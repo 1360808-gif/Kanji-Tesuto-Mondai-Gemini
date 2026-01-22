@@ -5,58 +5,80 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>漢字練習ツール</title>
     <style>
-        body { font-family: sans-serif; background-color: #f0f4f8; display: flex; flex-direction: column; align-items: center; padding: 20px; color: #333; }
-        .container { background: white; padding: 25px; border-radius: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); width: 100%; max-width: 600px; text-align: center; }
+        /* 画面全体の設定：中央寄せを解除し、左右に余裕を持たせる */
+        body { 
+            font-family: sans-serif; 
+            background-color: #f0f4f8; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            padding: 20px; 
+            color: #333; 
+            margin: 0;
+        }
+
+        /* コンテナ：max-widthを解除して横幅を95%に広げる */
+        .container { 
+            background: white; 
+            padding: 25px; 
+            border-radius: 20px; 
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1); 
+            width: 95%; /* 画面の横幅いっぱいに近く設定 */
+            max-width: none; /* 制限を解除 */
+            text-align: center; 
+            box-sizing: border-box;
+        }
+
+        h1 { font-size: 24px; color: #2c3e50; border-bottom: 3px solid #3498db; padding-bottom: 10px; margin-bottom: 20px; }
+        
         .hidden { display: none; }
-        h1 { font-size: 22px; color: #2c3e50; border-bottom: 3px solid #3498db; padding-bottom: 10px; margin-bottom: 20px; }
         
         /* ボタンのデザイン */
         button { cursor: pointer; padding: 12px 20px; border: none; border-radius: 12px; font-size: 18px; margin: 5px; font-weight: bold; transition: 0.2s; }
-        .btn-blue { background: #3498db; color: white; width: 100%; max-width: 280px; }
+        .btn-blue { background: #3498db; color: white; width: 100%; max-width: 400px; } /* ボタンも少し大きく */
         .btn-blue:hover { transform: scale(1.02); background: #2980b9; }
-        .btn-green { background: #2ecc71; color: white; width: 80%; height: 60px; font-size: 22px; }
+        .btn-green { background: #2ecc71; color: white; width: 80%; height: 70px; font-size: 26px; }
         .btn-gray { background: #95a5a6; color: white; font-size: 14px; padding: 8px 15px; }
 
         /* 入力エリア */
-        textarea { width: 95%; height: 100px; border: 2px solid #ddd; border-radius: 10px; padding: 10px; font-size: 16px; margin-top: 10px; }
-        .code-display { background: #f8f9fa; padding: 15px; word-break: break-all; font-family: monospace; font-size: 13px; border: 2px dashed #bdc3c7; margin: 15px 0; color: #7f8c8d; }
+        textarea { width: 100%; height: 120px; border: 2px solid #ddd; border-radius: 10px; padding: 10px; font-size: 18px; margin-top: 10px; box-sizing: border-box; }
+        .code-display { background: #f8f9fa; padding: 15px; word-break: break-all; font-family: monospace; font-size: 14px; border: 2px dashed #bdc3c7; margin: 15px 0; color: #7f8c8d; text-align: left; }
 
-        /* クイズカード（視認性向上） */
+        /* クイズカード：横に長く表示される */
         .card { 
             border: 5px solid #3498db; 
             border-radius: 25px; 
-            padding: 60px 20px; 
+            padding: 80px 40px; 
             margin: 25px 0; 
-            min-height: 200px; 
-            background-color: #fffdf0; /* 目に優しい薄い黄色 */
+            min-height: 250px; 
+            background-color: #fffdf0; 
             display: flex; 
             flex-direction: column; 
             justify-content: center; 
             box-shadow: inset 0 0 15px rgba(0,0,0,0.05);
         }
         
-        /* 【重要】問題文のスタイル：大きく・太く */
+        /* 問題文：横幅に合わせてさらに見やすく */
         .q-text { 
-            font-size: 42px; 
+            font-size: 48px; 
             font-weight: 900; 
             line-height: 1.5; 
             color: #2c3e50;
             word-break: break-all;
         }
 
-        /* 答えのスタイル：大きく・色を変える */
+        /* 答えのスタイル */
         .a-text { 
-            font-size: 56px; 
+            font-size: 64px; 
             color: #e67e22; 
             font-weight: 900;
-            margin-top: 20px;
+            margin-top: 30px;
             min-height: 1.2em;
         }
 
-        /* カッコの中を赤くするためのクラス */
         .highlight { color: #e74c3c; }
 
-        .info-tag { font-size: 16px; color: #7f8c8d; font-weight: bold; margin-bottom: 10px; }
+        .info-tag { font-size: 18px; color: #7f8c8d; font-weight: bold; margin-bottom: 10px; }
     </style>
 </head>
 <body>
@@ -68,11 +90,13 @@
 
     <h1>漢字練習</h1>
 
-    <div id="teacher-view" class="hidden" style="background: #fff5f5; padding: 20px; border-radius: 15px; border: 2px solid #fab1a0; margin-top: 10px;">
+    <div id="teacher-view" class="hidden" style="background: #fff5f5; padding: 25px; border-radius: 15px; border: 2px solid #fab1a0; margin-top: 10px; text-align: left;">
         <h3 style="margin-top:0;">もんだい作成（先生用）</h3>
-        <p style="font-size: 14px; text-align: left;">1. スプレッドシートの「問題」と「答え」の2列をコピーしてください。<br>2. 下に貼り付けて、ボタンを押してください。</p>
+        <p>1. スプレッドシートの「問題」と「答え」の2列をコピーしてください。<br>2. 下に貼り付けて、ボタンを押してください。</p>
         <textarea id="teacher-input" placeholder="例：&#13;&#10;山に（のぼ）る	登る"></textarea>
-        <button class="btn-blue" style="background:#e74c3c; margin-top:10px;" onclick="makeCode()">配布用コードを作成する</button>
+        <div style="text-align: center;">
+            <button class="btn-blue" style="background:#e74c3c; margin-top:10px;" onclick="makeCode()">配布用コードを作成する</button>
+        </div>
         <div id="code-result" class="hidden">
             <p style="font-weight: bold; margin-top: 15px; color:#c0392b;">作成完了！下のコードをコピーして配ってください：</p>
             <div id="output-code" class="code-display"></div>
@@ -80,14 +104,16 @@
     </div>
 
     <div id="student-setup">
-        <p style="font-weight:bold;">先生からもらったコードを下に貼ってください</p>
+        <p style="font-weight:bold; font-size: 18px;">先生からもらったコードを下に貼ってください</p>
         <textarea id="student-input" placeholder="ここに貼り付けます"></textarea>
-        <button class="btn-blue" style="height:60px;" onclick="loadData()">練習をはじめる！</button>
+        <div style="text-align: center;">
+            <button class="btn-blue" style="height:70px; font-size: 22px;" onclick="loadData()">練習をはじめる！</button>
+        </div>
     </div>
 
     <div id="quiz-area" class="hidden">
         <div id="mode-select">
-            <p>どっちのモードでやる？</p>
+            <p style="font-size: 20px;">どっちのモードでやる？</p>
             <button class="btn-blue" onclick="startGame('normal')">最初から（順番どおり）</button>
             <button class="btn-blue" onclick="startGame('random')" style="background:#9b59b6;">ランダム（まぜこぜ）</button>
         </div>
@@ -99,18 +125,20 @@
                 <div id="a-text" class="a-text"></div>
             </div>
             
-            <button id="show-btn" class="btn-blue" style="max-width:100%; width:100%; height:80px; font-size:24px;" onclick="showAnswer()">答えを見る</button>
-            
-            <div id="judge-btns" class="hidden">
-                <button class="btn-green" onclick="nextStep()">次へすすむ ＞</button>
+            <div style="text-align: center;">
+                <button id="show-btn" class="btn-blue" style="max-width:600px; width:100%; height:90px; font-size:28px;" onclick="showAnswer()">答えを見る</button>
+                <div id="judge-btns" class="hidden">
+                    <button class="btn-green" onclick="nextStep()">次へすすむ ＞</button>
+                </div>
             </div>
             
-            <button onclick="location.reload()" style="background:none; color: #95a5a6; font-size: 14px; margin-top: 30px; text-decoration: underline;">メニューにもどる</button>
+            <button onclick="location.reload()" style="background:none; color: #95a5a6; font-size: 16px; margin-top: 40px; text-decoration: underline;">メニューにもどる</button>
         </div>
     </div>
 </div>
 
 <script>
+    /* （スクリプト部分は前回と同じですが、念のため全文含めています） */
     let questions = [];
     let currentIndex = 0;
 
@@ -144,7 +172,6 @@
                 const parts = line.split('\t');
                 return { q: parts[0], a: parts[1] || "" };
             }).filter(item => item.q);
-
             document.getElementById('student-setup').classList.add('hidden');
             document.getElementById('quiz-area').classList.remove('hidden');
         } catch(e) {
@@ -160,7 +187,6 @@
         showQuestion();
     }
 
-    // 問題表示（カッコ内を赤くする処理を追加）
     function showQuestion() {
         if(currentIndex >= questions.length) {
             alert("全問おわりました！よくがんばったね！");
@@ -168,15 +194,12 @@
             return;
         }
         document.getElementById('info').innerText = `あと ${questions.length - currentIndex} 問 / ぜんぶで ${questions.length} 問`;
-        
-        // 問題文の（ ）の部分を赤色にする
         let rawText = questions[currentIndex].q;
         let formattedText = rawText
             .replace(/（/g, '<span class="highlight">（')
             .replace(/）/g, '）</span>')
             .replace(/\(/g, '<span class="highlight">(')
             .replace(/\)/g, ')</span>');
-
         document.getElementById('q-text').innerHTML = formattedText;
         document.getElementById('a-text').innerText = "";
         document.getElementById('show-btn').classList.remove('hidden');
