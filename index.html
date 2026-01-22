@@ -5,133 +5,174 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>漢字練習ツール</title>
     <style>
-        /* 全体のフォントを手書き・教科書体系に設定 */
+        /* 画面全体の高さを固定し、はみ出さないように設定 */
+        html, body { 
+            height: 100%; 
+            margin: 0; 
+            overflow: hidden; /* 全体のスクロールを禁止 */
+            font-family: "Hiragino Kaku Gothic ProN", "Yu Mincho", "MS PMincho", serif;
+            background-color: #f0f4f8;
+        }
+
         body { 
-            font-family: "Hiragino Kaku Gothic ProN", "Yu Mincho", "YuMincho", "MS PMincho", "Sawarabi Mincho", serif;
-            background-color: #f0f4f8; 
             display: flex; 
             flex-direction: column; 
             align-items: center; 
-            padding: 20px; 
-            color: #333; 
-            margin: 0;
+            padding: 10px; 
+            box-sizing: border-box;
         }
 
         .container { 
             background: white; 
-            padding: 25px; 
+            padding: 15px 25px; 
             border-radius: 20px; 
             box-shadow: 0 4px 15px rgba(0,0,0,0.1); 
-            width: 95%; 
-            max-width: none; 
-            text-align: center; 
+            width: 98%; 
+            height: 98vh; /* 画面の高さ98%に収める */
+            display: flex;
+            flex-direction: column;
             box-sizing: border-box;
         }
 
-        h1 { font-size: 24px; color: #2c3e50; border-bottom: 3px solid #3498db; padding-bottom: 10px; margin-bottom: 20px; }
+        h1 { font-size: 20px; color: #2c3e50; border-bottom: 2px solid #3498db; margin: 5px 0; padding-bottom: 5px; }
         
         .hidden { display: none; }
         
-        button { cursor: pointer; padding: 12px 20px; border: none; border-radius: 12px; font-size: 18px; margin: 5px; font-weight: bold; transition: 0.2s; }
-        .btn-blue { background: #3498db; color: white; width: 100%; max-width: 400px; }
-        .btn-blue:hover { transform: scale(1.02); background: #2980b9; }
-        .btn-green { background: #2ecc71; color: white; width: 80%; height: 70px; font-size: 26px; }
-        .btn-gray { background: #95a5a6; color: white; font-size: 14px; padding: 8px 15px; }
+        /* 設定ボタンを小さく配置 */
+        .admin-area { text-align: right; }
+        button.btn-gray { background: #95a5a6; color: white; font-size: 11px; padding: 4px 8px; border: none; border-radius: 5px; cursor: pointer; }
 
-        textarea { width: 100%; height: 120px; border: 2px solid #ddd; border-radius: 10px; padding: 10px; font-size: 18px; margin-top: 10px; box-sizing: border-box; }
-        .code-display { background: #f8f9fa; padding: 15px; word-break: break-all; font-family: monospace; font-size: 14px; border: 2px dashed #bdc3c7; margin: 15px 0; color: #7f8c8d; text-align: left; }
+        /* 入力・設定画面（ここだけは内容が多いのでスクロール可） */
+        #teacher-view, #student-setup, #mode-select {
+            overflow-y: auto;
+            flex-grow: 1;
+        }
 
-        /* クイズカード */
+        textarea { width: 100%; height: 80px; font-size: 16px; margin-top: 5px; }
+
+        /* 【重要】クイズエリア：ここが1画面に収まるメイン部分 */
+        #game-screen {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between; /* 要素を上下に分散 */
+            padding: 5px 0;
+        }
+
+        /* クイズカード：高さを画面に合わせて柔軟に変化させる */
         .card { 
-            border: 5px solid #3498db; 
-            border-radius: 25px; 
-            padding: 80px 40px; 
-            margin: 25px 0; 
-            min-height: 250px; 
+            border: 4px solid #3498db; 
+            border-radius: 20px; 
+            margin: 10px 0; 
+            flex-grow: 1; /* 余った高さをカードが使う */
             background-color: #fffdf0; 
             display: flex; 
             flex-direction: column; 
             justify-content: center; 
-            box-shadow: inset 0 0 15px rgba(0,0,0,0.05);
+            min-height: 150px;
         }
         
-        /* 問題文：明朝体・教科書体系を優先して手書き感を出す */
         .q-text { 
-            font-family: "HG正楷書体-PRO", "HGP正楷書体", "YuMincho", "Yu Mincho", "MS PMincho", serif;
-            font-size: 52px; 
+            font-family: "HG正楷書体-PRO", "HGP正楷書体", "YuMincho", serif;
+            font-size: clamp(30px, 6vh, 48px); /* 画面の高さに合わせて文字サイズが変化 */
             font-weight: 600; 
-            line-height: 1.5; 
-            color: #2c3e50;
-            word-break: break-all;
+            line-height: 1.3; 
+            padding: 0 20px;
         }
 
-        /* 答えのスタイル：さらに手書き感を強調 */
         .a-text { 
-            font-family: "HG正楷書体-PRO", "HGP正楷書体", "YuMincho", "Yu Mincho", "MS PMincho", serif;
-            font-size: 72px; 
+            font-family: "HG正楷書体-PRO", "HGP正楷書体", "YuMincho", serif;
+            font-size: clamp(40px, 8vh, 64px); 
             color: #e67e22; 
             font-weight: 600;
-            margin-top: 30px;
-            min-height: 1.2em;
+            margin-top: 10px;
+        }
+
+        /* 操作ボタンを大きく、かつ画面下部に固定 */
+        .action-area {
+            height: 100px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        button.btn-main { 
+            cursor: pointer;
+            background: #3498db; 
+            color: white; 
+            width: 100%; 
+            max-width: 500px; 
+            height: 80px; 
+            font-size: 24px; 
+            border: none;
+            border-radius: 15px;
+            font-weight: bold;
+        }
+
+        button.btn-green { 
+            background: #2ecc71; 
+            color: white; 
+            width: 100%; 
+            max-width: 500px; 
+            height: 80px; 
+            font-size: 24px; 
+            border: none;
+            border-radius: 15px;
+            font-weight: bold;
         }
 
         .highlight { color: #e74c3c; font-weight: bold; }
-
-        .info-tag { font-size: 18px; color: #7f8c8d; font-weight: bold; margin-bottom: 10px; }
+        .info-tag { font-size: 14px; color: #7f8c8d; font-weight: bold; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <div style="text-align: right;">
+    <div class="admin-area">
         <button class="btn-gray" onclick="toggleTeacherMode()">先生用設定</button>
     </div>
 
     <h1>漢字練習</h1>
 
-    <div id="teacher-view" class="hidden" style="background: #fff5f5; padding: 25px; border-radius: 15px; border: 2px solid #fab1a0; margin-top: 10px; text-align: left;">
-        <h3 style="margin-top:0;">もんだい作成（先生用）</h3>
-        <p>1. スプレッドシートの「問題」と「答え」の2列をコピーしてください。<br>2. 下に貼り付けて、ボタンを押してください。</p>
-        <textarea id="teacher-input" placeholder="例：&#13;&#10;山に（のぼ）る	登る"></textarea>
-        <div style="text-align: center;">
-            <button class="btn-blue" style="background:#e74c3c; margin-top:10px;" onclick="makeCode()">配布用コードを作成する</button>
-        </div>
+    <div id="teacher-view" class="hidden">
+        <h3 style="margin:5px 0; font-size: 16px;">もんだい作成（先生用）</h3>
+        <textarea id="teacher-input" placeholder="スプレッドシートから貼り付け"></textarea>
+        <button onclick="makeCode()" style="padding:10px; margin-top:5px; background:#e74c3c; color:white; border:none; border-radius:5px; width:100%;">配布コード作成</button>
         <div id="code-result" class="hidden">
-            <p style="font-weight: bold; margin-top: 15px; color:#c0392b;">作成完了！下のコードをコピーして配ってください：</p>
-            <div id="output-code" class="code-display"></div>
+            <div id="output-code" style="background:#eee; font-size:10px; word-break:break-all; padding:5px; margin-top:5px; border:1px dashed #777;"></div>
         </div>
     </div>
 
     <div id="student-setup">
-        <p style="font-weight:bold; font-size: 18px;">先生からもらったコードを下に貼ってください</p>
-        <textarea id="student-input" placeholder="ここに貼り付けます"></textarea>
-        <div style="text-align: center;">
-            <button class="btn-blue" style="height:70px; font-size: 22px;" onclick="loadData()">練習をはじめる！</button>
-        </div>
+        <p style="font-size:14px; margin: 5px 0;">先生からもらったコードを貼ってください</p>
+        <textarea id="student-input"></textarea>
+        <button onclick="loadData()" style="width:100%; padding:15px; background:#3498db; color:white; border:none; border-radius:10px; font-weight:bold; margin-top:5px;">練習をはじめる</button>
     </div>
 
-    <div id="quiz-area" class="hidden">
-        <div id="mode-select">
-            <p style="font-size: 20px;">どっちのモードでやる？</p>
-            <button class="btn-blue" onclick="startGame('normal')">最初から（順番どおり）</button>
-            <button class="btn-blue" onclick="startGame('random')" style="background:#9b59b6;">ランダム（まぜこぜ）</button>
+    <div id="quiz-area" class="hidden" style="flex-grow:1; display:flex; flex-direction:column;">
+        <div id="mode-select" style="text-align:center; padding-top:20px;">
+            <button onclick="startGame('normal')" style="width:80%; padding:20px; margin-bottom:10px; background:#3498db; color:white; border:none; border-radius:10px;">最初から</button>
+            <button onclick="startGame('random')" style="width:80%; padding:20px; background:#9b59b6; color:white; border:none; border-radius:10px;">ランダム</button>
         </div>
 
         <div id="game-screen" class="hidden">
             <div id="info" class="info-tag"></div>
+            
             <div class="card">
                 <div id="q-text" class="q-text"></div>
                 <div id="a-text" class="a-text"></div>
             </div>
             
-            <div style="text-align: center;">
-                <button id="show-btn" class="btn-blue" style="max-width:600px; width:100%; height:90px; font-size:28px;" onclick="showAnswer()">答えを見る</button>
-                <div id="judge-btns" class="hidden">
+            <div class="action-area">
+                <button id="show-btn" class="btn-main" onclick="showAnswer()">答えを見る</button>
+                <div id="judge-btns" class="hidden" style="width:100%; text-align:center;">
                     <button class="btn-green" onclick="nextStep()">次へすすむ ＞</button>
                 </div>
             </div>
             
-            <button onclick="location.reload()" style="background:none; color: #95a5a6; font-size: 16px; margin-top: 40px; text-decoration: underline;">メニューにもどる</button>
+            <div style="text-align:center; margin-top:5px;">
+                <button onclick="location.reload()" style="background:none; border:none; color: #95a5a6; font-size: 12px; text-decoration: underline; cursor:pointer;">メニューへもどる</button>
+            </div>
         </div>
     </div>
 </div>
@@ -141,29 +182,21 @@
     let currentIndex = 0;
 
     function toggleTeacherMode() {
-        const pw = prompt("パスワードを入れてください（初期：1234）");
-        if(pw === "1234") {
-            document.getElementById('teacher-view').classList.toggle('hidden');
-        } else {
-            alert("パスワードがちがいます");
-        }
+        const pw = prompt("パスワード（1234）");
+        if(pw === "1234") document.getElementById('teacher-view').classList.toggle('hidden');
     }
 
     function makeCode() {
         const input = document.getElementById('teacher-input').value.trim();
-        if(!input) return alert("データがありません");
-        try {
-            const code = btoa(unescape(encodeURIComponent(input)));
-            document.getElementById('output-code').innerText = code;
-            document.getElementById('code-result').classList.remove('hidden');
-        } catch(e) {
-            alert("エラーが発生しました。");
-        }
+        if(!input) return;
+        const code = btoa(unescape(encodeURIComponent(input)));
+        document.getElementById('output-code').innerText = code;
+        document.getElementById('code-result').classList.remove('hidden');
     }
 
     function loadData() {
         const code = document.getElementById('student-input').value.trim();
-        if(!code) return alert("コードを貼ってください");
+        if(!code) return;
         try {
             const decoded = decodeURIComponent(escape(atob(code)));
             questions = decoded.split('\n').map(line => {
@@ -172,9 +205,7 @@
             }).filter(item => item.q);
             document.getElementById('student-setup').classList.add('hidden');
             document.getElementById('quiz-area').classList.remove('hidden');
-        } catch(e) {
-            alert("コードが正しくありません。");
-        }
+        } catch(e) { alert("コードが正しくありません"); }
     }
 
     function startGame(mode) {
@@ -187,18 +218,15 @@
 
     function showQuestion() {
         if(currentIndex >= questions.length) {
-            alert("全問おわりました！よくがんばったね！");
+            alert("全問おわりました！");
             location.reload();
             return;
         }
-        document.getElementById('info').innerText = `あと ${questions.length - currentIndex} 問 / ぜんぶで ${questions.length} 問`;
+        document.getElementById('info').innerText = `あと ${questions.length - currentIndex} 問 / ${questions.length} 問中`;
         let rawText = questions[currentIndex].q;
-        let formattedText = rawText
-            .replace(/（/g, '<span class="highlight">（')
-            .replace(/）/g, '）</span>')
-            .replace(/\(/g, '<span class="highlight">(')
-            .replace(/\)/g, ')</span>');
-        document.getElementById('q-text').innerHTML = formattedText;
+        document.getElementById('q-text').innerHTML = rawText
+            .replace(/（/g, '<span class="highlight">（').replace(/）/g, '）</span>')
+            .replace(/\(/g, '<span class="highlight">(').replace(/\)/g, ')</span>');
         document.getElementById('a-text').innerText = "";
         document.getElementById('show-btn').classList.remove('hidden');
         document.getElementById('judge-btns').classList.add('hidden');
