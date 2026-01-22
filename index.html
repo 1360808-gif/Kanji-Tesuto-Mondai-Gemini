@@ -50,4 +50,110 @@
     <hr style="margin: 20px 0; border: 0; border-top: 1px solid #eee;">
 
     <div id="student-setup">
-        <p>先生からもらったコードを
+        <p>先生からもらったコードを貼ってください</p>
+        <textarea id="student-input" placeholder="ここにコードを貼り付け"></textarea>
+        <button class="btn-blue" onclick="loadData()">練習をはじめる</button>
+    </div>
+
+    <div id="quiz-area" class="hidden">
+        <div id="mode-select">
+            <button class="btn-blue" onclick="startGame('normal')">最初から</button>
+            <button class="btn-blue" onclick="startGame('random')">ランダム</button>
+        </div>
+
+        <div id="game-screen" class="hidden">
+            <div id="info" style="font-size: 14px; color: #7f8c8d;"></div>
+            <div class="card">
+                <div id="q-text" class="q-text"></div>
+                <div id="a-text" class="a-text"></div>
+            </div>
+            <button id="show-btn" class="btn-blue" style="max-width:100%; width:100%; height:60px;" onclick="showAnswer()">答えを見る</button>
+            <div id="judge-btns" class="hidden">
+                <button class="btn-green" onclick="nextStep()">〇 次へ</button>
+            </div>
+            <button onclick="location.reload()" style="background:none; color: #95a5a6; font-size: 12px; margin-top: 20px;">もどる</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    let questions = [];
+    let currentIndex = 0;
+
+    // 先生用メニューの表示切り替え（簡易パスワード付）
+    function toggleTeacherMode() {
+        const pw = prompt("パスワードを入れてください（初期：1234）");
+        if(pw === "1234") {
+            document.getElementById('teacher-view').classList.toggle('hidden');
+        } else {
+            alert("パスワードがちがいます");
+        }
+    }
+
+    // 先生：コードの作成
+    function makeCode() {
+        const input = document.getElementById('teacher-input').value.trim();
+        if(!input) return alert("データがありません");
+        try {
+            // 文字列をBase64形式で圧縮
+            const code = btoa(unescape(encodeURIComponent(input)));
+            document.getElementById('output-code').innerText = code;
+            document.getElementById('code-result').classList.remove('hidden');
+        } catch(e) {
+            alert("エラーが発生しました。");
+        }
+    }
+
+    // 子ども：コードの読み込み
+    function loadData() {
+        const code = document.getElementById('student-input').value.trim();
+        if(!code) return alert("コードを貼ってください");
+        try {
+            const decoded = decodeURIComponent(escape(atob(code)));
+            questions = decoded.split('\n').map(line => {
+                const parts = line.split('\t');
+                return { q: parts[0], a: parts[1] || "" };
+            }).filter(item => item.q);
+
+            document.getElementById('student-setup').classList.add('hidden');
+            document.getElementById('quiz-area').classList.remove('hidden');
+        } catch(e) {
+            alert("コードが正しくありません。正しくコピーできているか確認してください。");
+        }
+    }
+
+    // ゲーム開始
+    function startGame(mode) {
+        if(mode === 'random') questions.sort(() => Math.random() - 0.5);
+        currentIndex = 0;
+        document.getElementById('mode-select').classList.add('hidden');
+        document.getElementById('game-screen').classList.remove('hidden');
+        showQuestion();
+    }
+
+    function showQuestion() {
+        if(currentIndex >= questions.length) {
+            alert("全問おわりました！");
+            location.reload();
+            return;
+        }
+        document.getElementById('info').innerText = `残り ${questions.length - currentIndex} 問`;
+        document.getElementById('q-text').innerText = questions[currentIndex].q;
+        document.getElementById('a-text').innerText = "";
+        document.getElementById('show-btn').classList.remove('hidden');
+        document.getElementById('judge-btns').classList.add('hidden');
+    }
+
+    function showAnswer() {
+        document.getElementById('a-text').innerText = questions[currentIndex].a;
+        document.getElementById('show-btn').classList.add('hidden');
+        document.getElementById('judge-btns').classList.remove('hidden');
+    }
+
+    function nextStep() {
+        currentIndex++;
+        showQuestion();
+    }
+</script>
+</body>
+</html>
