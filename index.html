@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>漢字練習システム</title>
+    <style>
+        body { font-family: "Helvetica Neue", Arial, "Hiragino Kaku Gothic ProN", "Hiragino Sans", Meiryo, sans-serif; background-color: #f0f8ff; color: #333; display: flex; flex-direction: column; align-items: center; padding: 20px; }
+        .container { background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); width: 90%; max-width: 600px; }
+        h1 { color: #2c3e50; font-size: 24px; text-align: center; }
+        .hidden { display: none; }
+        textarea { width: 100%; height: 150px; margin: 10px 0; border: 1px solid #ccc; border-radius: 5px; padding: 10px; font-size: 16px; }
+        button { cursor: pointer; padding: 10px 20px; border: none; border-radius: 5px; font-size: 16px; transition: 0.3s; margin: 5px; }
+        .btn-main { background-color: #3498db; color: white; }
+        .btn-main:hover { background-color: #2980b9; }
+        .btn-correct { background-color: #2ecc71; color: white; width: 45%; }
+        .btn-wrong { background-color: #e74c3c; color: white; width: 45%; }
+        .card { text-align: center; padding: 40px 20px; border: 2px solid #3498db; border-radius: 10px; margin: 20px 0; }
+        .question-text { font-size: 32px; font-weight: bold; margin-bottom: 20px; }
+        .answer-text { font-size: 28px; color: #e67e22; font-weight: bold; min-height: 40px; }
+        .mode-select { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin-bottom: 20px; }
+        .status { text-align: center; color: #7f8c8d; font-size: 14px; }
+        .list-view { font-size: 14px; margin-top: 20px; border-top: 1px solid #eee; padding-top: 10px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div id="nav">
+        <button onclick="showView('teacher')" style="background:#bdc3c7">先生用ページ</button>
+        <button onclick="showView('student')" style="background:#bdc3c7">子ども用ページ</button>
+    </div>
+
+    <hr style="width:100%; margin: 20px 0;">
+
+    <div id="teacher-view" class="view">
+        <h1>先生用：もんだい作成</h1>
+        <p>1行に1問ずつ「問題,答え」の形式で入力してください。</p>
+        <textarea id="input-kanji" placeholder="例：山にのぼる,登る&#13;&#10;ごはんをたべる,食べる"></textarea>
+        <button class="btn-main" onclick="saveQuestions()">問題を保存する</button>
+    </div>
+
+    <div id="student-view" class="view hidden">
+        <h1>漢字練習</h1>
+        
+        <div id="menu">
+            <p>どうやって練習する？</p>
+            <div class="mode-select">
+                <button class="btn-main" onclick="startLesson('all')">最初から</button>
+                <button class="btn-main" onclick="startLesson('continue')">続きから</button>
+                <button class="btn-main" onclick="startLesson('random')">ランダムに</button>
+                <button class="btn-main" onclick="startLesson('wrong')">間違えた問題だけ</button>
+            </div>
+            <button onclick="toggleListView()" style="background:none; border:1px solid #ccc; color:#777;">問題すべてを見る</button>
+        </div>
+
+        <div id="quiz-area" class="hidden">
+            <div class="status">残り: <span id="remaining-count">0</span>問</div>
+            <div class="card">
+                <div id="q-text" class="question-text"></div>
+                <div id="a-text" class="answer-text"></div>
+            </div>
+            <div id="action-buttons">
+                <button id="show-ans-btn" class="btn-main" style="width:100%" onclick="showAnswer()">答えを見る</button>
+                <div id="judge-buttons" class="hidden">
+                    <button class="btn-correct" onclick="judge(true)">〇 せいかい</button>
+                    <button class="btn-wrong" onclick="judge(false)">× まちがえた</button>
+                </div>
+            </div>
+            <button onclick="showView('student')" style="margin-top:20px; background:none; color:#777;">メニューにもどる</button>
+        </div>
+
+        <div id="list-display" class="list-view hidden">
+            <h3>もんだいリスト</h3>
+            <div id="full-list"></div>
+        </div>
+    </div>
+</div>
+
+<script>
+    let questions = []; // {q, a, id}
+    let currentQueue = [];
+    let currentIndex = 0;
+    let wrongIds = new Set();
+
+    // データの読み込み
+    window.onload = () => {
+        const saved = localStorage.getItem('kanji-data');
+        if(saved) {
+            questions = JSON.parse(saved);
+            document.getElementById('input-kanji').value = questions.map(item => `${item.q},${item.a}`).join('\n');
+        }
+        const savedWrong = localStorage.getItem('kanji-wrong');
+        if(savedWrong) wrongIds = new Set(JSON.parse(savedWrong));
+    };
+
+    function showView(viewName) {
+        document.querySelectorAll('.view').forEach(v => v.classList.add('hidden'));
+        document.getElementById(viewName + '-view').classList.remove('hidden');
+        if(viewName === 'student') {
+            document.getElementById('menu').classList.remove('hidden');
+            document.getElementById('quiz-area').classList.add('hidden');
+            document.getElementById('list-display').classList.add('hidden');
+        }
+    }
+
+    function saveQuestions() {
+        const text = document.getElementById('input-kanji').value;
+        questions = text.split('\n').filter(line => line.includes(',')).map((line, index) => {
+            const [q, a] = line.split(',');
+            return { q: q.trim(), a: a.trim(), id: index };
+        });
+        localStorage.setItem('kanji-data', JSON.stringify(questions));
+        alert('保存しました！');
+    }
+
+    function startLesson(mode) {
+        if(questions.length === 0) return alert('問題がありません。');
+        
+        if(mode === 'all') {
+            currentQueue = [...questions];
+            currentIndex = 0;
+        } else if(mode === 'continue') {
+            // 今回は簡易的に「最初から」と同じだが、進捗保存機能のベースに
+            currentQueue = [...questions].slice(currentIndex);
+        } else if(mode === 'random') {
+            currentQueue = [...questions].sort(() => Math.random() - 0.5);
+            currentIndex = 0;
+        } else if(mode === 'wrong') {
+            currentQueue = questions.filter(q => wrongIds.has(q.id));
+            if(currentQueue.length === 0) return alert('間違えた問題はありません！');
+            currentIndex = 0;
+        }
+
+        document.getElementById('menu').classList.add('hidden');
+        document.getElementById('quiz-area').classList.remove('hidden');
+        showQuestion();
+    }
+
+    function showQuestion() {
+        if(currentIndex >= currentQueue.length) {
+            alert('全問おわりました！');
+            showView('student');
+            return;
+        }
+        const item = currentQueue[currentIndex];
+        document.getElementById('q-text').innerText = item.q;
+        document.getElementById('a-text').innerText = "";
+        document.getElementById('remaining-count').innerText = currentQueue.length - currentIndex;
+        document.getElementById('show-ans-btn').classList.remove('hidden');
+        document.getElementById('judge-buttons').classList.add('hidden');
+    }
+
+    function showAnswer() {
+        document.getElementById('a-text').innerText = currentQueue[currentIndex].a;
+        document.getElementById('show-ans-btn').classList.add('hidden');
+        document.getElementById('judge-buttons').classList.remove('hidden');
+    }
+
+    function judge(isCorrect) {
+        const item = currentQueue[currentIndex];
+        if(isCorrect) {
+            wrongIds.delete(item.id);
+        } else {
+            wrongIds.add(item.id);
+        }
+        localStorage.setItem('kanji-wrong', JSON.stringify([...wrongIds]));
+        currentIndex++;
+        showQuestion();
+    }
+
+    function toggleListView() {
+        const listDiv = document.getElementById('list-display');
+        listDiv.classList.toggle('hidden');
+        const listContent = document.getElementById('full-list');
+        listContent.innerHTML = questions.map(item => `<div>・${item.q}（${item.a}）</div>`).join('');
+    }
+</script>
+</body>
+</html>

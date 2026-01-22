@@ -1,1 +1,0 @@
-# Kanji-Tesuto-Mondai-Gemini
