@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>漢字練習（PC画面最適化版）</title>
+    <title>漢字練習（修正安定版）</title>
     <style>
         :root {
             --paper-bg: #fffdf5;
@@ -20,15 +20,20 @@
             background-color: #e0d8c3;
             font-family: var(--main-font);
             display: flex; justify-content: center; align-items: center;
-            overflow: hidden; /* ブラウザ全体のスクロールを禁止 */
+            overflow: hidden;
+        }
+
+        #loading {
+            font-size: 24px;
+            font-weight: bold;
+            color: #555;
         }
 
         .main-container {
-            display: grid;
-            grid-template-columns: 260px 1.2fr 2fr; /* 比率を調整 */
+            display: none; /* 初期状態は非表示 */
+            grid-template-columns: 260px 1.2fr 2fr;
             gap: 15px;
-            width: 98vw; 
-            height: 96vh; /* 画面内に収まる高さ */
+            width: 98vw; height: 96vh;
             background: var(--paper-bg);
             padding: 20px; box-sizing: border-box;
             border-radius: 20px;
@@ -36,43 +41,35 @@
             box-shadow: 10px 10px 0 rgba(0,0,0,0.1);
         }
 
-        /* 共通ボックス：はみ出し防止 */
         .box {
             border: 3px solid var(--ink-black);
             border-radius: 15px;
             background: white;
-            overflow: hidden; /* 中身がはみ出さないように */
-            display: flex;
-            flex-direction: column;
+            overflow: hidden;
+            display: flex; flex-direction: column;
         }
 
-        /* 右側：問題エリア */
-        .right-column { 
-            display: flex; flex-direction: row-reverse; gap: 10px; 
-            height: 100%;
-        }
+        .right-column { display: flex; flex-direction: row-reverse; gap: 10px; height: 100%; }
         
         .q-num-box {
             border: 3px solid var(--ink-black);
             min-width: 45px; height: 45px;
             display: flex; align-items: center; justify-content: center;
-            font-size: 24px; font-weight: bold; background: white;
-            flex-shrink: 0;
+            font-size: 24px; font-weight: bold; background: white; flex-shrink: 0;
         }
 
         .q-area {
             flex-grow: 1;
             writing-mode: vertical-rl;
-            font-size: clamp(24px, 4vh, 38px); /* 画面の高さに合わせて文字サイズを自動調整 */
+            font-size: clamp(24px, 4vh, 38px);
             line-height: 2.0;
             letter-spacing: 0.15em;
             padding: 30px 15px;
             background-image: radial-gradient(#eee 1.5px, transparent 1.5px);
             background-size: 40px 40px;
-            overflow-y: auto; /* 長い場合は枠内でスクロール */
+            overflow-y: auto;
         }
 
-        /* 傍線：UDフォント崩れ防止 */
         .highlight { 
             color: #e74c3c;
             display: inline-block;
@@ -80,70 +77,51 @@
             margin: 0 0.1em;
             padding: 0.1em 0;
             line-height: 1.1;
-            text-decoration: none;
         }
 
-        /* 中央：アクションエリア */
-        .middle-column { 
-            display: flex; flex-direction: column; gap: 10px; align-items: center;
-            height: 100%;
-        }
+        .middle-column { display: flex; flex-direction: column; gap: 10px; align-items: center; height: 100%; }
         
         .answer-box {
-            width: 100%; 
-            flex-grow: 1; /* 余ったスペースを答えの箱に使う */
-            max-height: 50%; /* 答えが大きくなりすぎないように制限 */
+            width: 100%; flex-grow: 1; max-height: 50%;
             display: flex; align-items: center; justify-content: center;
             writing-mode: vertical-rl;
-            font-size: clamp(30px, 6vh, 56px); 
-            color: #e74c3c; font-weight: bold;
-            opacity: 0; transform: scale(0.9);
-            overflow-y: auto;
+            font-size: clamp(30px, 6vh, 56px); color: #e74c3c; font-weight: bold;
+            opacity: 0; transform: scale(0.9); overflow-y: auto;
         }
         .answer-box.visible { opacity: 1; transform: scale(1); transition: 0.2s; }
 
-        .btn-group {
-            display: flex; flex-direction: column; gap: 8px; width: 100%; align-items: center;
-            flex-shrink: 0; /* ボタンエリアは縮ませない */
-        }
+        .btn-group { display: flex; flex-direction: column; gap: 8px; width: 100%; align-items: center; flex-shrink: 0; }
 
         .btn {
             width: 90%; max-width: 240px; padding: clamp(10px, 1.5vh, 18px);
             border: 3px solid var(--ink-black);
             border-radius: 50px;
             font-size: clamp(14px, 1.8vh, 18px); font-weight: bold; cursor: pointer;
-            box-shadow: 0 4px 0 var(--ink-black);
-            background: white;
+            box-shadow: 0 4px 0 var(--ink-black); background: white;
+            font-family: var(--main-font);
         }
         .btn:active { transform: translateY(2px); box-shadow: 0 2px 0 var(--ink-black); }
         .btn-perfect { background: var(--perfect-green); color: white; }
         .btn-retry { background: var(--retry-orange); color: white; }
         .btn-show { background: var(--action-blue); color: white; }
 
-        /* 左側：進捗エリア */
-        .left-column { 
-            background: #fffdf0; border-style: dashed; padding: 15px;
-            height: 100%;
-        }
-        .stats { flex-grow: 1; }
+        .left-column { background: #fffdf0; border-style: dashed; padding: 15px; height: 100%; }
         .stats p { margin: 10px 0; font-size: 16px; border-bottom: 1px dashed #ccc; padding-bottom: 5px; }
         .stats span { font-size: 20px; font-weight: bold; color: var(--action-blue); }
 
-        .menu-btns { display: grid; gap: 8px; flex-shrink: 0; }
+        .menu-btns { margin-top: auto; display: grid; gap: 8px; flex-shrink: 0; }
         .menu-btn {
-            border: 2px solid var(--ink-black);
-            background: #eee; border-radius: 8px; padding: 6px; font-size: 12px;
+            border: 2px solid var(--ink-black); background: #eee; border-radius: 8px; padding: 6px; font-size: 12px;
             text-align: center; cursor: pointer;
         }
-
         .hidden { display: none !important; }
     </style>
 </head>
 <body>
 
-<div id="loading">✨ 最適化中... ✨</div>
+<div id="loading">✨ じゅんびしています... ✨</div>
 
-<div class="main-container hidden" id="app">
+<div class="main-container" id="app">
     <div class="box left-column">
         <h4 style="text-align:center; margin: 0 0 10px 0;">📔 がんばり記録</h4>
         <div class="stats">
@@ -153,7 +131,7 @@
         </div>
         <div class="menu-btns">
             <div class="menu-btn" onclick="location.reload()">🏠 タイトルへ</div>
-            <div class="menu-btn" onclick="fetchData(true)">🔄 データ更新</div>
+            <div class="menu-btn" onclick="fetchData(true)">🔄 最新にする</div>
         </div>
     </div>
 
@@ -177,7 +155,7 @@
 
 <script>
     const API_URL = "https://script.google.com/macros/s/AKfycbyWHprvWe-NcrfamWL2I6bWSAak6HW-JxyMCY-RZkZDFrhLkbSfLkeVmpKyznlI7g3a/exec";
-    const CACHE_KEY = "kanji_quiz_data_v4";
+    const CACHE_KEY = "kanji_quiz_data_stable";
     let allData = {};
     let currentQuestions = [];
     let currentIndex = 0;
@@ -194,35 +172,50 @@
     async function fetchData(force = false) {
         const cached = localStorage.getItem(CACHE_KEY);
         if (!force && cached) {
-            allData = JSON.parse(cached);
-            startApp();
-            return;
+            try {
+                allData = JSON.parse(cached);
+                startApp();
+                return;
+            } catch(e) { localStorage.removeItem(CACHE_KEY); }
         }
+        
         try {
             const res = await fetch(API_URL);
+            if (!res.ok) throw new Error();
             allData = await res.json();
             localStorage.setItem(CACHE_KEY, JSON.stringify(allData));
             startApp();
-        } catch(e) { alert("接続に失敗しました。"); }
+        } catch(e) {
+            document.getElementById('loading').innerHTML = "⚠️ データがよみこめませんでした。<br><button onclick='fetchData(true)'>再試行</button>";
+        }
     }
 
     function startApp() {
-        currentQuestions = allData[Object.keys(allData)[0]];
-        document.getElementById('loading').classList.add('hidden');
+        const keys = Object.keys(allData);
+        if (keys.length === 0) {
+            document.getElementById('loading').innerText = "問題データが空っぽです。";
+            return;
+        }
+        currentQuestions = allData[keys[0]];
+        
+        // 画面表示の切り替え
+        document.getElementById('loading').style.display = 'none';
         document.getElementById('app').style.display = 'grid';
+        
         updateStats();
         showQuestion();
     }
 
     function showQuestion() {
+        if (!currentQuestions[currentIndex]) return;
         const q = currentQuestions[currentIndex];
         document.getElementById('q-number').innerText = toKanjiNum(currentIndex + 1);
-        let rawText = q.q;
+        let rawText = q.q || "";
         let formattedText = rawText.replace(/[（\(](.*?)[）\)]/g, '<span class="highlight">$1</span>');
         document.getElementById('q-text').innerHTML = formattedText;
-        document.getElementById('a-text').innerText = q.a;
+        document.getElementById('a-text').innerText = q.a || "";
         document.getElementById('a-text').classList.remove('visible');
-        document.getElementById('q-text').scrollTop = 0; // スクロール位置をリセット
+        document.getElementById('q-text').scrollTop = 0;
     }
 
     function showAnswer() { document.getElementById('a-text').classList.add('visible'); }
@@ -246,12 +239,13 @@
             showQuestion();
             updateStats();
         } else {
-            alert("おつかれさま！全問終了です。");
+            alert("全問クリア！お疲れさまでした。");
             location.reload();
         }
     }
 
-    window.onload = () => fetchData();
+    // 読み込み開始
+    fetchData();
 </script>
 </body>
 </html>
