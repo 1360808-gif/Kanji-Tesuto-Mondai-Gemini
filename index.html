@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>漢字練習（問題番号付き）</title>
+    <title>漢字練習（爆速キャッシュ版）</title>
     <style>
         html, body { 
             height: 100%; margin: 0; overflow: hidden; 
@@ -41,16 +41,13 @@
             display: flex; flex-direction: column; justify-content: flex-start;
             position: relative;
         }
-        
-        /* 問題番号のスタイル */
         .q-number {
             font-size: clamp(24px, 4.5vh, 36px);
-            margin-left: 20px; /* 縦書きなので左側に隙間（次の行との間隔） */
+            margin-left: 20px;
             color: #7f8c8d;
             border-left: 1px solid #ccc;
             padding-left: 10px;
         }
-
         .q-text { 
             font-size: clamp(32px, 6.5vh, 52px); line-height: 2.2; 
             letter-spacing: 0.2em; word-break: break-all;
@@ -75,6 +72,13 @@
         .btn-action:active { transform: translateY(3px); box-shadow: 0 2px 0 #7f231c; }
         .btn-next { background: #27ae60; box-shadow: 0 5px 0 #1e8449; }
         .info-tag { position: absolute; top: 15px; left: 20px; font-size: 16px; color: #888; writing-mode: horizontal-tb; }
+        
+        /* 更新ボタン */
+        .reload-data {
+            position: absolute; bottom: 10px; right: 10px;
+            font-size: 12px; color: #aaa; background: none; border: 1px solid #ddd; border-radius: 5px; padding: 5px; cursor: pointer;
+        }
+
         .hidden { display: none !important; }
     </style>
 </head>
@@ -86,12 +90,13 @@
         <div id="sheet-select">
             <h2 style="font-size: 2rem;">どの練習をする？</h2>
             <div id="sheet-buttons" style="width:100%; display:flex; flex-direction:column; align-items:center;"></div>
+            <button class="reload-data" onclick="fetchData(true)">スプレッドシートの最新情報を取得</button>
         </div>
         <div id="mode-select" class="hidden">
             <h2 id="selected-sheet-name" style="font-size: 2rem; color:#c0392b;"></h2>
             <button class="btn-list" onclick="setMode('normal')">順番どおり</button>
             <button class="btn-list" onclick="setMode('random')" style="background:#8e44ad; box-shadow: 0 4px 0 #5e3370;">ランダムにまぜる</button>
-            <button onclick="location.reload()" style="margin-top:30px; font-size:1.2rem; color:#888; background:none; border:none; text-decoration:underline; cursor:pointer;">えらびなおす</button>
+            <button onclick="location.reload()" style="margin-top:30px; font-size:1.2rem; color:#888; background:none; border:none; text-decoration:underline;">えらびなおす</button>
         </div>
         <div id="game-screen" class="hidden">
             <div id="info" class="info-tag"></div>
@@ -110,34 +115,55 @@
 
 <script>
     const API_URL = "https://script.google.com/macros/s/AKfycbyWHprvWe-NcrfamWL2I6bWSAak6HW-JxyMCY-RZkZDFrhLkbSfLkeVmpKyznlI7g3a/exec";
+    const CACHE_KEY = "kanji_quiz_data";
     let allQuestions = {};
     let currentQuestions = [];
     let currentIndex = 0;
 
-    // 数値を漢数字に変換する関数
     function toKanjiNum(num) {
         const kanji = ["〇", "一", "二", "三", "四", "五", "六", "七", "八", "九"];
         return num.toString().split('').map(d => kanji[parseInt(d)]).join('');
     }
 
-    window.onload = async function() {
+    // データの取得と表示
+    async function fetchData(force = false) {
+        document.getElementById('loading').classList.remove('hidden');
+        document.getElementById('quiz-area').classList.add('hidden');
+
+        // キャッシュチェック
+        const cached = localStorage.getItem(CACHE_KEY);
+        if (!force && cached) {
+            allQuestions = JSON.parse(cached);
+            renderSheetButtons();
+            return;
+        }
+
         try {
             const response = await fetch(API_URL);
             allQuestions = await response.json();
-            const btnArea = document.getElementById('sheet-buttons');
-            Object.keys(allQuestions).forEach(name => {
-                const btn = document.createElement('button');
-                btn.className = 'btn-list';
-                btn.innerText = name;
-                btn.onclick = () => selectSheet(name);
-                btnArea.appendChild(btn);
-            });
-            document.getElementById('loading').classList.add('hidden');
-            document.getElementById('quiz-area').classList.remove('hidden');
+            // キャッシュに保存
+            localStorage.setItem(CACHE_KEY, JSON.stringify(allQuestions));
+            renderSheetButtons();
         } catch (e) {
-            document.getElementById('loading').innerHTML = `<p style='color:red;'>接続エラー</p>`;
+            document.getElementById('loading').innerHTML = `<p style='color:red;'>接続エラー</p><button onclick="fetchData(true)">再試行</button>`;
         }
-    };
+    }
+
+    function renderSheetButtons() {
+        const btnArea = document.getElementById('sheet-buttons');
+        btnArea.innerHTML = "";
+        Object.keys(allQuestions).forEach(name => {
+            const btn = document.createElement('button');
+            btn.className = 'btn-list';
+            btn.innerText = name;
+            btn.onclick = () => selectSheet(name);
+            btnArea.appendChild(btn);
+        });
+        document.getElementById('loading').classList.add('hidden');
+        document.getElementById('quiz-area').classList.remove('hidden');
+    }
+
+    window.onload = () => fetchData();
 
     function selectSheet(name) {
         currentQuestions = [...allQuestions[name]];
@@ -156,23 +182,17 @@
 
     function showQuestion() {
         if(currentIndex >= currentQuestions.length) {
-            alert("すべての問題を練習しました！");
+            alert("終了しました！");
             location.reload();
             return;
         }
-
         const answerEl = document.getElementById('a-text');
         answerEl.classList.remove('visible');
         answerEl.innerText = "";
-
-        // 問題番号（漢数字）のセット
         document.getElementById('q-number').innerText = toKanjiNum(currentIndex + 1) + "、";
-
         document.getElementById('info').innerText = `問題： ${currentIndex + 1} / ${currentQuestions.length}`;
-        
         let rawText = currentQuestions[currentIndex].q;
         let formattedText = rawText.replace(/[（\()]/g, '<span class="highlight">').replace(/[）\)]/g, '</span>');
-        
         document.getElementById('q-text').innerHTML = formattedText;
         document.getElementById('show-btn').classList.remove('hidden');
         document.getElementById('next-btn').classList.add('hidden');
