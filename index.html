@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>漢字練習（傍線位置修正版）</title>
+    <title>ワクワク漢字練習（操作改善版）</title>
     <style>
         :root {
             --paper-bg: #fffdf5;
@@ -66,15 +66,12 @@
             overflow-y: auto;
         }
 
-        /* ★傍線の修正：文字の範囲だけに背景として線を引く★ */
         .highlight { 
             color: #e74c3c;
-            /* 背景グラデーションで右端4px分だけ赤色にする */
-            background: linear-gradient(to left, transparent 0%, transparent 5%, #e74c3c 5%, #e74c3c 15%, transparent 15%);
+            background: linear-gradient(to left, transparent 0%, transparent 5%, #e74c3c 5%, #e74c3c(15%), transparent 15%);
             background-size: 100% 100%;
             background-repeat: no-repeat;
-            padding: 0;
-            display: inline; /* blockにせず、文字の流れに合わせる */
+            display: inline;
         }
 
         .middle-column { display: flex; flex-direction: column; gap: 10px; align-items: center; height: 100%; }
@@ -88,7 +85,7 @@
         }
         .answer-box.visible { opacity: 1; transform: scale(1); transition: 0.2s; }
 
-        .btn-group { display: flex; flex-direction: column; gap: 8px; width: 100%; align-items: center; flex-shrink: 0; }
+        .btn-group { display: flex; flex-direction: column; gap: 12px; width: 100%; align-items: center; flex-shrink: 0; }
 
         .btn {
             width: 90%; max-width: 240px; padding: clamp(10px, 1.5vh, 18px);
@@ -107,16 +104,12 @@
         .stats p { margin: 10px 0; font-size: 16px; border-bottom: 1px dashed #ccc; padding-bottom: 5px; }
         .stats span { font-size: 20px; font-weight: bold; color: var(--action-blue); }
 
-        .menu-btns { margin-top: auto; display: grid; gap: 8px; flex-shrink: 0; }
-        .menu-btn {
-            border: 2px solid var(--ink-black); background: #eee; border-radius: 8px; padding: 6px; font-size: 12px;
-            text-align: center; cursor: pointer;
-        }
+        .hidden { display: none !important; }
     </style>
 </head>
 <body>
 
-<div id="loading">✨ じゅんびしています... ✨</div>
+<div id="loading">✨ 読み込み中... ✨</div>
 
 <div class="main-container" id="app">
     <div class="box left-column">
@@ -126,21 +119,25 @@
             <p>✨ 完ぺき！　<span id="stat-perfect" style="color:var(--perfect-green)">0</span></p>
             <p>🏃 とちゅう　<span id="stat-retry" style="color:var(--retry-orange)">0</span></p>
         </div>
-        <div class="menu-btns">
-            <div class="menu-btn" onclick="location.reload()">🏠 タイトルへ</div>
-            <div class="menu-btn" onclick="fetchData(true)">🔄 最新にする</div>
+        <div class="menu-btns" style="margin-top:auto; display:grid; gap:8px;">
+            <div class="btn" style="width:auto; font-size:12px; padding:8px; border-radius:10px;" onclick="location.reload()">🏠 タイトルへ</div>
+            <div class="btn" style="width:auto; font-size:12px; padding:8px; border-radius:10px;" onclick="fetchData(true)">🔄 最新にする</div>
         </div>
     </div>
 
     <div class="middle-column">
         <div class="box answer-box" id="a-text"></div>
+        
         <div class="btn-group">
-            <button class="btn btn-show" onclick="showAnswer()">答えを見ろ！</button>
-            <div style="display:flex; gap:10px; width:90%; justify-content:center;">
-                <button class="btn btn-perfect" style="flex:1;" onclick="record('perfect')">完ぺき！</button>
-                <button class="btn btn-retry" style="flex:1;" onclick="record('retry')">とちゅう</button>
+            <button id="show-btn" class="btn btn-show" onclick="showAnswer()">答えをみる</button>
+            
+            <div id="judgement-btns" class="hidden" style="width:100%; display:flex; flex-direction:column; align-items:center; gap:10px;">
+                <div style="display:flex; gap:10px; width:90%; justify-content:center;">
+                    <button class="btn btn-perfect" style="flex:1;" onclick="record('perfect')">かんぺき！</button>
+                    <button class="btn btn-retry" style="flex:1;" onclick="record('retry')">とちゅう</button>
+                </div>
+                <button class="btn" style="background:#fff;" onclick="nextStep()">次へ進む ＞</button>
             </div>
-            <button class="btn" onclick="nextStep()">次へ進む ＞</button>
         </div>
     </div>
 
@@ -152,7 +149,7 @@
 
 <script>
     const API_URL = "https://script.google.com/macros/s/AKfycbyWHprvWe-NcrfamWL2I6bWSAak6HW-JxyMCY-RZkZDFrhLkbSfLkeVmpKyznlI7g3a/exec";
-    const CACHE_KEY = "kanji_quiz_data_precise";
+    const CACHE_KEY = "kanji_quiz_data_v5";
     let allData = {};
     let currentQuestions = [];
     let currentIndex = 0;
@@ -169,21 +166,14 @@
     async function fetchData(force = false) {
         const cached = localStorage.getItem(CACHE_KEY);
         if (!force && cached) {
-            try {
-                allData = JSON.parse(cached);
-                startApp();
-                return;
-            } catch(e) { localStorage.removeItem(CACHE_KEY); }
+            try { allData = JSON.parse(cached); startApp(); return; } catch(e) {}
         }
-        
         try {
             const res = await fetch(API_URL);
             allData = await res.json();
             localStorage.setItem(CACHE_KEY, JSON.stringify(allData));
             startApp();
-        } catch(e) {
-            document.getElementById('loading').innerHTML = "⚠️ 再試行してください。<br><button onclick='fetchData(true)'>やり直す</button>";
-        }
+        } catch(e) { document.getElementById('loading').innerText = "接続エラー"; }
     }
 
     function startApp() {
@@ -197,23 +187,36 @@
     }
 
     function showQuestion() {
-        if (!currentQuestions[currentIndex]) return;
+        if (currentIndex >= currentQuestions.length) {
+            alert("全問クリアです！");
+            location.reload();
+            return;
+        }
         const q = currentQuestions[currentIndex];
         document.getElementById('q-number').innerText = toKanjiNum(currentIndex + 1);
-        let rawText = q.q || "";
-        // 傍線部分の置換
-        let formattedText = rawText.replace(/[（\(](.*?)[）\)]/g, '<span class="highlight">$1</span>');
+        let formattedText = q.q.replace(/[（\(](.*?)[）\)]/g, '<span class="highlight">$1</span>');
         document.getElementById('q-text').innerHTML = formattedText;
-        document.getElementById('a-text').innerText = q.a || "";
+        document.getElementById('a-text').innerText = q.a;
+        
+        // UIのリセット
         document.getElementById('a-text').classList.remove('visible');
+        document.getElementById('show-btn').classList.remove('hidden');
+        document.getElementById('judgement-btns').classList.add('hidden');
+        document.getElementById('q-text').scrollTop = 0;
     }
 
-    function showAnswer() { document.getElementById('a-text').classList.add('visible'); }
+    function showAnswer() {
+        document.getElementById('a-text').classList.add('visible');
+        document.getElementById('show-btn').classList.add('hidden');
+        document.getElementById('judgement-btns').classList.remove('hidden');
+    }
 
     function record(type) {
         if(type === 'perfect') perfectCount++;
         else retryCount++;
         updateStats();
+        
+        // 「かんぺき」を押した場合は即座に次へ。「とちゅう」の場合も次へ進む設定にしています
         nextStep();
     }
 
@@ -225,13 +228,8 @@
 
     function nextStep() {
         currentIndex++;
-        if(currentIndex < currentQuestions.length) {
-            showQuestion();
-            updateStats();
-        } else {
-            alert("終了！");
-            location.reload();
-        }
+        showQuestion();
+        updateStats();
     }
 
     fetchData();
