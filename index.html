@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>ワクワク漢字練習（UDフォント版）</title>
+    <title>ワクワク漢字練習（UD・傍線修正版）</title>
     <style>
         :root {
             --paper-bg: #fffdf5;
@@ -11,8 +11,8 @@
             --perfect-green: #2ecc71;
             --retry-orange: #f39c12;
             --action-blue: #3498db;
-            /* UDフォントを優先指定。入っていない場合は標準のメイリオ等を使用 */
-            --main-font: "BIZ UDPGothic", "BIZ UDPゴシック", "Meiryo UI", "Hiragino Kaku Gothic ProN", "UD Shin Go", sans-serif;
+            /* UDフォントの指定 */
+            --main-font: "BIZ UDPGothic", "BIZ UDPゴシック", "Meiryo UI", "Hiragino Kaku Gothic ProN", sans-serif;
         }
 
         body {
@@ -34,13 +34,11 @@
             box-shadow: 10px 10px 0 rgba(0,0,0,0.1);
         }
 
-        /* ボックスのスタイル */
         .box {
             border: 3px solid var(--ink-black);
-            border-radius: 15px 25px 15px 20px / 20px 15px 25px 15px;
+            border-radius: 15px;
             padding: 20px;
             background: white;
-            transition: all 0.2s;
         }
 
         /* 右側：問題エリア */
@@ -50,32 +48,39 @@
             border: 3px solid var(--ink-black);
             width: 50px; height: 50px;
             display: flex; align-items: center; justify-content: center;
-            font-size: 28px; font-weight: bold;
-            background: #fff;
-            transform: rotate(-3deg);
+            font-size: 28px; font-weight: bold; transform: rotate(-3deg);
+            background: white;
         }
 
         .q-area {
             flex-grow: 1;
             writing-mode: vertical-rl;
-            font-size: 40px; /* UDフォントに合わせて少し調整 */
-            line-height: 1.8;
+            font-size: 40px;
+            line-height: 2.2; /* 少し広げて傍線の余白を確保 */
             letter-spacing: 0.2em;
-            background-image: radial-gradient(#eee 2px, transparent 2px);
+            background-image: radial-gradient(#eee 1.5px, transparent 1.5px);
             background-size: 40px 40px;
-            font-feature-settings: "palt"; /* 文字詰めを有効にして読みやすく */
         }
 
-        /* 中央：答えとボタン */
+        /* ★傍線の修正：カッコ内を囲むスタイル★ */
+        .highlight { 
+            color: #e74c3c;
+            display: inline-block; /* 独立したブロックとして扱う */
+            border-right: 4px solid #e74c3c; /* 右側に傍線を引く */
+            margin: 0 0.1em; /* 前後の文字との隙間 */
+            padding: 0.2em 0; /* 線と文字の上下の余白 */
+            line-height: 1;
+            text-decoration: none; /* 標準の下線はオフ */
+        }
+
+        /* 中央：答え */
         .middle-column { display: flex; flex-direction: column; gap: 12px; align-items: center; }
-        
         .answer-box {
             width: 100%; height: 280px;
             display: flex; align-items: center; justify-content: center;
             writing-mode: vertical-rl;
-            font-size: 56px; color: #e74c3c;
+            font-size: 60px; color: #e74c3c; font-weight: bold;
             opacity: 0; transform: scale(0.8);
-            font-weight: bold;
         }
         .answer-box.visible { opacity: 1; transform: scale(1); transition: 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
 
@@ -83,7 +88,6 @@
             width: 220px; padding: 15px;
             border: 3px solid var(--ink-black);
             border-radius: 50px;
-            background: white;
             font-size: 18px; font-weight: bold; cursor: pointer;
             box-shadow: 0 4px 0 var(--ink-black);
             font-family: var(--main-font);
@@ -95,10 +99,7 @@
 
         /* 左側：進捗 */
         .left-column { background: #fffdf0; border-style: dashed; }
-        .stats p { 
-            margin: 15px 0; font-size: 18px; 
-            border-bottom: 2px dashed #ccc; padding-bottom: 5px;
-        }
+        .stats p { margin: 15px 0; font-size: 18px; border-bottom: 2px dashed #ccc; padding-bottom: 5px;}
         .stats span { font-size: 24px; font-weight: bold; color: var(--action-blue); }
 
         .menu-btns { margin-top: auto; display: grid; gap: 10px; }
@@ -107,22 +108,16 @@
             background: #eee; border-radius: 8px; padding: 8px; font-size: 13px;
             text-align: center; cursor: pointer;
         }
-
-        .highlight { 
-            color: #e74c3c; 
-            border-bottom: 3px solid #e74c3c; /* UDフォントで見やすいように下線を強調 */
-            padding-bottom: 2px;
-        }
         .hidden { display: none !important; }
     </style>
 </head>
 <body>
 
-<div id="loading">✨ UDフォントで準備中... ✨</div>
+<div id="loading">✨ 読み込み中... ✨</div>
 
 <div class="main-container hidden" id="app">
     <div class="box left-column">
-        <h3 style="margin:0 0 15px 0; text-align:center;">📔 がんばり記録</h3>
+        <h3 style="text-align:center;">📔 がんばり記録</h3>
         <div class="stats">
             <p>今の問題　<span id="stat-total">0/0</span></p>
             <p>✨ 完ぺき！　<span id="stat-perfect" style="color:var(--perfect-green)">0</span></p>
@@ -152,7 +147,7 @@
 
 <script>
     const API_URL = "https://script.google.com/macros/s/AKfycbyWHprvWe-NcrfamWL2I6bWSAak6HW-JxyMCY-RZkZDFrhLkbSfLkeVmpKyznlI7g3a/exec";
-    const CACHE_KEY = "kanji_quiz_data";
+    const CACHE_KEY = "kanji_quiz_data_v3";
     let allData = {};
     let currentQuestions = [];
     let currentIndex = 0;
@@ -178,7 +173,7 @@
             allData = await res.json();
             localStorage.setItem(CACHE_KEY, JSON.stringify(allData));
             startApp();
-        } catch(e) { alert("ネットがつながらないよ！"); }
+        } catch(e) { alert("接続エラー"); }
     }
 
     function startApp() {
@@ -192,16 +187,17 @@
     function showQuestion() {
         const q = currentQuestions[currentIndex];
         document.getElementById('q-number').innerText = toKanjiNum(currentIndex + 1);
-        // カッコの置換
-        let text = q.q.replace(/[（\()]/g, '<span class="highlight">').replace(/[）\)]/g, '</span>');
-        document.getElementById('q-text').innerHTML = text;
+        
+        // カッコを取り除き、中身を<span>で囲む（傍線を引く）
+        let rawText = q.q;
+        let formattedText = rawText.replace(/[（\(](.*?)[）\)]/g, '<span class="highlight">$1</span>');
+        
+        document.getElementById('q-text').innerHTML = formattedText;
         document.getElementById('a-text').innerText = q.a;
         document.getElementById('a-text').classList.remove('visible');
     }
 
-    function showAnswer() {
-        document.getElementById('a-text').classList.add('visible');
-    }
+    function showAnswer() { document.getElementById('a-text').classList.add('visible'); }
 
     function record(type) {
         if(type === 'perfect') perfectCount++;
