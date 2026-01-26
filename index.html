@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>漢字練習（爆速キャッシュ版）</title>
+    <title>漢字練習（番号囲み版）</title>
     <style>
         html, body { 
             height: 100%; margin: 0; overflow: hidden; 
@@ -41,13 +41,19 @@
             display: flex; flex-direction: column; justify-content: flex-start;
             position: relative;
         }
-        .q-number {
-            font-size: clamp(24px, 4.5vh, 36px);
-            margin-left: 20px;
-            color: #7f8c8d;
-            border-left: 1px solid #ccc;
-            padding-left: 10px;
+        
+        /* 問題番号を四角で囲むスタイル */
+        .q-number-box {
+            display: inline-block;
+            border: 2px solid #2c3e50; /* 四角の線 */
+            padding: 10px 5px;        /* 縦書きなので上下の余白 */
+            margin-left: 25px;        /* 隣の行との間隔 */
+            font-size: clamp(20px, 4vh, 32px);
+            text-align: center;
+            line-height: 1.2;
+            height: fit-content;      /* 番号の長さに合わせる */
         }
+
         .q-text { 
             font-size: clamp(32px, 6.5vh, 52px); line-height: 2.2; 
             letter-spacing: 0.2em; word-break: break-all;
@@ -72,13 +78,10 @@
         .btn-action:active { transform: translateY(3px); box-shadow: 0 2px 0 #7f231c; }
         .btn-next { background: #27ae60; box-shadow: 0 5px 0 #1e8449; }
         .info-tag { position: absolute; top: 15px; left: 20px; font-size: 16px; color: #888; writing-mode: horizontal-tb; }
-        
-        /* 更新ボタン */
         .reload-data {
             position: absolute; bottom: 10px; right: 10px;
             font-size: 12px; color: #aaa; background: none; border: 1px solid #ddd; border-radius: 5px; padding: 5px; cursor: pointer;
         }
-
         .hidden { display: none !important; }
     </style>
 </head>
@@ -96,12 +99,12 @@
             <h2 id="selected-sheet-name" style="font-size: 2rem; color:#c0392b;"></h2>
             <button class="btn-list" onclick="setMode('normal')">順番どおり</button>
             <button class="btn-list" onclick="setMode('random')" style="background:#8e44ad; box-shadow: 0 4px 0 #5e3370;">ランダムにまぜる</button>
-            <button onclick="location.reload()" style="margin-top:30px; font-size:1.2rem; color:#888; background:none; border:none; text-decoration:underline;">えらびなおす</button>
+            <button onclick="location.reload()" style="margin-top:30px; font-size:1.2rem; color:#888; background:none; border:none; text-decoration:underline; cursor:pointer;">えらびなおす</button>
         </div>
         <div id="game-screen" class="hidden">
             <div id="info" class="info-tag"></div>
             <div class="card">
-                <div id="q-number" class="q-number"></div>
+                <div class="q-number-box" id="q-number"></div>
                 <div id="q-text" class="q-text"></div>
                 <div id="a-text" class="a-text"></div>
             </div>
@@ -122,26 +125,24 @@
 
     function toKanjiNum(num) {
         const kanji = ["〇", "一", "二", "三", "四", "五", "六", "七", "八", "九"];
+        if (num < 10) return kanji[num];
+        if (num === 10) return "十";
+        // 簡易的な漢数字変換（100まで対応させるならもう少し複雑になりますが、まずは一、二...の形式に）
         return num.toString().split('').map(d => kanji[parseInt(d)]).join('');
     }
 
-    // データの取得と表示
     async function fetchData(force = false) {
         document.getElementById('loading').classList.remove('hidden');
         document.getElementById('quiz-area').classList.add('hidden');
-
-        // キャッシュチェック
         const cached = localStorage.getItem(CACHE_KEY);
         if (!force && cached) {
             allQuestions = JSON.parse(cached);
             renderSheetButtons();
             return;
         }
-
         try {
             const response = await fetch(API_URL);
             allQuestions = await response.json();
-            // キャッシュに保存
             localStorage.setItem(CACHE_KEY, JSON.stringify(allQuestions));
             renderSheetButtons();
         } catch (e) {
@@ -189,7 +190,10 @@
         const answerEl = document.getElementById('a-text');
         answerEl.classList.remove('visible');
         answerEl.innerText = "";
-        document.getElementById('q-number').innerText = toKanjiNum(currentIndex + 1) + "、";
+        
+        // 四角の中に漢数字をセット
+        document.getElementById('q-number').innerText = toKanjiNum(currentIndex + 1);
+
         document.getElementById('info').innerText = `問題： ${currentIndex + 1} / ${currentQuestions.length}`;
         let rawText = currentQuestions[currentIndex].q;
         let formattedText = rawText.replace(/[（\()]/g, '<span class="highlight">').replace(/[）\)]/g, '</span>');
