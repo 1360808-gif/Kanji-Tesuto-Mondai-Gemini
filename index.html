@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>漢字練習（解答2列・完全固定版）</title>
+    <title>漢字練習（レイアウト最適化版）</title>
     <style>
         :root {
             --paper-bg: #fffdf5;
@@ -25,9 +25,10 @@
 
         #loading { font-size: 24px; font-weight: bold; color: #555; }
 
+        /* ★レイアウト調整：左を広く（320px）、右を狭く（1.5fr）に変更★ */
         .main-container {
             display: none;
-            grid-template-columns: 260px 1.2fr 2fr;
+            grid-template-columns: 320px 1.2fr 1.5fr; 
             gap: 15px;
             width: 98vw; height: 96vh;
             background: var(--paper-bg);
@@ -45,25 +46,25 @@
             display: flex; flex-direction: column;
         }
 
-        /* 右側：問題エリア */
-        .right-column { display: flex; flex-direction: row-reverse; gap: 10px; height: 100%; }
+        /* 右側：問題エリア（幅を少しタイトに） */
+        .right-column { display: flex; flex-direction: row-reverse; gap: 8px; height: 100%; }
         
         .q-num-box {
             border: 3px solid var(--ink-black);
-            min-width: 45px; height: 45px;
+            min-width: 40px; height: 40px;
             display: flex; align-items: center; justify-content: center;
-            font-size: 24px; font-weight: bold; background: white; flex-shrink: 0;
+            font-size: 20px; font-weight: bold; background: white; flex-shrink: 0;
         }
 
         .q-area {
             flex-grow: 1;
             writing-mode: vertical-rl;
-            font-size: clamp(24px, 4.2vh, 38px);
-            line-height: 2.3;
-            letter-spacing: 0.2em;
-            padding: 30px 20px;
+            font-size: clamp(22px, 4vh, 34px); /* 幅に合わせて少しフォントサイズを調整 */
+            line-height: 2.1;
+            letter-spacing: 0.15em;
+            padding: 25px 15px;
             background-image: radial-gradient(#eee 1.5px, transparent 1.5px);
-            background-size: 40px 40px;
+            background-size: 35px 35px;
             overflow-y: auto;
         }
 
@@ -78,25 +79,23 @@
 
         .middle-column { display: flex; flex-direction: column; gap: 10px; align-items: center; height: 100%; }
         
-        /* ★最重要：解答エリアのレイアウト構造★ */
+        /* 解答エリア：2列並びを維持 */
         .answer-box {
             width: 100%; flex-grow: 1; max-height: 50%;
-            /* Flexboxを使い、横並び(row-reverse)を強制します */
             display: flex; 
             flex-direction: row-reverse; 
             justify-content: center; 
             align-items: center;
-            gap: 50px; /* 列同士の間隔 */
+            gap: 40px;
             opacity: 0; transform: scale(0.9);
-            padding: 20px;
+            padding: 10px;
         }
         
         .answer-box.visible { opacity: 1; transform: scale(1); transition: 0.2s; }
         
-        /* 個々の解答列 */
         .ans-column {
-            writing-mode: vertical-rl; /* ここで個別に縦書きを指定 */
-            font-size: clamp(35px, 6.5vh, 60px); 
+            writing-mode: vertical-rl;
+            font-size: clamp(30px, 6vh, 55px); 
             color: #e74c3c; 
             font-weight: bold;
             white-space: nowrap;
@@ -107,7 +106,7 @@
         .btn-group { display: flex; flex-direction: column; gap: 12px; width: 100%; align-items: center; flex-shrink: 0; }
 
         .btn {
-            width: 90%; max-width: 240px; min-height: 65px;
+            width: 90%; max-width: 240px; min-height: 60px;
             padding: 10px;
             border: 3px solid var(--ink-black);
             border-radius: 50px;
@@ -121,42 +120,42 @@
         .btn-retry { background: var(--retry-orange); color: white; }
         .btn-show { background: var(--action-blue); color: white; }
 
-        .left-column { background: #fffdf0; border-style: dashed; padding: 15px; height: 100%; }
-        .stats p { margin: 10px 0; font-size: 16px; border-bottom: 1px dashed #ccc; padding-bottom: 5px; }
-        .stats span { font-size: 20px; font-weight: bold; color: var(--action-blue); }
+        /* 左側：広くなった記録エリア */
+        .left-column { background: #fffdf0; border-style: dashed; padding: 20px; height: 100%; }
+        .stats p { margin: 15px 0; font-size: 18px; border-bottom: 1px dashed #ccc; padding-bottom: 8px; }
+        .stats span { font-size: 24px; font-weight: bold; color: var(--action-blue); }
 
         .hidden { display: none !important; }
     </style>
 </head>
 <body>
 
-<div id="loading">✨ じゅんびしています... ✨</div>
+<div id="loading">✨ 読み込み中... ✨</div>
 
 <div class="main-container" id="app">
     <div class="box left-column">
-        <h4 style="text-align:center; margin: 0 0 10px 0;">📔 記録</h4>
+        <h4 style="text-align:center; margin: 0 0 15px 0; font-size: 22px;">📔 学習の記録</h4>
         <div class="stats">
-            <p>今の問題　<span id="stat-total">0/0</span></p>
+            <p>現在の進行度　<span id="stat-total">0/0</span></p>
             <p>✨ かんぺき！　<span id="stat-perfect" style="color:var(--perfect-green)">0</span></p>
-            <p>🏃 おぼえとちゅう　<span id="stat-retry" style="color:var(--retry-orange)">0</span></p>
+            <p>🏃 おぼえ途中　<span id="stat-retry" style="color:var(--retry-orange)">0</span></p>
         </div>
-        <div class="menu-btns" style="margin-top:auto; display:grid; gap:8px;">
-            <div class="btn" style="width:auto; min-height:40px; font-size:12px; border-radius:10px;" onclick="location.reload()">🏠 タイトルへ</div>
-            <div class="btn" style="width:auto; min-height:40px; font-size:12px; border-radius:10px;" onclick="fetchData(true)">🔄 最新にする</div>
+        <div class="menu-btns" style="margin-top:auto; display:grid; gap:10px;">
+            <div class="btn" style="width:auto; min-height:45px; font-size:14px; border-radius:12px;" onclick="location.reload()">🏠 タイトルへ戻る</div>
+            <div class="btn" style="width:auto; min-height:45px; font-size:14px; border-radius:12px;" onclick="fetchData(true)">🔄 データを更新</div>
         </div>
     </div>
 
     <div class="middle-column">
         <div class="box answer-box" id="a-text"></div>
-        
         <div class="btn-group">
             <button id="show-btn" class="btn btn-show" onclick="showAnswer()">答えをみる</button>
             <div id="judgement-btns" class="hidden" style="width:100%; display:flex; flex-direction:column; align-items:center; gap:10px;">
                 <div style="display:flex; gap:10px; width:95%;">
                     <button class="btn btn-perfect" style="flex:1;" onclick="record('perfect')">かんぺき！</button>
-                    <button class="btn btn-retry" style="flex:1;" onclick="record('retry')">おぼえ<br>とちゅう</button>
+                    <button class="btn btn-retry" style="flex:1;" onclick="record('retry')">おぼえ中</button>
                 </div>
-                <button class="btn" style="background:#fff; min-height:45px;" onclick="nextStep()">次へ進む ＞</button>
+                <button class="btn" style="background:#fff; min-height:45px; font-size: 16px;" onclick="nextStep()">次へ進む ＞</button>
             </div>
         </div>
     </div>
@@ -169,7 +168,7 @@
 
 <script>
     const API_URL = "https://script.google.com/macros/s/AKfycbyWHprvWe-NcrfamWL2I6bWSAak6HW-JxyMCY-RZkZDFrhLkbSfLkeVmpKyznlI7g3a/exec";
-    const CACHE_KEY = "kanji_quiz_v11_fixed";
+    const CACHE_KEY = "kanji_quiz_v12_layout";
     let allData = {};
     let currentQuestions = [];
     let currentIndex = 0;
@@ -213,9 +212,7 @@
         const rawAns = q.a || "";
         const ansList = rawAns.split(/[、,，]/); 
 
-        // 修正：個別の「縦書き列」を作成してFlexコンテナに追加
         answerArea.innerHTML = ansList.map(a => `<div class="ans-column">${a.trim()}</div>`).join('');
-
         answerArea.classList.remove('visible');
         document.getElementById('show-btn').classList.remove('hidden');
         document.getElementById('judgement-btns').classList.add('hidden');
