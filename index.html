@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>漢字練習（表示最適化版）</title>
+    <title>漢字練習（タイトル表示版）</title>
     <style>
         :root {
             --paper-bg: #fffdf5;
@@ -27,7 +27,8 @@
 
         .main-container {
             display: none;
-            grid-template-columns: 320px 1.2fr 1.5fr; 
+            /* タイトル用に右端に 50px の列を追加 */
+            grid-template-columns: 320px 1.2fr 1.5fr 50px; 
             gap: 15px;
             width: 98vw; height: 96vh;
             background: var(--paper-bg);
@@ -65,6 +66,20 @@
             background-image: radial-gradient(#eee 1.5px, transparent 1.5px);
             background-size: 35px 35px;
             overflow-y: auto;
+        }
+
+        /* 右端：シート名表示エリア */
+        .title-column {
+            writing-mode: vertical-rl;
+            display: flex;
+            align-items: center;
+            justify-content: flex-start;
+            font-size: 18px;
+            font-weight: bold;
+            color: #777;
+            padding-top: 10px;
+            border-left: 1px solid #ddd;
+            letter-spacing: 0.1em;
         }
 
         .highlight { 
@@ -117,21 +132,17 @@
         .btn-retry { background: var(--retry-orange); color: white; }
         .btn-show { background: var(--action-blue); color: white; }
 
-        /* --- 左側：記録エリアの修正 --- */
         .left-column { 
             background: #fffdf0; 
             border-style: dashed; 
-            padding: 15px 20px; /* パディングを微調整 */
+            padding: 15px 20px; 
             height: 100%; 
             box-sizing: border-box;
         }
-        .stats {
-            flex-grow: 0; /* 記録部分が必要以上に広がらないように固定 */
-        }
         .stats p { 
-            margin: 10px 0; /* 余白を15pxから10pxに縮小して見切れを防止 */
+            margin: 10px 0; 
             font-size: 17px; 
-            border-bottom: 2px dotted #ccc; /* dotted(点線)で見やすく */
+            border-bottom: 2px dotted #ccc; 
             padding-bottom: 5px; 
         }
         .stats span { font-size: 22px; font-weight: bold; color: var(--action-blue); }
@@ -175,11 +186,13 @@
         <div class="q-num-box" id="q-number"></div>
         <div class="box q-area" id="q-text"></div>
     </div>
+
+    <div class="title-column" id="sheet-title"></div>
 </div>
 
 <script>
     const API_URL = "https://script.google.com/macros/s/AKfycbyWHprvWe-NcrfamWL2I6bWSAak6HW-JxyMCY-RZkZDFrhLkbSfLkeVmpKyznlI7g3a/exec";
-    const CACHE_KEY = "kanji_quiz_v13_layout_fixed";
+    const CACHE_KEY = "kanji_quiz_v14_with_title";
     let allData = {};
     let currentQuestions = [];
     let currentIndex = 0;
@@ -202,7 +215,12 @@
     function startApp() {
         const keys = Object.keys(allData);
         if (keys.length === 0) return;
-        currentQuestions = allData[keys[0]];
+
+        // 現在使用しているシート名（タイトル）を表示
+        const sheetName = keys[0];
+        document.getElementById('sheet-title').innerText = "【 " + sheetName + " 】";
+        
+        currentQuestions = allData[sheetName];
         document.getElementById('loading').style.display = 'none';
         document.getElementById('app').style.display = 'grid';
         updateStats();
