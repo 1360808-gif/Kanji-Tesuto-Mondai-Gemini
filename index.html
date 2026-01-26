@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>漢字練習（解答2列・確実版）</title>
+    <title>漢字練習（解答2列・完全固定版）</title>
     <style>
         :root {
             --paper-bg: #fffdf5;
@@ -67,6 +67,7 @@
             overflow-y: auto;
         }
 
+        /* 傍線：文字に密着 */
         .highlight { 
             color: #e74c3c;
             text-decoration: underline #e74c3c 4px;
@@ -75,36 +76,33 @@
             display: inline;
         }
 
-        /* 中央：操作エリア */
         .middle-column { display: flex; flex-direction: column; gap: 10px; align-items: center; height: 100%; }
         
-        /* 解答エリア：縦書きの列を「横並び」にするための設定 */
+        /* ★最重要：解答エリアのレイアウト構造★ */
         .answer-box {
-            width: 100%; 
-            flex-grow: 1; 
-            max-height: 50%;
-            writing-mode: vertical-rl; /* 親要素を縦書きに */
-            text-align: center; /* 縦書き時の「中央揃え」 */
-            color: #e74c3c; 
-            font-weight: bold;
-            opacity: 0; 
-            transform: scale(0.9);
-            display: block; /* Flexを一度解除して自然な縦書きの流れを作る */
-            padding: 20px 0;
-            overflow: hidden;
+            width: 100%; flex-grow: 1; max-height: 50%;
+            /* Flexboxを使い、横並び(row-reverse)を強制します */
+            display: flex; 
+            flex-direction: row-reverse; 
+            justify-content: center; 
+            align-items: center;
+            gap: 50px; /* 列同士の間隔 */
+            opacity: 0; transform: scale(0.9);
+            padding: 20px;
         }
         
-        /* 各解答列を「右から左へ」並べるためのクラス */
-        .ans-column {
-            display: inline-block; /* 文字のように横に並ぶ箱にする */
-            margin: 0 25px; /* 列同士の間隔（左右の余白） */
-            font-size: clamp(35px, 6.5vh, 60px);
-            line-height: 1.1;
-            vertical-align: middle;
-            white-space: nowrap;
-        }
-
         .answer-box.visible { opacity: 1; transform: scale(1); transition: 0.2s; }
+        
+        /* 個々の解答列 */
+        .ans-column {
+            writing-mode: vertical-rl; /* ここで個別に縦書きを指定 */
+            font-size: clamp(35px, 6.5vh, 60px); 
+            color: #e74c3c; 
+            font-weight: bold;
+            white-space: nowrap;
+            line-height: 1.1;
+            text-align: center;
+        }
 
         .btn-group { display: flex; flex-direction: column; gap: 12px; width: 100%; align-items: center; flex-shrink: 0; }
 
@@ -117,7 +115,6 @@
             box-shadow: 0 4px 0 var(--ink-black); background: white;
             font-family: var(--main-font);
             display: flex; align-items: center; justify-content: center;
-            line-height: 1.2;
         }
         .btn:active { transform: translateY(2px); box-shadow: 0 2px 0 var(--ink-black); }
         .btn-perfect { background: var(--perfect-green); color: white; }
@@ -151,6 +148,7 @@
 
     <div class="middle-column">
         <div class="box answer-box" id="a-text"></div>
+        
         <div class="btn-group">
             <button id="show-btn" class="btn btn-show" onclick="showAnswer()">答えをみる</button>
             <div id="judgement-btns" class="hidden" style="width:100%; display:flex; flex-direction:column; align-items:center; gap:10px;">
@@ -171,7 +169,7 @@
 
 <script>
     const API_URL = "https://script.google.com/macros/s/AKfycbyWHprvWe-NcrfamWL2I6bWSAak6HW-JxyMCY-RZkZDFrhLkbSfLkeVmpKyznlI7g3a/exec";
-    const CACHE_KEY = "kanji_quiz_v10_final";
+    const CACHE_KEY = "kanji_quiz_v11_fixed";
     let allData = {};
     let currentQuestions = [];
     let currentIndex = 0;
@@ -213,12 +211,9 @@
         
         const answerArea = document.getElementById('a-text');
         const rawAns = q.a || "";
-        
-        // 全角・半角の「、」または「,」で分割
         const ansList = rawAns.split(/[、,，]/); 
 
-        // ★2つを横に並べるためのHTML構造
-        // 縦書き親要素の中で inline-block を使うと、1つ目が右、2つ目がその左に並びます。
+        // 修正：個別の「縦書き列」を作成してFlexコンテナに追加
         answerArea.innerHTML = ansList.map(a => `<div class="ans-column">${a.trim()}</div>`).join('');
 
         answerArea.classList.remove('visible');
