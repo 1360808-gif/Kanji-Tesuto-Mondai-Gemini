@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>漢字練習（レイアウト最適化版）</title>
+    <title>漢字練習（表示最適化版）</title>
     <style>
         :root {
             --paper-bg: #fffdf5;
@@ -25,7 +25,6 @@
 
         #loading { font-size: 24px; font-weight: bold; color: #555; }
 
-        /* ★レイアウト調整：左を広く（320px）、右を狭く（1.5fr）に変更★ */
         .main-container {
             display: none;
             grid-template-columns: 320px 1.2fr 1.5fr; 
@@ -46,7 +45,7 @@
             display: flex; flex-direction: column;
         }
 
-        /* 右側：問題エリア（幅を少しタイトに） */
+        /* 右側：問題エリア */
         .right-column { display: flex; flex-direction: row-reverse; gap: 8px; height: 100%; }
         
         .q-num-box {
@@ -59,7 +58,7 @@
         .q-area {
             flex-grow: 1;
             writing-mode: vertical-rl;
-            font-size: clamp(22px, 4vh, 34px); /* 幅に合わせて少しフォントサイズを調整 */
+            font-size: clamp(22px, 4vh, 34px);
             line-height: 2.1;
             letter-spacing: 0.15em;
             padding: 25px 15px;
@@ -68,7 +67,6 @@
             overflow-y: auto;
         }
 
-        /* 傍線：文字に密着 */
         .highlight { 
             color: #e74c3c;
             text-decoration: underline #e74c3c 4px;
@@ -79,7 +77,6 @@
 
         .middle-column { display: flex; flex-direction: column; gap: 10px; align-items: center; height: 100%; }
         
-        /* 解答エリア：2列並びを維持 */
         .answer-box {
             width: 100%; flex-grow: 1; max-height: 50%;
             display: flex; 
@@ -120,10 +117,24 @@
         .btn-retry { background: var(--retry-orange); color: white; }
         .btn-show { background: var(--action-blue); color: white; }
 
-        /* 左側：広くなった記録エリア */
-        .left-column { background: #fffdf0; border-style: dashed; padding: 20px; height: 100%; }
-        .stats p { margin: 15px 0; font-size: 18px; border-bottom: 1px dashed #ccc; padding-bottom: 8px; }
-        .stats span { font-size: 24px; font-weight: bold; color: var(--action-blue); }
+        /* --- 左側：記録エリアの修正 --- */
+        .left-column { 
+            background: #fffdf0; 
+            border-style: dashed; 
+            padding: 15px 20px; /* パディングを微調整 */
+            height: 100%; 
+            box-sizing: border-box;
+        }
+        .stats {
+            flex-grow: 0; /* 記録部分が必要以上に広がらないように固定 */
+        }
+        .stats p { 
+            margin: 10px 0; /* 余白を15pxから10pxに縮小して見切れを防止 */
+            font-size: 17px; 
+            border-bottom: 2px dotted #ccc; /* dotted(点線)で見やすく */
+            padding-bottom: 5px; 
+        }
+        .stats span { font-size: 22px; font-weight: bold; color: var(--action-blue); }
 
         .hidden { display: none !important; }
     </style>
@@ -134,13 +145,13 @@
 
 <div class="main-container" id="app">
     <div class="box left-column">
-        <h4 style="text-align:center; margin: 0 0 15px 0; font-size: 22px;">📔 学習の記録</h4>
+        <h4 style="text-align:center; margin: 0 0 10px 0; font-size: 20px;">📔 学習の記録</h4>
         <div class="stats">
             <p>現在の進行度　<span id="stat-total">0/0</span></p>
             <p>✨ かんぺき！　<span id="stat-perfect" style="color:var(--perfect-green)">0</span></p>
             <p>🏃 おぼえ途中　<span id="stat-retry" style="color:var(--retry-orange)">0</span></p>
         </div>
-        <div class="menu-btns" style="margin-top:auto; display:grid; gap:10px;">
+        <div class="menu-btns" style="margin-top:auto; display:grid; gap:8px;">
             <div class="btn" style="width:auto; min-height:45px; font-size:14px; border-radius:12px;" onclick="location.reload()">🏠 タイトルへ戻る</div>
             <div class="btn" style="width:auto; min-height:45px; font-size:14px; border-radius:12px;" onclick="fetchData(true)">🔄 データを更新</div>
         </div>
@@ -168,7 +179,7 @@
 
 <script>
     const API_URL = "https://script.google.com/macros/s/AKfycbyWHprvWe-NcrfamWL2I6bWSAak6HW-JxyMCY-RZkZDFrhLkbSfLkeVmpKyznlI7g3a/exec";
-    const CACHE_KEY = "kanji_quiz_v12_layout";
+    const CACHE_KEY = "kanji_quiz_v13_layout_fixed";
     let allData = {};
     let currentQuestions = [];
     let currentIndex = 0;
