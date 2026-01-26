@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>漢字練習（タイトル表示版）</title>
+    <title>漢字練習（レイアウト再調整版）</title>
     <style>
         :root {
             --paper-bg: #fffdf5;
@@ -25,10 +25,10 @@
 
         #loading { font-size: 24px; font-weight: bold; color: #555; }
 
+        /* ★レイアウト調整：左をさらに広く(400px)、右をさらに狭く(1.2fr)に変更★ */
         .main-container {
             display: none;
-            /* タイトル用に右端に 50px の列を追加 */
-            grid-template-columns: 320px 1.2fr 1.5fr 50px; 
+            grid-template-columns: 400px 1.2fr 1.2fr 50px; 
             gap: 15px;
             width: 98vw; height: 96vh;
             background: var(--paper-bg);
@@ -46,7 +46,7 @@
             display: flex; flex-direction: column;
         }
 
-        /* 右側：問題エリア */
+        /* 右側：問題エリア（さらに幅をタイトに） */
         .right-column { display: flex; flex-direction: row-reverse; gap: 8px; height: 100%; }
         
         .q-num-box {
@@ -59,10 +59,10 @@
         .q-area {
             flex-grow: 1;
             writing-mode: vertical-rl;
-            font-size: clamp(22px, 4vh, 34px);
-            line-height: 2.1;
-            letter-spacing: 0.15em;
-            padding: 25px 15px;
+            font-size: clamp(20px, 3.8vh, 32px); /* 幅に合わせてフォントを微調整 */
+            line-height: 2.0;
+            letter-spacing: 0.12em;
+            padding: 20px 12px;
             background-image: radial-gradient(#eee 1.5px, transparent 1.5px);
             background-size: 35px 35px;
             overflow-y: auto;
@@ -74,12 +74,13 @@
             display: flex;
             align-items: center;
             justify-content: flex-start;
-            font-size: 18px;
+            font-size: 16px;
             font-weight: bold;
-            color: #777;
-            padding-top: 10px;
+            color: #888;
+            padding-top: 15px;
             border-left: 1px solid #ddd;
             letter-spacing: 0.1em;
+            text-align: center;
         }
 
         .highlight { 
@@ -132,39 +133,40 @@
         .btn-retry { background: var(--retry-orange); color: white; }
         .btn-show { background: var(--action-blue); color: white; }
 
+        /* 左側：さらに広くなった記録エリア */
         .left-column { 
             background: #fffdf0; 
             border-style: dashed; 
-            padding: 15px 20px; 
+            padding: 25px 30px; 
             height: 100%; 
             box-sizing: border-box;
         }
         .stats p { 
-            margin: 10px 0; 
-            font-size: 17px; 
+            margin: 15px 0; 
+            font-size: 20px; /* 文字を大きく */
             border-bottom: 2px dotted #ccc; 
-            padding-bottom: 5px; 
+            padding-bottom: 10px; 
         }
-        .stats span { font-size: 22px; font-weight: bold; color: var(--action-blue); }
+        .stats span { font-size: 28px; font-weight: bold; color: var(--action-blue); }
 
         .hidden { display: none !important; }
     </style>
 </head>
 <body>
 
-<div id="loading">✨ 読み込み中... ✨</div>
+<div id="loading">✨ じゅんび中... ✨</div>
 
 <div class="main-container" id="app">
     <div class="box left-column">
-        <h4 style="text-align:center; margin: 0 0 10px 0; font-size: 20px;">📔 学習の記録</h4>
+        <h4 style="text-align:center; margin: 0 0 20px 0; font-size: 24px;">📔 学習の記録</h4>
         <div class="stats">
-            <p>現在の進行度　<span id="stat-total">0/0</span></p>
+            <p>今の進行度　　<span id="stat-total">0/0</span></p>
             <p>✨ かんぺき！　<span id="stat-perfect" style="color:var(--perfect-green)">0</span></p>
             <p>🏃 おぼえ途中　<span id="stat-retry" style="color:var(--retry-orange)">0</span></p>
         </div>
-        <div class="menu-btns" style="margin-top:auto; display:grid; gap:8px;">
-            <div class="btn" style="width:auto; min-height:45px; font-size:14px; border-radius:12px;" onclick="location.reload()">🏠 タイトルへ戻る</div>
-            <div class="btn" style="width:auto; min-height:45px; font-size:14px; border-radius:12px;" onclick="fetchData(true)">🔄 データを更新</div>
+        <div class="menu-btns" style="margin-top:auto; display:grid; gap:12px;">
+            <div class="btn" style="width:auto; min-height:50px; font-size:16px; border-radius:12px;" onclick="location.reload()">🏠 タイトルへ戻る</div>
+            <div class="btn" style="width:auto; min-height:50px; font-size:16px; border-radius:12px;" onclick="fetchData(true)">🔄 データを更新</div>
         </div>
     </div>
 
@@ -192,7 +194,7 @@
 
 <script>
     const API_URL = "https://script.google.com/macros/s/AKfycbyWHprvWe-NcrfamWL2I6bWSAak6HW-JxyMCY-RZkZDFrhLkbSfLkeVmpKyznlI7g3a/exec";
-    const CACHE_KEY = "kanji_quiz_v14_with_title";
+    const CACHE_KEY = "kanji_quiz_v15_layout_final";
     let allData = {};
     let currentQuestions = [];
     let currentIndex = 0;
@@ -216,7 +218,6 @@
         const keys = Object.keys(allData);
         if (keys.length === 0) return;
 
-        // 現在使用しているシート名（タイトル）を表示
         const sheetName = keys[0];
         document.getElementById('sheet-title').innerText = "【 " + sheetName + " 】";
         
