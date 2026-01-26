@@ -1,205 +1,55 @@
-<!DOCTYPE html>
-<html lang="ja">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>漢字練習（傍線修正版）</title>
-    <style>
-        :root {
-            --paper-bg: #fffdf5;
-            --ink-black: #333;
-            --perfect-green: #2ecc71;
-            --retry-orange: #f39c12;
-            --action-blue: #3498db;
-            --main-font: "UD Digital Kyokasho N-R", "UD デジタル 教科書体 N-R", "BIZ UDPGothic", sans-serif;
-        }
-
-        body {
-            margin: 0; padding: 0; 
-            height: 100vh; width: 100vw;
-            background-color: #e0d8c3;
-            font-family: var(--main-font);
-            display: flex; justify-content: center; align-items: center;
-            overflow: hidden;
-        }
-
-        .main-container {
-            display: none;
-            grid-template-columns: 260px 1.2fr 2fr;
-            gap: 15px;
-            width: 98vw; height: 96vh;
-            background: var(--paper-bg);
-            padding: 20px; box-sizing: border-box;
-            border-radius: 20px;
-            border: 4px solid var(--ink-black);
-            box-shadow: 10px 10px 0 rgba(0,0,0,0.1);
-        }
-
-        .box {
-            border: 3px solid var(--ink-black);
-            border-radius: 15px;
-            background: white;
-            overflow: hidden;
-            display: flex; flex-direction: column;
-        }
-
-        /* 右側：問題エリア */
-        .right-column { display: flex; flex-direction: row-reverse; gap: 10px; height: 100%; }
-        
-        .q-num-box {
-            border: 3px solid var(--ink-black);
-            min-width: 45px; height: 45px;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 24px; font-weight: bold; background: white; flex-shrink: 0;
-        }
-
-        .q-area {
-            flex-grow: 1;
-            writing-mode: vertical-rl;
-            font-size: clamp(24px, 4.2vh, 38px);
-            line-height: 2.3;
-            letter-spacing: 0.2em;
-            padding: 30px 20px;
-            background-image: radial-gradient(#eee 1.5px, transparent 1.5px);
-            background-size: 40px 40px;
-            overflow-y: auto;
-        }
-
-        /* ★傍線の修正：文字に密着させる最新手法★ */
-        .highlight { 
-            color: #e74c3c;
-            text-decoration: underline #e74c3c 4px; /* 標準の下線 */
-            text-underline-offset: -0.1em; /* 縦書き時の右側に配置 */
-            text-decoration-skip-ink: none; /* 文字を突き抜けないように */
-            display: inline;
-        }
-
-        .middle-column { display: flex; flex-direction: column; gap: 10px; align-items: center; height: 100%; }
-        
-        .answer-box {
-            width: 100%; flex-grow: 1; max-height: 50%;
-            display: flex; align-items: center; justify-content: center;
-            writing-mode: vertical-rl;
-            font-size: clamp(32px, 6vh, 60px); color: #e74c3c; font-weight: bold;
-            opacity: 0; transform: scale(0.9);
-        }
-        .answer-box.visible { opacity: 1; transform: scale(1); transition: 0.2s; }
-
-        .btn-group { display: flex; flex-direction: column; gap: 12px; width: 100%; align-items: center; flex-shrink: 0; }
-
-        .btn {
-            width: 90%; max-width: 240px; min-height: 65px;
-            padding: 10px;
-            border: 3px solid var(--ink-black);
-            border-radius: 50px;
-            font-size: 18px; font-weight: bold; cursor: pointer;
-            box-shadow: 0 4px 0 var(--ink-black); background: white;
-            font-family: var(--main-font);
-            display: flex; align-items: center; justify-content: center;
-            line-height: 1.2;
-        }
-        .btn:active { transform: translateY(2px); box-shadow: 0 2px 0 var(--ink-black); }
-        .btn-perfect { background: var(--perfect-green); color: white; }
-        .btn-retry { background: var(--retry-orange); color: white; }
-        .btn-show { background: var(--action-blue); color: white; }
-
-        .left-column { background: #fffdf0; border-style: dashed; padding: 15px; height: 100%; }
-        .stats p { margin: 10px 0; font-size: 16px; border-bottom: 1px dashed #ccc; padding-bottom: 5px; }
-        .stats span { font-size: 20px; font-weight: bold; color: var(--action-blue); }
-
-        .hidden { display: none !important; }
-    </style>
-</head>
-<body>
-
-<div id="loading">✨ 読み込み中... ✨</div>
-
-<div class="main-container" id="app">
-    <div class="box left-column">
-        <h4 style="text-align:center; margin: 0 0 10px 0;">📔 記録</h4>
-        <div class="stats">
-            <p>今の問題　<span id="stat-total">0/0</span></p>
-            <p>✨ かんぺき！　<span id="stat-perfect" style="color:var(--perfect-green)">0</span></p>
-            <p>🏃 おぼえとちゅう　<span id="stat-retry" style="color:var(--retry-orange)">0</span></p>
-        </div>
-    </div>
-
-    <div class="middle-column">
-        <div class="box answer-box" id="a-text"></div>
-        <div class="btn-group">
-            <button id="show-btn" class="btn btn-show" onclick="showAnswer()">答えをみる</button>
-            <div id="judgement-btns" class="hidden" style="width:100%; display:flex; flex-direction:column; align-items:center; gap:10px;">
-                <div style="display:flex; gap:10px; width:95%;">
-                    <button class="btn btn-perfect" style="flex:1;" onclick="record('perfect')">かんぺき！</button>
-                    <button class="btn btn-retry" style="flex:1;" onclick="record('retry')">おぼえ<br>とちゅう</button>
-                </div>
-                <button class="btn" style="background:#fff; min-height:45px;" onclick="nextStep()">次へ進む ＞</button>
-            </div>
-        </div>
-    </div>
-
-    <div class="right-column">
-        <div class="q-num-box" id="q-number"></div>
-        <div class="box q-area" id="q-text"></div>
-    </div>
-</div>
+<style>
+    /* 中略 */
+    .answer-box {
+        width: 100%; flex-grow: 1; max-height: 50%;
+        display: flex; 
+        flex-direction: column; /* 複数ある場合に並べる */
+        align-items: center; justify-content: center;
+        writing-mode: vertical-rl;
+        font-size: clamp(32px, 6vh, 60px); 
+        color: #e74c3c; font-weight: bold;
+        opacity: 0; transform: scale(0.9);
+        gap: 20px; /* 解答同士の間隔 */
+        line-height: 1.2;
+    }
+    .answer-box.visible { opacity: 1; transform: scale(1); transition: 0.2s; }
+    
+    /* 2つ以上の解答がある場合に少し文字を小さくして収まりを良くする */
+    .answer-multi {
+        font-size: clamp(24px, 5vh, 48px);
+    }
+    /* 中略 */
+</style>
 
 <script>
-    const API_URL = "https://script.google.com/macros/s/AKfycbyWHprvWe-NcrfamWL2I6bWSAak6HW-JxyMCY-RZkZDFrhLkbSfLkeVmpKyznlI7g3a/exec";
-    const CACHE_KEY = "kanji_quiz_v7";
-    let allData = {};
-    let currentQuestions = [];
-    let currentIndex = 0;
-    let perfectCount = 0;
-    let retryCount = 0;
-
-    async function fetchData() {
-        try {
-            const res = await fetch(API_URL);
-            allData = await res.json();
-            currentQuestions = allData[Object.keys(allData)[0]];
-            document.getElementById('loading').style.display = 'none';
-            document.getElementById('app').style.display = 'grid';
-            showQuestion();
-        } catch(e) { document.getElementById('loading').innerText = "接続失敗"; }
-    }
-
+    /* 中略 */
     function showQuestion() {
+        if (currentIndex >= currentQuestions.length) return;
         const q = currentQuestions[currentIndex];
         document.getElementById('q-number').innerText = (currentIndex + 1);
+        
+        // 問題文の（）を傍線に変換
         document.getElementById('q-text').innerHTML = q.q.replace(/[（\(](.*?)[）\)]/g, '<span class="highlight">$1</span>');
-        document.getElementById('a-text').innerText = q.a;
+        
+        // ★解答の表示処理（複数対応）
+        const answerArea = document.getElementById('a-text');
+        const rawAnswer = q.a || "";
+        
+        // 「、」か「 」か「,」で区切られている場合に分割
+        const answers = rawAnswer.split(/[、\s,]+/);
+        
+        if (answers.length > 1) {
+            answerArea.classList.add('answer-multi');
+            // 縦書きの列として並べる
+            answerArea.innerHTML = answers.map(a => `<div>${a}</div>`).join('');
+        } else {
+            answerArea.classList.remove('answer-multi');
+            answerArea.innerText = rawAnswer;
+        }
+
         document.getElementById('a-text').classList.remove('visible');
         document.getElementById('show-btn').classList.remove('hidden');
         document.getElementById('judgement-btns').classList.add('hidden');
     }
-
-    function showAnswer() {
-        document.getElementById('a-text').classList.add('visible');
-        document.getElementById('show-btn').classList.add('hidden');
-        document.getElementById('judgement-btns').classList.remove('hidden');
-    }
-
-    function record(type) {
-        if(type === 'perfect') perfectCount++;
-        else retryCount++;
-        updateStats();
-        nextStep();
-    }
-
-    function updateStats() {
-        document.getElementById('stat-total').innerText = `${currentIndex + 1}/${currentQuestions.length}`;
-        document.getElementById('stat-perfect').innerText = perfectCount;
-        document.getElementById('stat-retry').innerText = retryCount;
-    }
-
-    function nextStep() {
-        currentIndex++;
-        if(currentIndex < currentQuestions.length) showQuestion();
-        else { alert("終了！"); location.reload(); }
-    }
-
-    fetchData();
+    /* 以下略 */
 </script>
-</body>
-</html>
