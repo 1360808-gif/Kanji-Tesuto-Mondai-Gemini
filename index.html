@@ -3,126 +3,137 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>漢字練習ツール - ラフ案再現</title>
+    <title>ワクワク漢字練習</title>
     <style>
         :root {
-            --bg-color: #ffffff;
-            --line-color: #333;
+            --paper-bg: #fffdf5;
+            --ink-black: #333;
+            --perfect-green: #2ecc71;
+            --retry-orange: #f39c12;
+            --action-blue: #3498db;
             --main-font: "HG正楷書体-PRO", "HGP正楷書体", "Hiragino Mincho ProN", "Yu Mincho", serif;
         }
 
         body {
-            margin: 0; padding: 10px; height: 100vh;
-            background-color: #f0f0f0;
+            margin: 0; padding: 15px; height: 100vh;
+            background-color: #e0d8c3; /* 机のような色 */
             font-family: var(--main-font);
             display: flex; justify-content: center; align-items: center;
         }
 
         .main-container {
             display: grid;
-            grid-template-columns: 300px 1fr 2fr; /* 左:進捗 中:操作 右:問題 */
-            gap: 15px;
+            grid-template-columns: 280px 1fr 1.5fr;
+            gap: 20px;
             width: 98vw; height: 95vh;
-            background: white;
-            padding: 20px; box-sizing: border-box;
-            border-radius: 15px;
+            background: var(--paper-bg);
+            padding: 25px; box-sizing: border-box;
+            border-radius: 40px 15px 40px 15px / 15px 40px 15px 40px; /* 手描き風の歪み */
+            border: 4px solid var(--ink-black);
+            box-shadow: 10px 10px 0 rgba(0,0,0,0.1);
         }
 
-        /* 共通のボックススタイル */
+        /* ボックスの基本（ガタガタした線） */
         .box {
-            border: 3px solid var(--line-color);
-            border-radius: 20px;
+            border: 3px solid var(--ink-black);
+            border-radius: 15px 25px 15px 20px / 20px 15px 25px 15px;
             padding: 20px;
-            display: flex; flex-direction: column;
-            position: relative;
+            background: white;
+            transition: all 0.2s;
         }
 
         /* 右側：問題エリア */
-        .right-column {
-            display: flex; flex-direction: row-reverse;
-            gap: 10px;
-        }
+        .right-column { display: flex; flex-direction: row-reverse; gap: 15px; }
+        
         .q-num-box {
-            border: 2px solid var(--line-color);
-            width: 40px; height: 40px;
+            border: 3px solid var(--ink-black);
+            width: 50px; height: 50px;
             display: flex; align-items: center; justify-content: center;
-            font-size: 24px; font-weight: bold;
+            font-size: 28px; font-weight: bold;
+            background: #fff;
+            transform: rotate(-3deg);
         }
+
         .q-area {
             flex-grow: 1;
             writing-mode: vertical-rl;
-            font-size: 40px; line-height: 1.8;
-            letter-spacing: 0.2em;
+            font-size: 44px; line-height: 2;
+            letter-spacing: 0.25em;
+            background-image: radial-gradient(#eee 2px, transparent 2px); /* 原稿用紙風の点 */
+            background-size: 40px 40px;
         }
 
         /* 中央：答えとボタン */
-        .middle-column {
-            display: flex; flex-direction: column; gap: 10px; align-items: center;
-        }
+        .middle-column { display: flex; flex-direction: column; gap: 12px; align-items: center; }
+        
         .answer-box {
-            width: 100%; height: 250px;
+            width: 100%; height: 280px;
             display: flex; align-items: center; justify-content: center;
             writing-mode: vertical-rl;
-            font-size: 50px; color: #c0392b;
-            visibility: hidden; /* 最初は隠す */
+            font-size: 60px; color: #e74c3c;
+            opacity: 0; transform: scale(0.8);
         }
-        .answer-box.visible { visibility: visible; }
+        .answer-box.visible { opacity: 1; transform: scale(1); transition: 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
 
         .btn {
-            width: 180px; padding: 10px;
-            border: 2px solid var(--line-color);
-            border-radius: 12px;
+            width: 220px; padding: 15px;
+            border: 3px solid var(--ink-black);
+            border-radius: 50px;
             background: white;
-            font-size: 18px; font-weight: bold; cursor: pointer;
+            font-size: 20px; font-weight: bold; cursor: pointer;
+            box-shadow: 0 4px 0 var(--ink-black);
             font-family: var(--main-font);
         }
-        .btn:active { background: #eee; }
+        .btn:active { transform: translateY(4px); box-shadow: none; }
+        .btn-perfect { background: var(--perfect-green); color: white; }
+        .btn-retry { background: var(--retry-orange); color: white; }
+        .btn-show { background: var(--action-blue); color: white; }
 
-        /* 左側：進捗とメニュー */
-        .left-column { font-size: 22px; gap: 20px; }
-        .stats p { margin: 10px 0; }
-        .menu-btns {
-            margin-top: auto;
-            display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
+        /* 左側：スタンプ帳風進捗 */
+        .left-column { background: #fffdf0; border-style: dashed; }
+        .stats p { 
+            margin: 15px 0; font-size: 20px; 
+            border-bottom: 2px dashed #ccc; padding-bottom: 5px;
         }
+        .stats span { font-size: 26px; font-weight: bold; color: var(--action-blue); }
+
+        .menu-btns { margin-top: auto; display: grid; gap: 10px; }
         .menu-btn {
-            border: 2px solid var(--line-color);
-            border-radius: 10px; padding: 10px; font-size: 14px;
+            border: 2px solid var(--ink-black);
+            background: #eee; border-radius: 8px; padding: 8px; font-size: 13px;
             text-align: center; cursor: pointer;
         }
 
-        .highlight { color: #c0392b; text-decoration: underline; }
+        .highlight { color: #e74c3c; border: 2px solid #e74c3c; border-radius: 5px; padding: 2px; }
         .hidden { display: none !important; }
     </style>
 </head>
 <body>
 
-<div id="loading" style="writing-mode: horizontal-tb;">スプレッドシートを読み込み中...</div>
+<div id="loading">✨ じゅんび中... ✨</div>
 
 <div class="main-container hidden" id="app">
     <div class="box left-column">
+        <h3 style="margin:0 0 15px 0; text-align:center;">📔 がんばり記録</h3>
         <div class="stats">
-            <p>問題数　<span id="stat-total">0/50</span></p>
-            <p>完ぺきに おぼえた　<span id="stat-perfect">0/50</span></p>
-            <p>まだ おぼえ とちゅう　<span id="stat-retry">0/50</span></p>
+            <p>のこり問題　<span id="stat-total">0/0</span></p>
+            <p>✨ 完ぺき！　<span id="stat-perfect" style="color:var(--perfect-green)">0</span></p>
+            <p>🏃 とちゅう　<span id="stat-retry" style="color:var(--retry-orange)">0</span></p>
         </div>
         <div class="menu-btns">
-            <div class="menu-btn">とちゅう ほぞん</div>
-            <div class="menu-btn">ここまで練習した文字を1回テストしてみる</div>
-            <div class="menu-btn">完ぺきにおぼえた文字をテストしてみる</div>
-            <div class="menu-btn">まだおぼえとちゅうの字をテストしてみる</div>
+            <div class="menu-btn" onclick="location.reload()">🏠 タイトルへもどる</div>
+            <div class="menu-btn" onclick="fetchData(true)">🔄 最新にする</div>
         </div>
     </div>
 
     <div class="middle-column">
         <div class="box answer-box" id="a-text"></div>
-        <button class="btn" onclick="showAnswer()">答えを見ろ</button>
-        <button class="btn" onclick="record('perfect')">かんぺきにおぼえた</button>
-        <button class="btn" onclick="record('retry')">まだおぼえとちゅう</button>
-        <div style="margin-top:20px; display:flex; flex-direction:column; gap:10px;">
-            <button class="btn" onclick="nextStep()">つぎのもんだいへ</button>
-            <button class="btn" onclick="resetCurrent()">もう一度おなじもんだいをする</button>
+        <button class="btn btn-show" onclick="showAnswer()">答えを見ろ！</button>
+        <div style="display:flex; gap:10px;">
+            <button class="btn btn-perfect" style="width:110px; font-size:16px;" onclick="record('perfect')">完ぺき！</button>
+            <button class="btn btn-retry" style="width:110px; font-size:16px;" onclick="record('retry')">とちゅう</button>
         </div>
+        <button class="btn" style="margin-top:20px; background:#fff;" onclick="nextStep()">つぎへ ＞</button>
     </div>
 
     <div class="right-column">
@@ -133,28 +144,46 @@
 
 <script>
     const API_URL = "https://script.google.com/macros/s/AKfycbyWHprvWe-NcrfamWL2I6bWSAak6HW-JxyMCY-RZkZDFrhLkbSfLkeVmpKyznlI7g3a/exec";
+    const CACHE_KEY = "kanji_quiz_data";
     let allData = {};
     let currentQuestions = [];
     let currentIndex = 0;
     let perfectCount = 0;
     let retryCount = 0;
 
-    window.onload = async () => {
+    function toKanjiNum(num) {
+        const kanji = ["〇", "一", "二", "三", "四", "五", "六", "七", "八", "九"];
+        if (num < 10) return kanji[num];
+        if (num === 10) return "十";
+        return num.toString().split('').map(d => kanji[parseInt(d)]).join('');
+    }
+
+    async function fetchData(force = false) {
+        const cached = localStorage.getItem(CACHE_KEY);
+        if (!force && cached) {
+            allData = JSON.parse(cached);
+            startApp();
+            return;
+        }
         try {
             const res = await fetch(API_URL);
             allData = await res.json();
-            // 最初は1つ目のシートを選択
-            currentQuestions = allData[Object.keys(allData)[0]];
-            document.getElementById('loading').classList.add('hidden');
-            document.getElementById('app').classList.remove('hidden');
-            updateStats();
-            showQuestion();
-        } catch(e) { alert("接続失敗"); }
-    };
+            localStorage.setItem(CACHE_KEY, JSON.stringify(allData));
+            startApp();
+        } catch(e) { alert("ネットがつながらないよ！"); }
+    }
+
+    function startApp() {
+        currentQuestions = allData[Object.keys(allData)[0]];
+        document.getElementById('loading').classList.add('hidden');
+        document.getElementById('app').classList.remove('hidden');
+        updateStats();
+        showQuestion();
+    }
 
     function showQuestion() {
         const q = currentQuestions[currentIndex];
-        document.getElementById('q-number').innerText = (currentIndex + 1);
+        document.getElementById('q-number').innerText = toKanjiNum(currentIndex + 1);
         document.getElementById('q-text').innerHTML = q.q.replace(/[（\()]/g, '<span class="highlight">').replace(/[）\)]/g, '</span>');
         document.getElementById('a-text').innerText = q.a;
         document.getElementById('a-text').classList.remove('visible');
@@ -172,10 +201,9 @@
     }
 
     function updateStats() {
-        const total = currentQuestions.length;
-        document.getElementById('stat-total').innerText = `${currentIndex + 1}/${total}`;
-        document.getElementById('stat-perfect').innerText = `${perfectCount}/${total}`;
-        document.getElementById('stat-retry').innerText = `${retryCount}/${total}`;
+        document.getElementById('stat-total').innerText = `${currentIndex + 1}/${currentQuestions.length}`;
+        document.getElementById('stat-perfect').innerText = perfectCount;
+        document.getElementById('stat-retry').innerText = retryCount;
     }
 
     function nextStep() {
@@ -184,13 +212,12 @@
             showQuestion();
             updateStats();
         } else {
-            alert("最後まで終わりました！");
+            alert("✨ 全問クリア！おつかれさま！ ✨");
+            location.reload();
         }
     }
 
-    function resetCurrent() {
-        document.getElementById('a-text').classList.remove('visible');
-    }
+    window.onload = () => fetchData();
 </script>
 </body>
 </html>
