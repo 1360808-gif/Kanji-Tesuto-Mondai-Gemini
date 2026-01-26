@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>漢字練習（修正安定版）</title>
+    <title>漢字練習（傍線位置修正版）</title>
     <style>
         :root {
             --paper-bg: #fffdf5;
@@ -23,14 +23,10 @@
             overflow: hidden;
         }
 
-        #loading {
-            font-size: 24px;
-            font-weight: bold;
-            color: #555;
-        }
+        #loading { font-size: 24px; font-weight: bold; color: #555; }
 
         .main-container {
-            display: none; /* 初期状態は非表示 */
+            display: none;
             grid-template-columns: 260px 1.2fr 2fr;
             gap: 15px;
             width: 98vw; height: 96vh;
@@ -62,7 +58,7 @@
             flex-grow: 1;
             writing-mode: vertical-rl;
             font-size: clamp(24px, 4vh, 38px);
-            line-height: 2.0;
+            line-height: 2.2;
             letter-spacing: 0.15em;
             padding: 30px 15px;
             background-image: radial-gradient(#eee 1.5px, transparent 1.5px);
@@ -70,13 +66,15 @@
             overflow-y: auto;
         }
 
+        /* ★傍線の修正：文字の範囲だけに背景として線を引く★ */
         .highlight { 
             color: #e74c3c;
-            display: inline-block;
-            border-right: 4px solid #e74c3c;
-            margin: 0 0.1em;
-            padding: 0.1em 0;
-            line-height: 1.1;
+            /* 背景グラデーションで右端4px分だけ赤色にする */
+            background: linear-gradient(to left, transparent 0%, transparent 5%, #e74c3c 5%, #e74c3c 15%, transparent 15%);
+            background-size: 100% 100%;
+            background-repeat: no-repeat;
+            padding: 0;
+            display: inline; /* blockにせず、文字の流れに合わせる */
         }
 
         .middle-column { display: flex; flex-direction: column; gap: 10px; align-items: center; height: 100%; }
@@ -114,7 +112,6 @@
             border: 2px solid var(--ink-black); background: #eee; border-radius: 8px; padding: 6px; font-size: 12px;
             text-align: center; cursor: pointer;
         }
-        .hidden { display: none !important; }
     </style>
 </head>
 <body>
@@ -155,7 +152,7 @@
 
 <script>
     const API_URL = "https://script.google.com/macros/s/AKfycbyWHprvWe-NcrfamWL2I6bWSAak6HW-JxyMCY-RZkZDFrhLkbSfLkeVmpKyznlI7g3a/exec";
-    const CACHE_KEY = "kanji_quiz_data_stable";
+    const CACHE_KEY = "kanji_quiz_data_precise";
     let allData = {};
     let currentQuestions = [];
     let currentIndex = 0;
@@ -181,27 +178,20 @@
         
         try {
             const res = await fetch(API_URL);
-            if (!res.ok) throw new Error();
             allData = await res.json();
             localStorage.setItem(CACHE_KEY, JSON.stringify(allData));
             startApp();
         } catch(e) {
-            document.getElementById('loading').innerHTML = "⚠️ データがよみこめませんでした。<br><button onclick='fetchData(true)'>再試行</button>";
+            document.getElementById('loading').innerHTML = "⚠️ 再試行してください。<br><button onclick='fetchData(true)'>やり直す</button>";
         }
     }
 
     function startApp() {
         const keys = Object.keys(allData);
-        if (keys.length === 0) {
-            document.getElementById('loading').innerText = "問題データが空っぽです。";
-            return;
-        }
+        if (keys.length === 0) return;
         currentQuestions = allData[keys[0]];
-        
-        // 画面表示の切り替え
         document.getElementById('loading').style.display = 'none';
         document.getElementById('app').style.display = 'grid';
-        
         updateStats();
         showQuestion();
     }
@@ -211,11 +201,11 @@
         const q = currentQuestions[currentIndex];
         document.getElementById('q-number').innerText = toKanjiNum(currentIndex + 1);
         let rawText = q.q || "";
+        // 傍線部分の置換
         let formattedText = rawText.replace(/[（\(](.*?)[）\)]/g, '<span class="highlight">$1</span>');
         document.getElementById('q-text').innerHTML = formattedText;
         document.getElementById('a-text').innerText = q.a || "";
         document.getElementById('a-text').classList.remove('visible');
-        document.getElementById('q-text').scrollTop = 0;
     }
 
     function showAnswer() { document.getElementById('a-text').classList.add('visible'); }
@@ -239,12 +229,11 @@
             showQuestion();
             updateStats();
         } else {
-            alert("全問クリア！お疲れさまでした。");
+            alert("終了！");
             location.reload();
         }
     }
 
-    // 読み込み開始
     fetchData();
 </script>
 </body>
