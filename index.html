@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>ワクワク漢字練習</title>
+    <title>ワクワク漢字練習（UDフォント版）</title>
     <style>
         :root {
             --paper-bg: #fffdf5;
@@ -11,12 +11,13 @@
             --perfect-green: #2ecc71;
             --retry-orange: #f39c12;
             --action-blue: #3498db;
-            --main-font: "HG正楷書体-PRO", "HGP正楷書体", "Hiragino Mincho ProN", "Yu Mincho", serif;
+            /* UDフォントを優先指定。入っていない場合は標準のメイリオ等を使用 */
+            --main-font: "BIZ UDPGothic", "BIZ UDPゴシック", "Meiryo UI", "Hiragino Kaku Gothic ProN", "UD Shin Go", sans-serif;
         }
 
         body {
             margin: 0; padding: 15px; height: 100vh;
-            background-color: #e0d8c3; /* 机のような色 */
+            background-color: #e0d8c3;
             font-family: var(--main-font);
             display: flex; justify-content: center; align-items: center;
         }
@@ -28,12 +29,12 @@
             width: 98vw; height: 95vh;
             background: var(--paper-bg);
             padding: 25px; box-sizing: border-box;
-            border-radius: 40px 15px 40px 15px / 15px 40px 15px 40px; /* 手描き風の歪み */
+            border-radius: 40px 15px 40px 15px / 15px 40px 15px 40px;
             border: 4px solid var(--ink-black);
             box-shadow: 10px 10px 0 rgba(0,0,0,0.1);
         }
 
-        /* ボックスの基本（ガタガタした線） */
+        /* ボックスのスタイル */
         .box {
             border: 3px solid var(--ink-black);
             border-radius: 15px 25px 15px 20px / 20px 15px 25px 15px;
@@ -57,10 +58,12 @@
         .q-area {
             flex-grow: 1;
             writing-mode: vertical-rl;
-            font-size: 44px; line-height: 2;
-            letter-spacing: 0.25em;
-            background-image: radial-gradient(#eee 2px, transparent 2px); /* 原稿用紙風の点 */
+            font-size: 40px; /* UDフォントに合わせて少し調整 */
+            line-height: 1.8;
+            letter-spacing: 0.2em;
+            background-image: radial-gradient(#eee 2px, transparent 2px);
             background-size: 40px 40px;
+            font-feature-settings: "palt"; /* 文字詰めを有効にして読みやすく */
         }
 
         /* 中央：答えとボタン */
@@ -70,8 +73,9 @@
             width: 100%; height: 280px;
             display: flex; align-items: center; justify-content: center;
             writing-mode: vertical-rl;
-            font-size: 60px; color: #e74c3c;
+            font-size: 56px; color: #e74c3c;
             opacity: 0; transform: scale(0.8);
+            font-weight: bold;
         }
         .answer-box.visible { opacity: 1; transform: scale(1); transition: 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
 
@@ -80,7 +84,7 @@
             border: 3px solid var(--ink-black);
             border-radius: 50px;
             background: white;
-            font-size: 20px; font-weight: bold; cursor: pointer;
+            font-size: 18px; font-weight: bold; cursor: pointer;
             box-shadow: 0 4px 0 var(--ink-black);
             font-family: var(--main-font);
         }
@@ -89,13 +93,13 @@
         .btn-retry { background: var(--retry-orange); color: white; }
         .btn-show { background: var(--action-blue); color: white; }
 
-        /* 左側：スタンプ帳風進捗 */
+        /* 左側：進捗 */
         .left-column { background: #fffdf0; border-style: dashed; }
         .stats p { 
-            margin: 15px 0; font-size: 20px; 
+            margin: 15px 0; font-size: 18px; 
             border-bottom: 2px dashed #ccc; padding-bottom: 5px;
         }
-        .stats span { font-size: 26px; font-weight: bold; color: var(--action-blue); }
+        .stats span { font-size: 24px; font-weight: bold; color: var(--action-blue); }
 
         .menu-btns { margin-top: auto; display: grid; gap: 10px; }
         .menu-btn {
@@ -104,19 +108,23 @@
             text-align: center; cursor: pointer;
         }
 
-        .highlight { color: #e74c3c; border: 2px solid #e74c3c; border-radius: 5px; padding: 2px; }
+        .highlight { 
+            color: #e74c3c; 
+            border-bottom: 3px solid #e74c3c; /* UDフォントで見やすいように下線を強調 */
+            padding-bottom: 2px;
+        }
         .hidden { display: none !important; }
     </style>
 </head>
 <body>
 
-<div id="loading">✨ じゅんび中... ✨</div>
+<div id="loading">✨ UDフォントで準備中... ✨</div>
 
 <div class="main-container hidden" id="app">
     <div class="box left-column">
         <h3 style="margin:0 0 15px 0; text-align:center;">📔 がんばり記録</h3>
         <div class="stats">
-            <p>のこり問題　<span id="stat-total">0/0</span></p>
+            <p>今の問題　<span id="stat-total">0/0</span></p>
             <p>✨ 完ぺき！　<span id="stat-perfect" style="color:var(--perfect-green)">0</span></p>
             <p>🏃 とちゅう　<span id="stat-retry" style="color:var(--retry-orange)">0</span></p>
         </div>
@@ -184,7 +192,9 @@
     function showQuestion() {
         const q = currentQuestions[currentIndex];
         document.getElementById('q-number').innerText = toKanjiNum(currentIndex + 1);
-        document.getElementById('q-text').innerHTML = q.q.replace(/[（\()]/g, '<span class="highlight">').replace(/[）\)]/g, '</span>');
+        // カッコの置換
+        let text = q.q.replace(/[（\()]/g, '<span class="highlight">').replace(/[）\)]/g, '</span>');
+        document.getElementById('q-text').innerHTML = text;
         document.getElementById('a-text').innerText = q.a;
         document.getElementById('a-text').classList.remove('visible');
     }
