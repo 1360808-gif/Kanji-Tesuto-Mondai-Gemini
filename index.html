@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>漢字練習（個別リセット版）</title>
+    <title>漢字練習（中断・再開機能版）</title>
     <style>
         :root {
             --paper-bg: #fffdf5;
@@ -27,116 +27,74 @@
 
         /* セレクター画面 */
         #selector-screen {
-            display: none;
-            flex-direction: column;
-            align-items: center;
-            background: var(--paper-bg);
-            padding: 30px;
-            border-radius: 30px;
-            border: 5px solid var(--ink-black);
-            width: 90%;
-            max-width: 500px;
-            max-height: 85vh;
-            overflow-y: auto;
-            box-shadow: 15px 15px 0 rgba(0,0,0,0.1);
+            display: none; flex-direction: column; align-items: center;
+            background: var(--paper-bg); padding: 30px; border-radius: 30px;
+            border: 5px solid var(--ink-black); width: 90%; max-width: 500px;
+            max-height: 85vh; overflow-y: auto; box-shadow: 15px 15px 0 rgba(0,0,0,0.1);
         }
 
-        /* シート選択行のレイアウト */
-        .sheet-row {
-            display: flex;
-            width: 100%;
-            gap: 10px;
-            margin: 8px 0;
-            align-items: center;
+        /* モーダル（はじめから/つづきから） */
+        #resume-modal {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5); z-index: 100; justify-content: center; align-items: center;
+        }
+        .modal-content {
+            background: white; padding: 30px; border-radius: 20px; border: 4px solid var(--ink-black);
+            text-align: center; width: 300px;
         }
 
+        .sheet-row { display: flex; width: 100%; gap: 10px; margin: 8px 0; align-items: center; }
         .sheet-btn {
-            flex-grow: 1;
-            padding: 18px;
-            font-size: 20px;
-            font-weight: bold;
-            background: white;
-            border: 3px solid var(--ink-black);
-            border-radius: 15px;
-            cursor: pointer;
-            font-family: var(--main-font);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            text-align: left;
+            flex-grow: 1; padding: 18px; font-size: 20px; font-weight: bold; background: white;
+            border: 3px solid var(--ink-black); border-radius: 15px; cursor: pointer;
+            font-family: var(--main-font); display: flex; justify-content: space-between; align-items: center;
         }
-
-        /* 個別リセットボタン（ゴミ箱風） */
         .reset-mini-btn {
-            width: 50px;
-            height: 60px;
-            background: #eee;
-            border: 3px solid var(--ink-black);
-            border-radius: 12px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 20px;
-            transition: 0.2s;
+            width: 50px; height: 60px; background: #eee; border: 3px solid var(--ink-black);
+            border-radius: 12px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 20px;
         }
-        .reset-mini-btn:hover { background: #ffcccc; }
 
         .main-container {
-            display: none;
-            grid-template-columns: 350px 1.5fr 1.2fr 50px; 
+            display: none; grid-template-columns: 350px 1.5fr 1.2fr 50px; 
             gap: 25px; width: 94vw; height: 90vh; padding: 10px;
         }
 
         .box {
-            border: 4px solid var(--ink-black);
-            border-radius: 20px; background: var(--paper-bg);
-            overflow: hidden; display: flex; flex-direction: column;
-            box-shadow: 6px 6px 0 rgba(0,0,0,0.1);
+            border: 4px solid var(--ink-black); border-radius: 20px; background: var(--paper-bg);
+            overflow: hidden; display: flex; flex-direction: column; box-shadow: 6px 6px 0 rgba(0,0,0,0.1);
         }
 
         .right-column { display: flex; flex-direction: row-reverse; gap: 10px; height: 100%; padding: 20px; }
         .q-num-box {
-            border: 3px solid var(--ink-black);
-            min-width: 45px; height: 45px;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 22px; font-weight: bold; background: white; flex-shrink: 0;
-            border-radius: 10px;
+            border: 3px solid var(--ink-black); min-width: 45px; height: 45px;
+            display: flex; align-items: center; justify-content: center; font-size: 22px; font-weight: bold; background: white; border-radius: 10px;
         }
         .q-area {
-            flex-grow: 1; writing-mode: vertical-rl;
-            font-size: clamp(22px, 4vh, 34px); line-height: 2.2; letter-spacing: 0.15em;
+            flex-grow: 1; writing-mode: vertical-rl; font-size: clamp(22px, 4vh, 34px); line-height: 2.2;
             padding: 10px 15px 30px 15px; background-image: radial-gradient(#ddd 1.5px, transparent 1.5px);
             background-size: 35px 35px; overflow-y: auto;
         }
 
-        .title-column {
-            writing-mode: vertical-rl; display: flex; align-items: center;
-            font-size: 16px; font-weight: bold; color: #666; padding-top: 10px; letter-spacing: 0.2em;
-        }
+        .title-column { writing-mode: vertical-rl; display: flex; align-items: center; font-size: 16px; font-weight: bold; color: #666; padding-top: 10px; }
 
         .middle-column { display: flex; flex-direction: column; gap: 15px; align-items: center; height: 100%; padding: 20px; }
         .answer-container {
-            width: 100%; flex-grow: 1; max-height: 60%;
-            border: 3px dashed #ccc; border-radius: 15px; background: white;
-            display: flex; flex-direction: row-reverse; justify-content: center; align-items: center;
-            gap: 60px; padding: 20px; opacity: 0; transform: scale(0.95);
+            width: 100%; flex-grow: 1; max-height: 60%; border: 3px dashed #ccc; border-radius: 15px; background: white;
+            display: flex; flex-direction: row-reverse; justify-content: center; align-items: center; gap: 60px; padding: 20px; opacity: 0; transform: scale(0.95);
         }
         .answer-container.visible { opacity: 1; transform: scale(1); transition: 0.2s ease-out; }
-        .ans-column { writing-mode: vertical-rl; font-size: clamp(50px, 11vh, 95px); color: #e74c3c; font-weight: bold; white-space: nowrap; line-height: 1; }
+        .ans-column { writing-mode: vertical-rl; font-size: clamp(50px, 11vh, 95px); color: #e74c3c; font-weight: bold; white-space: nowrap; }
 
         .btn-group { display: flex; flex-direction: column; gap: 12px; width: 100%; align-items: center; flex-shrink: 0; }
         .btn {
-            width: 95%; max-width: 300px; min-height: 70px;
-            padding: 10px 15px; border: 3px solid var(--ink-black); border-radius: 50px;
-            font-size: 20px; font-weight: bold; cursor: pointer;
-            box-shadow: 0 4px 0 var(--ink-black); background: white;
-            font-family: var(--main-font); display: flex; align-items: center; justify-content: center;
-            white-space: nowrap;
+            width: 95%; max-width: 300px; min-height: 70px; padding: 10px 15px; border: 3px solid var(--ink-black);
+            border-radius: 50px; font-size: 20px; font-weight: bold; cursor: pointer; box-shadow: 0 4px 0 var(--ink-black);
+            background: white; font-family: var(--main-font); display: flex; align-items: center; justify-content: center; white-space: nowrap;
         }
         .btn-perfect { background: var(--perfect-green); color: white; }
         .btn-retry { background: var(--retry-orange); color: white; }
         .btn-show { background: var(--action-blue); color: white; }
+        .btn-suspend { background: #95a5a6; color: white; font-size: 18px; min-height: 55px; }
 
         .left-column { padding: 25px; height: 100%; }
         .stats p { margin: 15px 0; font-size: 19px; border-bottom: 2px dotted #bbb; padding-bottom: 10px; }
@@ -149,7 +107,16 @@
 </head>
 <body>
 
-<div id="loading">✨ データを読み込み中... ✨</div>
+<div id="loading">✨ 読み込み中... ✨</div>
+
+<div id="resume-modal">
+    <div class="modal-content">
+        <h3 id="modal-sheet-name" style="margin-top:0;"></h3>
+        <p>つづきから始めますか？</p>
+        <button class="btn btn-show" style="width:100%; min-height:50px; margin-bottom:10px;" onclick="handleResumeChoice(true)">つづきから</button>
+        <button class="btn" style="width:100%; min-height:50px;" onclick="handleResumeChoice(false)">はじめから</button>
+    </div>
+</div>
 
 <div id="selector-screen">
     <h2 style="margin-top:0;">📖 問題集を選んでね</h2>
@@ -165,8 +132,8 @@
             <p>🏃 おぼえちゅう　<span id="stat-retry" style="color:var(--retry-orange)">0</span></p>
         </div>
         <div class="menu-btns" style="margin-top:auto; display:grid; gap:10px;">
-            <div class="btn" style="width:auto; min-height:50px; font-size:16px; border-radius:12px;" onclick="backToList()">🏠 リストに戻る</div>
-            <div class="btn" style="width:auto; min-height:50px; font-size:16px; border-radius:12px;" onclick="fetchData(true)">🔄 データを更新</div>
+            <button class="btn btn-suspend" onclick="suspendQuiz()">⏸ ちゅうだんする</button>
+            <button class="btn" style="width:auto; min-height:50px; font-size:16px; border-radius:12px;" onclick="backToList()">🏠 リストに戻る</button>
         </div>
     </div>
 
@@ -198,7 +165,7 @@
 
 <script>
     const API_URL = "https://script.google.com/macros/s/AKfycbyWHprvWe-NcrfamWL2I6bWSAak6HW-JxyMCY-RZkZDFrhLkbSfLkeVmpKyznlI7g3a/exec";
-    const CACHE_KEY = "kanji_quiz_v25_individual_reset";
+    const CACHE_KEY = "kanji_quiz_v26_resume";
     const PROGRESS_KEY = "kanji_quiz_progress";
     
     let allData = {};
@@ -206,6 +173,7 @@
     let currentSheetName = "";
     let currentIndex = 0;
     let allProgress = {};
+    let pendingSheet = "";
 
     async function fetchData(force = false) {
         document.getElementById('loading').style.display = 'block';
@@ -218,7 +186,8 @@
             for (let key in parsed) {
                 allProgress[key] = {
                     perfect: new Set(parsed[key].perfect),
-                    retry: new Set(parsed[key].retry)
+                    retry: new Set(parsed[key].retry),
+                    lastIndex: parsed[key].lastIndex || 0
                 };
             }
         }
@@ -244,22 +213,18 @@
         keys.forEach(key => {
             const row = document.createElement('div');
             row.className = "sheet-row";
-
             const btn = document.createElement('button');
             btn.className = "sheet-btn";
             const retryCount = allProgress[key]?.retry.size || 0;
-            const badge = retryCount > 0 ? `<span style="background:var(--retry-orange); color:white; padding:2px 10px; border-radius:10px; font-size:13px;">おぼえちゅう:${retryCount}</span>` : "";
-            btn.innerHTML = `<span>${key}</span> ${badge}`;
-            btn.onclick = () => startQuiz(key);
+            const progressInfo = allProgress[key]?.lastIndex > 0 ? `<span style="font-size:12px; opacity:0.6;">(前回の続き: ${allProgress[key].lastIndex + 1}問目)</span>` : "";
+            const badge = retryCount > 0 ? `<span style="background:var(--retry-orange); color:white; padding:2px 8px; border-radius:10px; font-size:12px;">おぼえちゅう:${retryCount}</span>` : "";
+            btn.innerHTML = `<div>${key} ${progressInfo}</div> ${badge}`;
+            btn.onclick = () => selectSheet(key);
 
             const resetBtn = document.createElement('button');
             resetBtn.className = "reset-mini-btn";
             resetBtn.innerHTML = "🗑️";
-            resetBtn.title = "このシートの記録を消す";
-            resetBtn.onclick = (e) => {
-                e.stopPropagation();
-                clearSheetProgress(key);
-            };
+            resetBtn.onclick = (e) => { e.stopPropagation(); clearSheetProgress(key); };
 
             row.appendChild(btn);
             row.appendChild(resetBtn);
@@ -268,26 +233,42 @@
         screen.style.display = 'flex';
     }
 
-    function clearSheetProgress(sheetName) {
-        if(confirm(`「${sheetName}」の記録をリセットしますか？`)) {
-            delete allProgress[sheetName];
-            saveProgress();
-            createMenu(); // リストを再描画
+    function selectSheet(sheetName) {
+        const prog = allProgress[sheetName];
+        if (prog && prog.lastIndex > 0) {
+            pendingSheet = sheetName;
+            document.getElementById('modal-sheet-name').innerText = sheetName;
+            document.getElementById('resume-modal').style.display = 'flex';
+        } else {
+            startQuiz(sheetName, 0);
         }
     }
 
-    function startQuiz(sheetName) {
+    function handleResumeChoice(resume) {
+        document.getElementById('resume-modal').style.display = 'none';
+        const startIndex = resume ? allProgress[pendingSheet].lastIndex : 0;
+        startQuiz(pendingSheet, startIndex);
+    }
+
+    function startQuiz(sheetName, startIndex) {
         currentSheetName = sheetName;
         document.getElementById('selector-screen').style.display = 'none';
         document.getElementById('app').style.display = 'grid';
         document.getElementById('sheet-title').innerText = "【 " + sheetName + " 】";
         currentQuestions = allData[sheetName];
-        currentIndex = 0; 
+        currentIndex = startIndex;
         if (!allProgress[sheetName]) {
-            allProgress[sheetName] = { perfect: new Set(), retry: new Set() };
+            allProgress[sheetName] = { perfect: new Set(), retry: new Set(), lastIndex: 0 };
         }
         updateStats();
         showQuestion();
+    }
+
+    function suspendQuiz() {
+        if(confirm("ここまでの進捗を保存して中断しますか？")) {
+            allProgress[currentSheetName].lastIndex = currentIndex;
+            backToList();
+        }
     }
 
     function saveProgress() {
@@ -295,7 +276,8 @@
         for (let key in allProgress) {
             dataToSave[key] = {
                 perfect: Array.from(allProgress[key].perfect),
-                retry: Array.from(allProgress[key].retry)
+                retry: Array.from(allProgress[key].retry),
+                lastIndex: allProgress[key].lastIndex
             };
         }
         localStorage.setItem(PROGRESS_KEY, JSON.stringify(dataToSave));
@@ -309,6 +291,7 @@
     function showQuestion() {
         if (currentIndex >= currentQuestions.length) {
             alert("最後まで到達しました！");
+            allProgress[currentSheetName].lastIndex = 0; // 終わったらリセット
             backToList();
             return;
         }
@@ -322,6 +305,9 @@
         document.getElementById('show-btn').classList.remove('hidden');
         document.getElementById('judgement-btns').classList.add('hidden');
         document.getElementById('retry-options').classList.add('hidden');
+        
+        // 問題を表示するたびに、一応lastIndexを更新（予期せぬ終了対策）
+        allProgress[currentSheetName].lastIndex = currentIndex;
     }
 
     function showAnswer() {
@@ -364,6 +350,14 @@
         currentIndex++;
         showQuestion();
         updateStats();
+    }
+
+    function clearSheetProgress(sheetName) {
+        if(confirm(`「${sheetName}」の記録をリセットしますか？`)) {
+            delete allProgress[sheetName];
+            saveProgress();
+            createMenu();
+        }
     }
 
     fetchData();
