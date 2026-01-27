@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>漢字練習（特訓モード搭載版）</title>
+    <title>漢字練習（モーダル特訓対応版）</title>
     <style>
         :root {
             --paper-bg: #fffdf5;
@@ -25,6 +25,7 @@
             overflow: hidden;
         }
 
+        /* セレクター画面 */
         #selector-screen {
             display: none; flex-direction: column; align-items: center;
             background: var(--paper-bg); padding: 30px; border-radius: 30px;
@@ -32,13 +33,14 @@
             max-height: 85vh; overflow-y: auto; box-shadow: 15px 15px 0 rgba(0,0,0,0.1);
         }
 
+        /* モーダル */
         #resume-modal {
             display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.5); z-index: 100; justify-content: center; align-items: center;
+            background: rgba(0,0,0,0.6); z-index: 100; justify-content: center; align-items: center;
         }
         .modal-content {
-            background: white; padding: 30px; border-radius: 20px; border: 4px solid var(--ink-black);
-            text-align: center; width: 300px;
+            background: white; padding: 25px; border-radius: 20px; border: 4px solid var(--ink-black);
+            text-align: center; width: 320px; box-shadow: 0 10px 25px rgba(0,0,0,0.2);
         }
 
         .sheet-row { display: flex; width: 100%; gap: 10px; margin: 8px 0; align-items: center; }
@@ -93,7 +95,6 @@
         .btn-retry { background: var(--retry-orange); color: white; }
         .btn-show { background: var(--action-blue); color: white; }
         
-        /* 中断・特訓ボタン */
         .btn-suspend { background: #95a5a6; color: white; font-size: 18px; min-height: 55px; }
         .btn-special { 
             background: #e67e22; color: white; font-size: 16px; min-height: 60px; 
@@ -115,10 +116,13 @@
 
 <div id="resume-modal">
     <div class="modal-content">
-        <h3 id="modal-sheet-name" style="margin-top:0;"></h3>
-        <p>つづきから始めますか？</p>
-        <button class="btn btn-show" style="width:100%; min-height:50px; margin-bottom:10px;" onclick="handleResumeChoice(true)">つづきから</button>
-        <button class="btn" style="width:100%; min-height:50px;" onclick="handleResumeChoice(false)">はじめから</button>
+        <h3 id="modal-sheet-name" style="margin-top:0; border-bottom:2px solid #eee; padding-bottom:10px;"></h3>
+        <div style="display:flex; flex-direction:column; gap:12px; margin-top:20px;">
+            <button id="modal-resume-btn" class="btn btn-show" style="width:100%; min-height:60px;" onclick="handleResumeChoice('resume')">つづきから</button>
+            <button id="modal-special-btn" class="btn btn-special" style="width:100%; min-height:60px;" onclick="handleResumeChoice('special')">おぼえちゅうを練習</button>
+            <button class="btn" style="width:100%; min-height:60px; background:#fff;" onclick="handleResumeChoice('restart')">はじめから</button>
+            <button style="background:none; border:none; color:#999; cursor:pointer; text-decoration:underline;" onclick="document.getElementById('resume-modal').style.display='none'">キャンセル</button>
+        </div>
     </div>
 </div>
 
@@ -171,12 +175,12 @@
 
 <script>
     const API_URL = "https://script.google.com/macros/s/AKfycbyWHprvWe-NcrfamWL2I6bWSAak6HW-JxyMCY-RZkZDFrhLkbSfLkeVmpKyznlI7g3a/exec";
-    const CACHE_KEY = "kanji_quiz_v27_retry_mode";
+    const CACHE_KEY = "kanji_quiz_v28_modal_special";
     const PROGRESS_KEY = "kanji_quiz_progress";
     
     let allData = {};
-    let currentQuestions = []; // 表示用の問題リスト
-    let masterQuestions = [];  // そのシートの全問題リスト
+    let currentQuestions = [];
+    let masterQuestions = [];
     let currentSheetName = "";
     let currentIndex = 0;
     let allProgress = {};
@@ -186,7 +190,6 @@
     async function fetchData(force = false) {
         document.getElementById('loading').style.display = 'block';
         document.getElementById('selector-screen').style.display = 'none';
-        
         const savedProgress = localStorage.getItem(PROGRESS_KEY);
         if (savedProgress) {
             const parsed = JSON.parse(savedProgress);
@@ -199,7 +202,6 @@
                 };
             }
         }
-
         const cached = localStorage.getItem(CACHE_KEY);
         if (!force && cached) {
             try { allData = JSON.parse(cached); createMenu(); return; } catch(e) {}
@@ -228,12 +230,10 @@
             const badge = retryCount > 0 ? `<span style="background:var(--retry-orange); color:white; padding:2px 8px; border-radius:10px; font-size:12px;">おぼえちゅう:${retryCount}</span>` : "";
             btn.innerHTML = `<div>${key} ${progressInfo}</div> ${badge}`;
             btn.onclick = () => selectSheet(key);
-
             const resetBtn = document.createElement('button');
             resetBtn.className = "reset-mini-btn";
             resetBtn.innerHTML = "🗑️";
             resetBtn.onclick = (e) => { e.stopPropagation(); clearSheetProgress(key); };
-
             row.appendChild(btn);
             row.appendChild(resetBtn);
             list.appendChild(row);
@@ -242,20 +242,32 @@
     }
 
     function selectSheet(sheetName) {
+        pendingSheet = sheetName;
         const prog = allProgress[sheetName];
-        if (prog && prog.lastIndex > 0) {
-            pendingSheet = sheetName;
+        const retryCount = prog?.retry.size || 0;
+        
+        // 進捗がある、またはおぼえちゅうがある場合はモーダルを出す
+        if ((prog && prog.lastIndex > 0) || retryCount > 0) {
             document.getElementById('modal-sheet-name').innerText = sheetName;
+            // つづきからボタンの制御
+            document.getElementById('modal-resume-btn').style.display = (prog?.lastIndex > 0) ? "flex" : "none";
+            // 特訓ボタンの制御
+            document.getElementById('modal-special-btn').style.display = (retryCount > 0) ? "flex" : "none";
             document.getElementById('resume-modal').style.display = 'flex';
         } else {
             startQuiz(sheetName, 0);
         }
     }
 
-    function handleResumeChoice(resume) {
+    function handleResumeChoice(choice) {
         document.getElementById('resume-modal').style.display = 'none';
-        const startIndex = resume ? allProgress[pendingSheet].lastIndex : 0;
-        startQuiz(pendingSheet, startIndex);
+        if (choice === 'resume') {
+            startQuiz(pendingSheet, allProgress[pendingSheet].lastIndex);
+        } else if (choice === 'special') {
+            startQuiz(pendingSheet, 0, true);
+        } else {
+            startQuiz(pendingSheet, 0);
+        }
     }
 
     function startQuiz(sheetName, startIndex, retryOnly = false) {
@@ -288,7 +300,7 @@
     }
 
     function startRetryOnlyMode() {
-        const retryCount = allProgress[currentSheetName].retry.size;
+        const retryCount = allProgress[currentSheetName]?.retry.size || 0;
         if (retryCount === 0) {
             alert("おぼえちゅうの漢字はありません！");
             return;
@@ -337,10 +349,8 @@
             return;
         }
         const q = currentQuestions[currentIndex];
-        // 表示用の番号
         document.getElementById('q-number').innerText = isRetryOnlyMode ? (currentIndex + 1) : (q.originalIndex + 1);
         document.getElementById('q-text').innerHTML = q.q.replace(/[（\(](.*?)[）\)]/g, '<span class="highlight">$1</span>');
-        
         const answerArea = document.getElementById('a-text');
         const ansList = (q.a || "").split(/[、,，]/); 
         answerArea.innerHTML = ansList.map(a => `<div class="ans-column">${a.trim()}</div>`).join('');
@@ -348,6 +358,7 @@
         document.getElementById('show-btn').classList.remove('hidden');
         document.getElementById('judgement-btns').classList.add('hidden');
         document.getElementById('retry-options').classList.add('hidden');
+        if (!isRetryOnlyMode) allProgress[currentSheetName].lastIndex = currentIndex;
     }
 
     function showAnswer() {
@@ -359,20 +370,16 @@
     function record(type) {
         const prog = allProgress[currentSheetName];
         const originalIdx = currentQuestions[currentIndex].originalIndex;
-
         if(type === 'perfect') {
             prog.perfect.add(originalIdx);
             prog.retry.delete(originalIdx);
         } else {
             prog.retry.add(originalIdx);
         }
-        
         saveProgress();
         updateStats();
-        
-        if (type === 'perfect') {
-            nextStep();
-        } else {
+        if (type === 'perfect') nextStep();
+        else {
             document.getElementById('judgement-btns').classList.add('hidden');
             document.getElementById('retry-options').classList.remove('hidden');
         }
@@ -386,10 +393,7 @@
 
     function updateStats() {
         const prog = allProgress[currentSheetName];
-        // 特訓モードなら特訓用の進行度、通常なら全問の進行度
-        const currentPos = currentIndex + 1;
-        const total = currentQuestions.length;
-        document.getElementById('stat-total').innerText = `${currentPos}/${total}`;
+        document.getElementById('stat-total').innerText = `${currentIndex + 1}/${currentQuestions.length}`;
         document.getElementById('stat-perfect').innerText = prog.perfect.size;
         document.getElementById('stat-retry').innerText = prog.retry.size;
     }
