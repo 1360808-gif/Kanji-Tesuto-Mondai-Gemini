@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>漢字練習（レイアウト完全版）</title>
+    <title>漢字練習（復習機能強化版）</title>
     <style>
         :root {
             --paper-bg: #fffdf5;
@@ -14,7 +14,6 @@
             --main-font: "UD Digital Kyokasho N-R", "UD デジタル 教科書体 N-R", "BIZ UDPGothic", sans-serif;
         }
 
-        /* 全ての要素で枠線を含めてサイズ計算する（見切れ防止の基本） */
         * { box-sizing: border-box; }
 
         body {
@@ -28,7 +27,6 @@
 
         #loading { font-size: 24px; font-weight: bold; color: #555; }
 
-        /* 全体コンテナのサイズを少し絞り、画面端との間にマージンを作る */
         .main-container {
             display: none;
             grid-template-columns: 350px 1.5fr 1.2fr 50px; 
@@ -40,16 +38,14 @@
         }
 
         .box {
-            border: 4px solid var(--ink-black); /* 枠線を少し太くしつつ安定させる */
+            border: 4px solid var(--ink-black);
             border-radius: 20px;
             background: var(--paper-bg);
             overflow: hidden;
             display: flex; flex-direction: column;
             box-shadow: 6px 6px 0 rgba(0,0,0,0.1);
-            position: relative;
         }
 
-        /* 右側：問題エリア（paddingを調整して線の見切れを防ぐ） */
         .right-column { display: flex; flex-direction: row-reverse; gap: 10px; height: 100%; padding: 20px; }
         
         .q-num-box {
@@ -66,18 +62,16 @@
             font-size: clamp(22px, 4vh, 34px);
             line-height: 2.2;
             letter-spacing: 0.15em;
-            padding: 10px 15px 30px 15px; /* 下部に余裕を持たせる */
+            padding: 10px 15px 30px 15px;
             background-image: radial-gradient(#ddd 1.5px, transparent 1.5px);
             background-size: 35px 35px;
             overflow-y: auto;
         }
 
-        /* 右端：タイトル表示 */
         .title-column {
             writing-mode: vertical-rl;
             display: flex;
             align-items: center;
-            justify-content: flex-start;
             font-size: 16px;
             font-weight: bold;
             color: #666;
@@ -92,10 +86,8 @@
             display: inline;
         }
 
-        /* 中央：解答・操作エリア */
         .middle-column { display: flex; flex-direction: column; gap: 15px; align-items: center; height: 100%; padding: 20px; }
         
-        /* 答えの枠線が見切れないよう、marginではなくpaddingで中に入れる */
         .answer-container {
             width: 100%; flex-grow: 1; max-height: 60%;
             border: 3px dashed #ccc;
@@ -110,7 +102,7 @@
             opacity: 0; transform: scale(0.95);
         }
         
-        .answer-container.visible { opacity: 1; transform: scale(1); transition: 0.3s ease-out; }
+        .answer-container.visible { opacity: 1; transform: scale(1); transition: 0.2s ease-out; }
         
         .ans-column {
             writing-mode: vertical-rl;
@@ -137,8 +129,8 @@
         .btn-perfect { background: var(--perfect-green); color: white; }
         .btn-retry { background: var(--retry-orange); color: white; }
         .btn-show { background: var(--action-blue); color: white; }
+        .btn-again { background: white; border-style: dashed; }
 
-        /* 左側：記録 */
         .left-column { padding: 25px; height: 100%; }
         .stats p { margin: 15px 0; font-size: 19px; border-bottom: 2px dotted #bbb; padding-bottom: 10px; }
         .stats span { font-size: 30px; font-weight: bold; color: var(--action-blue); }
@@ -166,14 +158,22 @@
 
     <div class="box middle-column">
         <div class="answer-container" id="a-text"></div>
+        
         <div class="btn-group">
             <button id="show-btn" class="btn btn-show" onclick="showAnswer()">答えをみる</button>
+
             <div id="judgement-btns" class="hidden" style="width:100%; display:flex; flex-direction:column; align-items:center; gap:10px;">
                 <div style="display:flex; gap:10px; width:95%;">
                     <button class="btn btn-perfect" style="flex:1;" onclick="record('perfect')">かんぺき！</button>
-                    <button class="btn btn-retry" style="flex:1;" onclick="record('retry')">おぼえ中</button>
+                    <button class="btn btn-retry" style="flex:1;" onclick="record('retry')">おぼえ途中</button>
                 </div>
-                <button class="btn" style="background:#fff; min-height:45px; font-size: 17px; border-style: double;" onclick="nextStep()">次へ進む ＞</button>
+            </div>
+
+            <div id="retry-options" class="hidden" style="width:100%; display:flex; flex-direction:column; align-items:center; gap:10px;">
+                <div style="display:flex; gap:10px; width:95%;">
+                    <button class="btn" style="flex:1; background:#fff;" onclick="nextStep()">次の問題 ＞</button>
+                    <button class="btn btn-again" style="flex:1;" onclick="tryAgain()">もう一度 🔄</button>
+                </div>
             </div>
         </div>
     </div>
@@ -188,7 +188,7 @@
 
 <script>
     const API_URL = "https://script.google.com/macros/s/AKfycbyWHprvWe-NcrfamWL2I6bWSAak6HW-JxyMCY-RZkZDFrhLkbSfLkeVmpKyznlI7g3a/exec";
-    const CACHE_KEY = "kanji_quiz_v18_final_layout";
+    const CACHE_KEY = "kanji_quiz_v19_flow";
     let allData = {};
     let currentQuestions = [];
     let currentIndex = 0;
@@ -229,12 +229,16 @@
         const q = currentQuestions[currentIndex];
         document.getElementById('q-number').innerText = (currentIndex + 1);
         document.getElementById('q-text').innerHTML = q.q.replace(/[（\(](.*?)[）\)]/g, '<span class="highlight">$1</span>');
+        
         const answerArea = document.getElementById('a-text');
         const ansList = (q.a || "").split(/[、,，]/); 
         answerArea.innerHTML = ansList.map(a => `<div class="ans-column">${a.trim()}</div>`).join('');
+        
+        // 状態リセット
         answerArea.classList.remove('visible');
         document.getElementById('show-btn').classList.remove('hidden');
         document.getElementById('judgement-btns').classList.add('hidden');
+        document.getElementById('retry-options').classList.add('hidden');
     }
 
     function showAnswer() {
@@ -244,10 +248,25 @@
     }
 
     function record(type) {
-        if(type === 'perfect') perfectCount++;
-        else retryCount++;
-        updateStats();
-        nextStep();
+        if(type === 'perfect') {
+            perfectCount++;
+            updateStats();
+            nextStep(); // かんぺきなら即次へ
+        } else {
+            retryCount++;
+            updateStats();
+            // おぼえ途中なら選択肢を出す
+            document.getElementById('judgement-btns').classList.add('hidden');
+            document.getElementById('retry-options').classList.remove('hidden');
+        }
+    }
+
+    function tryAgain() {
+        // 同じ問題でもう一度取り組む
+        const answerArea = document.getElementById('a-text');
+        answerArea.classList.remove('visible');
+        document.getElementById('retry-options').classList.add('hidden');
+        document.getElementById('show-btn').classList.remove('hidden');
     }
 
     function updateStats() {
