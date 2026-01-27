@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>漢字練習（モーダル特訓対応版）</title>
+    <title>漢字練習（最新データ更新版）</title>
     <style>
         :root {
             --paper-bg: #fffdf5;
@@ -11,6 +11,7 @@
             --perfect-green: #2ecc71;
             --retry-orange: #f39c12;
             --action-blue: #3498db;
+            --update-purple: #9b59b6;
             --main-font: "UD Digital Kyokasho N-R", "UD デジタル 教科書体 N-R", "BIZ UDPGothic", sans-serif;
         }
 
@@ -23,14 +24,38 @@
             font-family: var(--main-font);
             display: flex; justify-content: center; align-items: center;
             overflow: hidden;
+            position: relative;
         }
+
+        /* --- こうしんボタン（画面左上固定） --- */
+        #top-update-btn {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            z-index: 50;
+            background: var(--update-purple);
+            color: white;
+            border: 3px solid var(--ink-black);
+            padding: 8px 15px;
+            border-radius: 12px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 14px;
+            box-shadow: 4px 4px 0 rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            line-height: 1.2;
+        }
+        #top-update-btn:active { transform: translate(2px, 2px); box-shadow: 2px 2px 0 rgba(0,0,0,0.1); }
+        #top-update-btn small { font-size: 10px; font-weight: normal; margin-top: 2px; }
 
         /* セレクター画面 */
         #selector-screen {
             display: none; flex-direction: column; align-items: center;
             background: var(--paper-bg); padding: 30px; border-radius: 30px;
             border: 5px solid var(--ink-black); width: 90%; max-width: 500px;
-            max-height: 85vh; overflow-y: auto; box-shadow: 15px 15px 0 rgba(0,0,0,0.1);
+            max-height: 80vh; overflow-y: auto; box-shadow: 15px 15px 0 rgba(0,0,0,0.1);
         }
 
         /* モーダル */
@@ -114,6 +139,11 @@
 
 <div id="loading">✨ 読み込み中... ✨</div>
 
+<button id="top-update-btn" onclick="fetchData(true)">
+    🔄 こうしん
+    <small>(先生からお知らせがあったときにおす)</small>
+</button>
+
 <div id="resume-modal">
     <div class="modal-content">
         <h3 id="modal-sheet-name" style="margin-top:0; border-bottom:2px solid #eee; padding-bottom:10px;"></h3>
@@ -175,7 +205,7 @@
 
 <script>
     const API_URL = "https://script.google.com/macros/s/AKfycbyWHprvWe-NcrfamWL2I6bWSAak6HW-JxyMCY-RZkZDFrhLkbSfLkeVmpKyznlI7g3a/exec";
-    const CACHE_KEY = "kanji_quiz_v28_modal_special";
+    const CACHE_KEY = "kanji_quiz_v29_final";
     const PROGRESS_KEY = "kanji_quiz_progress";
     
     let allData = {};
@@ -190,6 +220,9 @@
     async function fetchData(force = false) {
         document.getElementById('loading').style.display = 'block';
         document.getElementById('selector-screen').style.display = 'none';
+        document.getElementById('top-update-btn').style.display = 'none'; // 更新中は隠す
+        
+        // 進捗の読み込み
         const savedProgress = localStorage.getItem(PROGRESS_KEY);
         if (savedProgress) {
             const parsed = JSON.parse(savedProgress);
@@ -202,23 +235,38 @@
                 };
             }
         }
+
+        // キャッシュチェック（強制更新でない場合）
         const cached = localStorage.getItem(CACHE_KEY);
         if (!force && cached) {
-            try { allData = JSON.parse(cached); createMenu(); return; } catch(e) {}
+            try { 
+                allData = JSON.parse(cached); 
+                createMenu(); 
+                return; 
+            } catch(e) {}
         }
+
+        // データの取得
         try {
             const res = await fetch(API_URL);
             allData = await res.json();
             localStorage.setItem(CACHE_KEY, JSON.stringify(allData));
             createMenu();
-        } catch(e) { document.getElementById('loading').innerText = "接続エラー"; }
+            if(force) alert("最新の状態にこうしんしました！");
+        } catch(e) { 
+            document.getElementById('loading').innerText = "接続エラー。電波の良い場所で試してね。"; 
+        }
     }
 
     function createMenu() {
         document.getElementById('loading').style.display = 'none';
+        document.getElementById('app').style.display = 'none';
+        document.getElementById('top-update-btn').style.display = 'flex'; // リスト画面なら表示
+        
         const screen = document.getElementById('selector-screen');
         const list = document.getElementById('sheet-list');
         list.innerHTML = "";
+        
         const keys = Object.keys(allData);
         keys.forEach(key => {
             const row = document.createElement('div');
@@ -230,10 +278,12 @@
             const badge = retryCount > 0 ? `<span style="background:var(--retry-orange); color:white; padding:2px 8px; border-radius:10px; font-size:12px;">おぼえちゅう:${retryCount}</span>` : "";
             btn.innerHTML = `<div>${key} ${progressInfo}</div> ${badge}`;
             btn.onclick = () => selectSheet(key);
+            
             const resetBtn = document.createElement('button');
             resetBtn.className = "reset-mini-btn";
             resetBtn.innerHTML = "🗑️";
             resetBtn.onclick = (e) => { e.stopPropagation(); clearSheetProgress(key); };
+            
             row.appendChild(btn);
             row.appendChild(resetBtn);
             list.appendChild(row);
@@ -245,13 +295,9 @@
         pendingSheet = sheetName;
         const prog = allProgress[sheetName];
         const retryCount = prog?.retry.size || 0;
-        
-        // 進捗がある、またはおぼえちゅうがある場合はモーダルを出す
         if ((prog && prog.lastIndex > 0) || retryCount > 0) {
             document.getElementById('modal-sheet-name').innerText = sheetName;
-            // つづきからボタンの制御
             document.getElementById('modal-resume-btn').style.display = (prog?.lastIndex > 0) ? "flex" : "none";
-            // 特訓ボタンの制御
             document.getElementById('modal-special-btn').style.display = (retryCount > 0) ? "flex" : "none";
             document.getElementById('resume-modal').style.display = 'flex';
         } else {
@@ -261,19 +307,16 @@
 
     function handleResumeChoice(choice) {
         document.getElementById('resume-modal').style.display = 'none';
-        if (choice === 'resume') {
-            startQuiz(pendingSheet, allProgress[pendingSheet].lastIndex);
-        } else if (choice === 'special') {
-            startQuiz(pendingSheet, 0, true);
-        } else {
-            startQuiz(pendingSheet, 0);
-        }
+        if (choice === 'resume') startQuiz(pendingSheet, allProgress[pendingSheet].lastIndex);
+        else if (choice === 'special') startQuiz(pendingSheet, 0, true);
+        else startQuiz(pendingSheet, 0);
     }
 
     function startQuiz(sheetName, startIndex, retryOnly = false) {
         currentSheetName = sheetName;
         isRetryOnlyMode = retryOnly;
         masterQuestions = allData[sheetName];
+        document.getElementById('top-update-btn').style.display = 'none'; // 学習中は隠す
         
         if (retryOnly) {
             const retryIndices = Array.from(allProgress[sheetName].retry).sort((a,b) => a-b);
@@ -301,10 +344,7 @@
 
     function startRetryOnlyMode() {
         const retryCount = allProgress[currentSheetName]?.retry.size || 0;
-        if (retryCount === 0) {
-            alert("おぼえちゅうの漢字はありません！");
-            return;
-        }
+        if (retryCount === 0) return alert("おぼえちゅうの漢字はありません！");
         if (confirm(`おぼえちゅうの ${retryCount} 問だけを練習しますか？`)) {
             startQuiz(currentSheetName, 0, true);
         }
@@ -312,9 +352,7 @@
 
     function suspendQuiz() {
         if(confirm("進捗を保存して中断しますか？")) {
-            if (!isRetryOnlyMode) {
-                allProgress[currentSheetName].lastIndex = currentIndex;
-            }
+            if (!isRetryOnlyMode) allProgress[currentSheetName].lastIndex = currentIndex;
             backToList();
         }
     }
