@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>漢字練習（おぼえちゅう版）</title>
+    <title>漢字練習（シート選択版）</title>
     <style>
         :root {
             --paper-bg: #fffdf5;
@@ -25,14 +25,42 @@
             overflow: hidden;
         }
 
-        #loading { font-size: 24px; font-weight: bold; color: #555; }
+        /* セレクター画面（スタート画面） */
+        #selector-screen {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            background: var(--paper-bg);
+            padding: 40px;
+            border-radius: 30px;
+            border: 5px solid var(--ink-black);
+            max-width: 600px;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 15px 15px 0 rgba(0,0,0,0.1);
+        }
 
+        .sheet-btn {
+            width: 100%;
+            padding: 20px;
+            margin: 10px 0;
+            font-size: 22px;
+            font-weight: bold;
+            background: white;
+            border: 3px solid var(--ink-black);
+            border-radius: 15px;
+            cursor: pointer;
+            transition: 0.2s;
+            font-family: var(--main-font);
+        }
+        .sheet-btn:hover { background: #f0f0f0; transform: translateX(5px); }
+
+        /* クイズ画面メイン */
         .main-container {
             display: none;
             grid-template-columns: 350px 1.5fr 1.2fr 50px; 
             gap: 25px; 
-            width: 94vw; 
-            height: 90vh;
+            width: 94vw; height: 90vh;
             background: transparent;
             padding: 10px;
         }
@@ -47,7 +75,6 @@
         }
 
         .right-column { display: flex; flex-direction: row-reverse; gap: 10px; height: 100%; padding: 20px; }
-        
         .q-num-box {
             border: 3px solid var(--ink-black);
             min-width: 45px; height: 45px;
@@ -55,7 +82,6 @@
             font-size: 22px; font-weight: bold; background: white; flex-shrink: 0;
             border-radius: 10px;
         }
-
         .q-area {
             flex-grow: 1;
             writing-mode: vertical-rl;
@@ -79,68 +105,44 @@
             letter-spacing: 0.2em;
         }
 
-        .highlight { 
-            color: #e74c3c;
-            text-decoration: underline #e74c3c 5px;
-            text-underline-offset: -0.1em;
-            display: inline;
-        }
-
         .middle-column { display: flex; flex-direction: column; gap: 15px; align-items: center; height: 100%; padding: 20px; }
-        
         .answer-container {
             width: 100%; flex-grow: 1; max-height: 60%;
-            border: 3px dashed #ccc;
-            border-radius: 15px;
-            background: white;
-            display: flex;
-            flex-direction: row-reverse;
-            justify-content: center;
-            align-items: center;
-            gap: 60px;
-            padding: 20px;
-            opacity: 0; transform: scale(0.95);
+            border: 3px dashed #ccc; border-radius: 15px; background: white;
+            display: flex; flex-direction: row-reverse; justify-content: center; align-items: center;
+            gap: 60px; padding: 20px; opacity: 0; transform: scale(0.95);
         }
-        
         .answer-container.visible { opacity: 1; transform: scale(1); transition: 0.2s ease-out; }
-        
-        .ans-column {
-            writing-mode: vertical-rl;
-            font-size: clamp(50px, 11vh, 95px); 
-            color: #e74c3c; 
-            font-weight: bold;
-            white-space: nowrap;
-            line-height: 1;
-        }
+        .ans-column { writing-mode: vertical-rl; font-size: clamp(50px, 11vh, 95px); color: #e74c3c; font-weight: bold; white-space: nowrap; line-height: 1; }
 
         .btn-group { display: flex; flex-direction: column; gap: 12px; width: 100%; align-items: center; flex-shrink: 0; }
-
         .btn {
             width: 90%; max-width: 260px; min-height: 65px;
-            padding: 10px;
-            border: 3px solid var(--ink-black);
-            border-radius: 50px;
+            padding: 10px; border: 3px solid var(--ink-black); border-radius: 50px;
             font-size: 20px; font-weight: bold; cursor: pointer;
             box-shadow: 0 4px 0 var(--ink-black); background: white;
-            font-family: var(--main-font);
-            display: flex; align-items: center; justify-content: center;
+            font-family: var(--main-font); display: flex; align-items: center; justify-content: center;
         }
-        .btn:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--ink-black); }
         .btn-perfect { background: var(--perfect-green); color: white; }
         .btn-retry { background: var(--retry-orange); color: white; }
         .btn-show { background: var(--action-blue); color: white; }
-        .btn-again { background: white; border-style: dashed; }
 
         .left-column { padding: 25px; height: 100%; }
         .stats p { margin: 15px 0; font-size: 19px; border-bottom: 2px dotted #bbb; padding-bottom: 10px; }
         .stats span { font-size: 30px; font-weight: bold; color: var(--action-blue); }
 
         .hidden { display: none !important; }
+        #loading { font-size: 24px; font-weight: bold; color: #555; }
     </style>
 </head>
 <body>
 
-<div id="loading">✨ 読み込み中... ✨</div>
+<div id="loading">✨ データを読み込み中... ✨</div>
+
+<div id="selector-screen">
+    <h2 style="margin-top:0;">📖 問題集を選んでね</h2>
+    <div id="sheet-list" style="width:100%;"></div>
+</div>
 
 <div class="main-container" id="app">
     <div class="box left-column">
@@ -151,28 +153,25 @@
             <p>🏃 おぼえちゅう　<span id="stat-retry" style="color:var(--retry-orange)">0</span></p>
         </div>
         <div class="menu-btns" style="margin-top:auto; display:grid; gap:10px;">
-            <div class="btn" style="width:auto; min-height:50px; font-size:16px; border-radius:12px;" onclick="location.reload()">🏠 タイトルへ戻る</div>
+            <div class="btn" style="width:auto; min-height:50px; font-size:16px; border-radius:12px;" onclick="location.reload()">🏠 リストに戻る</div>
             <div class="btn" style="width:auto; min-height:50px; font-size:16px; border-radius:12px;" onclick="fetchData(true)">🔄 データを更新</div>
         </div>
     </div>
 
     <div class="box middle-column">
         <div class="answer-container" id="a-text"></div>
-        
         <div class="btn-group">
             <button id="show-btn" class="btn btn-show" onclick="showAnswer()">答えをみる</button>
-
             <div id="judgement-btns" class="hidden" style="width:100%; display:flex; flex-direction:column; align-items:center; gap:10px;">
                 <div style="display:flex; gap:10px; width:95%;">
                     <button class="btn btn-perfect" style="flex:1;" onclick="record('perfect')">かんぺき！</button>
                     <button class="btn btn-retry" style="flex:1;" onclick="record('retry')">おぼえちゅう</button>
                 </div>
             </div>
-
             <div id="retry-options" class="hidden" style="width:100%; display:flex; flex-direction:column; align-items:center; gap:10px;">
                 <div style="display:flex; gap:10px; width:95%;">
                     <button class="btn" style="flex:1; background:#fff;" onclick="nextStep()">次の問題 ＞</button>
-                    <button class="btn btn-again" style="flex:1;" onclick="tryAgain()">もう一度 🔄</button>
+                    <button class="btn" style="flex:1; background:white; border-style:dashed;" onclick="tryAgain()">もう一度 🔄</button>
                 </div>
             </div>
         </div>
@@ -182,13 +181,12 @@
         <div class="q-num-box" id="q-number"></div>
         <div class="q-area" id="q-text"></div>
     </div>
-
     <div class="title-column" id="sheet-title"></div>
 </div>
 
 <script>
     const API_URL = "https://script.google.com/macros/s/AKfycbyWHprvWe-NcrfamWL2I6bWSAak6HW-JxyMCY-RZkZDFrhLkbSfLkeVmpKyznlI7g3a/exec";
-    const CACHE_KEY = "kanji_quiz_v20_friendly_text";
+    const CACHE_KEY = "kanji_quiz_v21_selector";
     let allData = {};
     let currentQuestions = [];
     let currentIndex = 0;
@@ -196,33 +194,57 @@
     let retryCount = 0;
 
     async function fetchData(force = false) {
+        document.getElementById('loading').style.display = 'block';
+        document.getElementById('selector-screen').style.display = 'none';
+        
         const cached = localStorage.getItem(CACHE_KEY);
         if (!force && cached) {
-            try { allData = JSON.parse(cached); startApp(); return; } catch(e) {}
+            try { allData = JSON.parse(cached); createMenu(); return; } catch(e) {}
         }
         try {
             const res = await fetch(API_URL);
             allData = await res.json();
             localStorage.setItem(CACHE_KEY, JSON.stringify(allData));
-            startApp();
+            createMenu();
         } catch(e) { document.getElementById('loading').innerText = "接続エラー"; }
     }
 
-    function startApp() {
+    // 1. シート選択メニューを作成
+    function createMenu() {
+        document.getElementById('loading').style.display = 'none';
+        const screen = document.getElementById('selector-screen');
+        const list = document.getElementById('sheet-list');
+        list.innerHTML = "";
+        
         const keys = Object.keys(allData);
-        if (keys.length === 0) return;
-        const sheetName = keys[0];
+        keys.forEach(key => {
+            const btn = document.createElement('button');
+            btn.className = "sheet-btn";
+            btn.innerText = key;
+            btn.onclick = () => startQuiz(key);
+            list.appendChild(btn);
+        });
+        screen.style.display = 'flex';
+    }
+
+    // 2. クイズ開始
+    function startQuiz(sheetName) {
+        document.getElementById('selector-screen').style.display = 'none';
+        document.getElementById('app').style.display = 'grid';
+        
         document.getElementById('sheet-title').innerText = "【 " + sheetName + " 】";
         currentQuestions = allData[sheetName];
-        document.getElementById('loading').style.display = 'none';
-        document.getElementById('app').style.display = 'grid';
+        currentIndex = 0;
+        perfectCount = 0;
+        retryCount = 0;
+        
         updateStats();
         showQuestion();
     }
 
     function showQuestion() {
         if (currentIndex >= currentQuestions.length) {
-            alert("全問クリア！");
+            alert("全問クリア！リストに戻ります。");
             location.reload();
             return;
         }
@@ -260,8 +282,7 @@
     }
 
     function tryAgain() {
-        const answerArea = document.getElementById('a-text');
-        answerArea.classList.remove('visible');
+        document.getElementById('a-text').classList.remove('visible');
         document.getElementById('retry-options').classList.add('hidden');
         document.getElementById('show-btn').classList.remove('hidden');
     }
