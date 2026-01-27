@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>漢字練習（復習機能強化版）</title>
+    <title>漢字練習（おぼえちゅう版）</title>
     <style>
         :root {
             --paper-bg: #fffdf5;
@@ -148,7 +148,7 @@
         <div class="stats">
             <p>今の進行度　　<span id="stat-total">0/0</span></p>
             <p>✨ かんぺき！　<span id="stat-perfect" style="color:var(--perfect-green)">0</span></p>
-            <p>🏃 おぼえ途中　<span id="stat-retry" style="color:var(--retry-orange)">0</span></p>
+            <p>🏃 おぼえちゅう　<span id="stat-retry" style="color:var(--retry-orange)">0</span></p>
         </div>
         <div class="menu-btns" style="margin-top:auto; display:grid; gap:10px;">
             <div class="btn" style="width:auto; min-height:50px; font-size:16px; border-radius:12px;" onclick="location.reload()">🏠 タイトルへ戻る</div>
@@ -165,7 +165,7 @@
             <div id="judgement-btns" class="hidden" style="width:100%; display:flex; flex-direction:column; align-items:center; gap:10px;">
                 <div style="display:flex; gap:10px; width:95%;">
                     <button class="btn btn-perfect" style="flex:1;" onclick="record('perfect')">かんぺき！</button>
-                    <button class="btn btn-retry" style="flex:1;" onclick="record('retry')">おぼえ途中</button>
+                    <button class="btn btn-retry" style="flex:1;" onclick="record('retry')">おぼえちゅう</button>
                 </div>
             </div>
 
@@ -188,7 +188,7 @@
 
 <script>
     const API_URL = "https://script.google.com/macros/s/AKfycbyWHprvWe-NcrfamWL2I6bWSAak6HW-JxyMCY-RZkZDFrhLkbSfLkeVmpKyznlI7g3a/exec";
-    const CACHE_KEY = "kanji_quiz_v19_flow";
+    const CACHE_KEY = "kanji_quiz_v20_friendly_text";
     let allData = {};
     let currentQuestions = [];
     let currentIndex = 0;
@@ -234,7 +234,6 @@
         const ansList = (q.a || "").split(/[、,，]/); 
         answerArea.innerHTML = ansList.map(a => `<div class="ans-column">${a.trim()}</div>`).join('');
         
-        // 状態リセット
         answerArea.classList.remove('visible');
         document.getElementById('show-btn').classList.remove('hidden');
         document.getElementById('judgement-btns').classList.add('hidden');
@@ -251,18 +250,16 @@
         if(type === 'perfect') {
             perfectCount++;
             updateStats();
-            nextStep(); // かんぺきなら即次へ
+            nextStep();
         } else {
             retryCount++;
             updateStats();
-            // おぼえ途中なら選択肢を出す
             document.getElementById('judgement-btns').classList.add('hidden');
             document.getElementById('retry-options').classList.remove('hidden');
         }
     }
 
     function tryAgain() {
-        // 同じ問題でもう一度取り組む
         const answerArea = document.getElementById('a-text');
         answerArea.classList.remove('visible');
         document.getElementById('retry-options').classList.add('hidden');
