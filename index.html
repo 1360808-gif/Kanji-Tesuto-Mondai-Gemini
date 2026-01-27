@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>漢字練習（解答強調版）</title>
+    <title>漢字練習（レイアウト完全版）</title>
     <style>
         :root {
             --paper-bg: #fffdf5;
@@ -13,6 +13,9 @@
             --action-blue: #3498db;
             --main-font: "UD Digital Kyokasho N-R", "UD デジタル 教科書体 N-R", "BIZ UDPGothic", sans-serif;
         }
+
+        /* 全ての要素で枠線を含めてサイズ計算する（見切れ防止の基本） */
+        * { box-sizing: border-box; }
 
         body {
             margin: 0; padding: 0; 
@@ -25,27 +28,29 @@
 
         #loading { font-size: 24px; font-weight: bold; color: #555; }
 
-        /* ★調整：カラム間の gap を 15px から 30px に広げました ★ */
+        /* 全体コンテナのサイズを少し絞り、画面端との間にマージンを作る */
         .main-container {
             display: none;
             grid-template-columns: 350px 1.5fr 1.2fr 50px; 
-            gap: 30px; 
-            width: 96vw; height: 94vh;
-            background: transparent; /* 背景を透明にして各BOXを独立させる */
-            padding: 10px; box-sizing: border-box;
+            gap: 25px; 
+            width: 94vw; 
+            height: 90vh;
+            background: transparent;
+            padding: 10px;
         }
 
         .box {
-            border: 3px solid var(--ink-black);
+            border: 4px solid var(--ink-black); /* 枠線を少し太くしつつ安定させる */
             border-radius: 20px;
-            background: var(--paper-bg); /* 各BOXに紙の背景色を適用 */
+            background: var(--paper-bg);
             overflow: hidden;
             display: flex; flex-direction: column;
-            box-shadow: 8px 8px 0 rgba(0,0,0,0.1);
+            box-shadow: 6px 6px 0 rgba(0,0,0,0.1);
+            position: relative;
         }
 
-        /* 右側：問題エリア */
-        .right-column { display: flex; flex-direction: row-reverse; gap: 8px; height: 100%; padding: 15px; }
+        /* 右側：問題エリア（paddingを調整して線の見切れを防ぐ） */
+        .right-column { display: flex; flex-direction: row-reverse; gap: 10px; height: 100%; padding: 20px; }
         
         .q-num-box {
             border: 3px solid var(--ink-black);
@@ -61,14 +66,13 @@
             font-size: clamp(22px, 4vh, 34px);
             line-height: 2.2;
             letter-spacing: 0.15em;
-            padding: 20px 10px;
+            padding: 10px 15px 30px 15px; /* 下部に余裕を持たせる */
             background-image: radial-gradient(#ddd 1.5px, transparent 1.5px);
             background-size: 35px 35px;
             overflow-y: auto;
-            border: none;
         }
 
-        /* 右端：シート名 */
+        /* 右端：タイトル表示 */
         .title-column {
             writing-mode: vertical-rl;
             display: flex;
@@ -77,9 +81,8 @@
             font-size: 16px;
             font-weight: bold;
             color: #666;
-            padding-top: 20px;
+            padding-top: 10px;
             letter-spacing: 0.2em;
-            text-shadow: 1px 1px 0 white;
         }
 
         .highlight { 
@@ -89,63 +92,55 @@
             display: inline;
         }
 
-        /* 中央：解答エリアをより大きく */
-        .middle-column { display: flex; flex-direction: column; gap: 20px; align-items: center; height: 100%; padding: 20px; }
+        /* 中央：解答・操作エリア */
+        .middle-column { display: flex; flex-direction: column; gap: 15px; align-items: center; height: 100%; padding: 20px; }
         
-        .answer-box {
+        /* 答えの枠線が見切れないよう、marginではなくpaddingで中に入れる */
+        .answer-container {
             width: 100%; flex-grow: 1; max-height: 60%;
-            display: flex; 
-            flex-direction: row-reverse; 
-            justify-content: center; 
-            align-items: center;
-            gap: 70px;
-            opacity: 0; transform: scale(0.9);
-            border: 3px dashed #ccc; /* 答えの枠を少し控えめに */
+            border: 3px dashed #ccc;
+            border-radius: 15px;
             background: white;
+            display: flex;
+            flex-direction: row-reverse;
+            justify-content: center;
+            align-items: center;
+            gap: 60px;
+            padding: 20px;
+            opacity: 0; transform: scale(0.95);
         }
         
-        .answer-box.visible { opacity: 1; transform: scale(1); transition: 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        .answer-container.visible { opacity: 1; transform: scale(1); transition: 0.3s ease-out; }
         
-        /* ★答えの文字サイズを最大化★ */
         .ans-column {
             writing-mode: vertical-rl;
-            font-size: clamp(50px, 12vh, 100px); 
+            font-size: clamp(50px, 11vh, 95px); 
             color: #e74c3c; 
             font-weight: bold;
             white-space: nowrap;
             line-height: 1;
-            text-align: center;
         }
 
-        .btn-group { display: flex; flex-direction: column; gap: 15px; width: 100%; align-items: center; flex-shrink: 0; }
+        .btn-group { display: flex; flex-direction: column; gap: 12px; width: 100%; align-items: center; flex-shrink: 0; }
 
         .btn {
-            width: 90%; max-width: 280px; min-height: 70px;
+            width: 90%; max-width: 260px; min-height: 65px;
             padding: 10px;
             border: 3px solid var(--ink-black);
             border-radius: 50px;
             font-size: 20px; font-weight: bold; cursor: pointer;
-            box-shadow: 0 5px 0 var(--ink-black); background: white;
+            box-shadow: 0 4px 0 var(--ink-black); background: white;
             font-family: var(--main-font);
             display: flex; align-items: center; justify-content: center;
         }
-        .btn:active { transform: translateY(3px); box-shadow: 0 2px 0 var(--ink-black); }
+        .btn:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--ink-black); }
         .btn-perfect { background: var(--perfect-green); color: white; }
         .btn-retry { background: var(--retry-orange); color: white; }
         .btn-show { background: var(--action-blue); color: white; }
 
-        /* 左側：記録エリア */
-        .left-column { 
-            padding: 30px; 
-            height: 100%; 
-            box-sizing: border-box;
-        }
-        .stats p { 
-            margin: 15px 0; 
-            font-size: 19px; 
-            border-bottom: 2px dotted #bbb; 
-            padding-bottom: 12px; 
-        }
+        /* 左側：記録 */
+        .left-column { padding: 25px; height: 100%; }
+        .stats p { margin: 15px 0; font-size: 19px; border-bottom: 2px dotted #bbb; padding-bottom: 10px; }
         .stats span { font-size: 30px; font-weight: bold; color: var(--action-blue); }
 
         .hidden { display: none !important; }
@@ -153,32 +148,32 @@
 </head>
 <body>
 
-<div id="loading">✨ じゅんび中... ✨</div>
+<div id="loading">✨ 読み込み中... ✨</div>
 
 <div class="main-container" id="app">
     <div class="box left-column">
-        <h4 style="text-align:center; margin: 0 0 20px 0; font-size: 24px; color: var(--ink-black);">📔 学習の記録</h4>
+        <h4 style="text-align:center; margin: 0 0 20px 0; font-size: 24px;">📔 学習の記録</h4>
         <div class="stats">
             <p>今の進行度　　<span id="stat-total">0/0</span></p>
             <p>✨ かんぺき！　<span id="stat-perfect" style="color:var(--perfect-green)">0</span></p>
             <p>🏃 おぼえ途中　<span id="stat-retry" style="color:var(--retry-orange)">0</span></p>
         </div>
-        <div class="menu-btns" style="margin-top:auto; display:grid; gap:12px;">
-            <div class="btn" style="width:auto; min-height:55px; font-size:16px; border-radius:15px;" onclick="location.reload()">🏠 タイトルへ戻る</div>
-            <div class="btn" style="width:auto; min-height:55px; font-size:16px; border-radius:15px;" onclick="fetchData(true)">🔄 データを更新</div>
+        <div class="menu-btns" style="margin-top:auto; display:grid; gap:10px;">
+            <div class="btn" style="width:auto; min-height:50px; font-size:16px; border-radius:12px;" onclick="location.reload()">🏠 タイトルへ戻る</div>
+            <div class="btn" style="width:auto; min-height:50px; font-size:16px; border-radius:12px;" onclick="fetchData(true)">🔄 データを更新</div>
         </div>
     </div>
 
     <div class="box middle-column">
-        <div class="answer-box" id="a-text"></div>
+        <div class="answer-container" id="a-text"></div>
         <div class="btn-group">
             <button id="show-btn" class="btn btn-show" onclick="showAnswer()">答えをみる</button>
-            <div id="judgement-btns" class="hidden" style="width:100%; display:flex; flex-direction:column; align-items:center; gap:12px;">
-                <div style="display:flex; gap:15px; width:95%;">
+            <div id="judgement-btns" class="hidden" style="width:100%; display:flex; flex-direction:column; align-items:center; gap:10px;">
+                <div style="display:flex; gap:10px; width:95%;">
                     <button class="btn btn-perfect" style="flex:1;" onclick="record('perfect')">かんぺき！</button>
                     <button class="btn btn-retry" style="flex:1;" onclick="record('retry')">おぼえ中</button>
                 </div>
-                <button class="btn" style="background:#fff; min-height:50px; font-size: 18px; border-style: double;" onclick="nextStep()">次へ進む ＞</button>
+                <button class="btn" style="background:#fff; min-height:45px; font-size: 17px; border-style: double;" onclick="nextStep()">次へ進む ＞</button>
             </div>
         </div>
     </div>
@@ -193,7 +188,7 @@
 
 <script>
     const API_URL = "https://script.google.com/macros/s/AKfycbyWHprvWe-NcrfamWL2I6bWSAak6HW-JxyMCY-RZkZDFrhLkbSfLkeVmpKyznlI7g3a/exec";
-    const CACHE_KEY = "kanji_quiz_v17_big_answer";
+    const CACHE_KEY = "kanji_quiz_v18_final_layout";
     let allData = {};
     let currentQuestions = [];
     let currentIndex = 0;
