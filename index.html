@@ -2,21 +2,34 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <title>漢字プリントシステム - 一覧表示</title>
     <style>
         :root {
             --ink-black: #000000;
             --main-font: "UD Digital Kyokasho N-R", "UD デジタル 教科書体 N-R", sans-serif;
         }
 
-        /* --- 共通レイアウト --- */
         body {
             margin: 0;
-            display: flex;
-            justify-content: center;
-            align-items: center;
             background-color: #f0f0f0;
             font-family: var(--main-font);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        /* --- ナビゲーション（閲覧モード用） --- */
+        #nav-controls {
+            position: fixed; top: 10px; width: 100%;
+            display: flex; justify-content: center; gap: 20px;
+            z-index: 1000; writing-mode: horizontal-tb;
+        }
+
+        /* --- プリント表示エリア --- */
+        #print-wrapper {
+            display: flex;
+            flex-direction: column; /* 印刷時は縦にページが並ぶ */
+            gap: 40px;
+            padding: 40px 20px;
         }
 
         .print-canvas {
@@ -24,101 +37,134 @@
             flex-direction: row-reverse;
             background: white;
             border: 1px solid #999;
-            box-sizing: border-box;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            page-break-after: always; /* 印刷時にここで改ページ */
         }
+
+        /* --- モード別スタイル --- */
+        /* 閲覧モード：1画面に1枚だけ表示 */
+        .mode-responsive { height: 85vh; padding: 2vh; }
+        .mode-responsive .column-unit td { width: 5.5vw; max-width: 65px; }
+        .mode-responsive .h-ques { height: 60%; writing-mode: vertical-rl; text-orientation: upright; font-size: min(2vh, 18px); padding: 10px 2px; text-align: start; }
+        
+        /* 印刷モード：サイズ固定で縦に並べる */
+        .mode-fixed { height: 800px; padding: 30px; }
+        .mode-fixed .column-unit td { width: 65px; }
+        .mode-fixed .h-ques { height: 480px; writing-mode: vertical-rl; text-orientation: upright; font-size: 20px; padding: 20px 5px; text-align: start; }
+
+        /* 共通テーブルスタイル */
+        .column-unit { border-collapse: collapse; height: 100%; }
+        .column-unit td { border: 1px solid #000; text-align: center; vertical-align: middle; }
+        .h-check { height: 10%; }
+        .h-num { height: 5%; background: #f9f9f9; font-weight: bold; }
+        .h-ans { height: 20%; color: #e74c3c; writing-mode: vertical-rl; text-orientation: upright; font-weight: bold; }
+        .square { width: 25px; height: 25px; border: 1px solid #000; margin: auto; }
 
         .print-title {
-            writing-mode: vertical-rl;
-            font-weight: bold;
-            border-left: 3px double #000;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border-top: 1px solid #000;
-            border-right: 1px solid #000;
-            border-bottom: 1px solid #000;
+            writing-mode: vertical-rl; font-weight: bold; border-left: 3px double #000;
+            padding: 0 10px; margin-left: 20px; display: flex; align-items: center;
+            border: 1px solid #000; border-left: 3px double #000;
         }
 
-        .kanji-table-container {
-            display: flex;
-            flex-direction: row-reverse;
-        }
+        button { padding: 10px 20px; cursor: pointer; border-radius: 5px; border: none; background: #333; color: white; font-weight: bold; }
+        .hidden { display: none !important; }
 
-        .column-unit { border-collapse: collapse; height: 100%; }
-        .column-unit td {
-            border: 1px solid var(--ink-black);
-            text-align: center;
-            vertical-align: middle;
-            background: white;
-            padding: 0;
+        @media print {
+            #nav-controls { display: none; }
+            body { background: white; }
+            #print-wrapper { gap: 0; padding: 0; }
         }
-
-        /* --- モード1：レスポンシブ（画面閲覧用） --- */
-        .mode-responsive {
-            height: 90vh;
-            padding: 2vh;
-        }
-        .mode-responsive .column-unit td { width: 5.5vw; max-width: 65px; }
-        .mode-responsive .print-title { font-size: min(2.5vh, 24px); padding: 0 1vh; margin-left: 1.5vh; }
-        .mode-responsive .h-check { height: 8%; }
-        .mode-responsive .h-num   { height: 5%; font-size: 1.5vh; background: #f9f9f9; }
-        .mode-responsive .h-ques  { height: 62%; writing-mode: vertical-rl; text-orientation: upright; font-size: min(2vh, 18px); padding: 1vh 2px; text-align: start; }
-        .mode-responsive .h-ans   { height: 20%; font-size: min(2.2vh, 20px); color: #e74c3c; writing-mode: vertical-rl; text-orientation: upright; }
-
-        /* --- モード2：サイズ固定（印刷・保存用） --- */
-        .mode-fixed {
-            height: 800px; /* A4横を想定した固定高 */
-            padding: 30px;
-        }
-        .mode-fixed .column-unit td { width: 65px; }
-        .mode-fixed .print-title { font-size: 24px; padding: 0 10px; margin-left: 20px; }
-        .mode-fixed .h-check { height: 60px; }
-        .h-num { font-weight: bold; background: #f9f9f9; }
-        .mode-fixed .h-num   { height: 40px; font-size: 16px; }
-        .mode-fixed .h-ques  { height: 480px; writing-mode: vertical-rl; text-orientation: upright; font-size: 20px; padding: 20px 5px; text-align: start; }
-        .mode-fixed .h-ans   { height: 180px; font-size: 22px; color: #e74c3c; writing-mode: vertical-rl; text-orientation: upright; }
-
-        .square { width: 25px; height: 25px; border: 1px solid #000; margin: auto; }
-        #close-btn { position: fixed; top: 10px; left: 10px; padding: 8px 16px; background: #ff4757; color: white; border: none; border-radius: 20px; cursor: pointer; z-index: 100; }
     </style>
 </head>
 <body>
 
-    <button id="close-btn" onclick="toggleMode()">モード切替 (閲覧/印刷)</button>
-
-    <div id="main-canvas" class="print-canvas mode-responsive">
-        <div class="print-title">６年　やまなし</div>
-        <div id="table-area" class="kanji-table-container"></div>
+    <div id="nav-controls">
+        <button id="prev-btn" onclick="changePage(-1)">← 前の15問</button>
+        <button onclick="toggleViewMode()">モード切替 (閲覧/印刷)</button>
+        <button id="next-btn" onclick="changePage(1)">次の15問 →</button>
+        <button style="background: #ff4757;" onclick="window.history.back()">とじる</button>
     </div>
 
-<script>
-    const area = document.getElementById('table-area');
-    const canvas = document.getElementById('main-canvas');
+    <div id="print-wrapper">
+        </div>
 
-    // モード切替関数
-    function toggleMode() {
-        if (canvas.classList.contains('mode-responsive')) {
-            canvas.classList.replace('mode-responsive', 'mode-fixed');
-            alert("印刷用サイズ（固定）に切り替えました。");
+<script>
+    // ダミーデータ40問
+    const allQuestions = Array.from({length: 40}, (_, i) => ({
+        id: i + 1,
+        q: `第${i+1}問目の問題文です。漢字の練習をしましょう。（　）`,
+        a: `解答${i+1}`
+    }));
+
+    let currentPage = 0;
+    let isFixedMode = false; // 初期は閲覧モード
+
+    function render() {
+        const wrapper = document.getElementById('print-wrapper');
+        wrapper.innerHTML = "";
+        
+        const questionsPerPage = 15;
+
+        if (isFixedMode) {
+            // 印刷・保存モード：全問を15問ずつのブロック（ページ）として表示
+            for (let i = 0; i < allQuestions.length; i += questionsPerPage) {
+                const chunk = allQuestions.slice(i, i + questionsPerPage);
+                wrapper.appendChild(createPageElement(chunk, "mode-fixed"));
+            }
+            document.getElementById('prev-btn').classList.add('hidden');
+            document.getElementById('next-btn').classList.add('hidden');
         } else {
-            canvas.classList.replace('mode-fixed', 'mode-responsive');
-            alert("閲覧用サイズ（レスポンシブ）に切り替えました。");
+            // レスポンシブモード：現在のページ（15問）のみ表示
+            const start = currentPage * questionsPerPage;
+            const chunk = allQuestions.slice(start, start + questionsPerPage);
+            wrapper.appendChild(createPageElement(chunk, "mode-responsive"));
+            
+            document.getElementById('prev-btn').classList.toggle('hidden', currentPage === 0);
+            document.getElementById('next-btn').classList.toggle('hidden', start + questionsPerPage >= allQuestions.length);
         }
     }
 
-    // 15列生成処理
-    for (let i = 1; i <= 15; i++) {
-        const table = document.createElement('table');
-        table.className = 'column-unit';
-        table.innerHTML = `
-            <tr><td class="h-check"><div class="square"></div></td></tr>
-            <tr><td class="h-num">${i}</td></tr>
-            <tr><td class="h-ques">ここに漢字の問題文が表示されます。縦書きで読みやすさを重視。（　）</td></tr>
-            <tr><td class="h-num">${i}</td></tr>
-            <tr><td class="h-ans">正解例</td></tr>
-        `;
-        area.appendChild(table);
+    function createPageElement(data, modeClass) {
+        const canvas = document.createElement('div');
+        canvas.className = `print-canvas ${modeClass}`;
+        
+        const title = document.createElement('div');
+        title.className = "print-title";
+        title.innerText = "６年　やまなし";
+        canvas.appendChild(title);
+
+        const container = document.createElement('div');
+        container.className = "kanji-table-container";
+
+        data.forEach(item => {
+            const table = document.createElement('table');
+            table.className = "column-unit";
+            table.innerHTML = `
+                <tr><td class="h-check"><div class="square"></div></td></tr>
+                <tr><td class="h-num">${item.id}</td></tr>
+                <tr><td class="h-ques">${item.q}</td></tr>
+                <tr><td class="h-num">${item.id}</td></tr>
+                <tr><td class="h-ans">${item.a}</td></tr>
+            `;
+            container.appendChild(table);
+        });
+        
+        canvas.appendChild(container);
+        return canvas;
     }
+
+    function changePage(step) {
+        currentPage += step;
+        render();
+    }
+
+    function toggleViewMode() {
+        isFixedMode = !isFixedMode;
+        render();
+    }
+
+    // 初回実行
+    render();
 </script>
 </body>
 </html>
