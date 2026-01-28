@@ -2,43 +2,35 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
+    <title>漢字プリントシステム - 一覧表示</title>
     <style>
         :root {
             --ink-black: #000000;
             --main-font: "UD Digital Kyokasho N-R", "UD デジタル 教科書体 N-R", sans-serif;
         }
 
+        /* --- 共通レイアウト --- */
         body {
             margin: 0;
-            height: 100vh;
             display: flex;
             justify-content: center;
             align-items: center;
             background-color: #f0f0f0;
             font-family: var(--main-font);
-            overflow: hidden; /* はみ出し防止 */
         }
 
-        /* プリント全体のコンテナ：画面の高さに合わせて伸縮 */
         .print-canvas {
             display: flex;
             flex-direction: row-reverse;
             background: white;
-            padding: 2vh; /* 画面サイズに連動した余白 */
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-            border: 1px solid #ccc;
-            height: 90vh; /* 画面の90%の高さに固定 */
+            border: 1px solid #999;
             box-sizing: border-box;
         }
 
-        /* タイトルエリア */
         .print-title {
             writing-mode: vertical-rl;
-            font-size: min(2.5vh, 24px); /* 画面に合わせてフォントサイズも変化 */
             font-weight: bold;
             border-left: 3px double #000;
-            padding: 0 1vh;
-            margin-left: 1.5vh;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -50,89 +42,83 @@
         .kanji-table-container {
             display: flex;
             flex-direction: row-reverse;
-            height: 100%;
         }
 
-        .column-unit {
-            border-collapse: collapse;
-            height: 100%;
-        }
-
+        .column-unit { border-collapse: collapse; height: 100%; }
         .column-unit td {
             border: 1px solid var(--ink-black);
-            /* 幅を画面の横幅に合わせて可変（15列＋タイトル分） */
-            width: 5.5vw; 
-            max-width: 65px;
             text-align: center;
             vertical-align: middle;
             background: white;
             padding: 0;
         }
 
-        /* --- 高さを比率（%）で配分 --- */
-        .h-check { height: 8%; } 
-        .h-num-t { height: 5%; font-size: 1.5vh; background: #f9f9f9; }
-        .h-ques  { 
-            height: 62%; 
-            writing-mode: vertical-rl;
-            text-orientation: upright;
-            font-size: min(2vh, 18px);
-            line-height: 1.5;
-            padding: 1vh 0.2vw;
-            text-align: start;
+        /* --- モード1：レスポンシブ（画面閲覧用） --- */
+        .mode-responsive {
+            height: 90vh;
+            padding: 2vh;
         }
-        .h-num-b { height: 5%; font-size: 1.2vh; background: #f9f9f9; }
-        .h-ans   { 
-            height: 20%; 
-            font-size: min(2.2vh, 20px); 
-            color: #e74c3c;
-            writing-mode: vertical-rl;
-            text-orientation: upright;
-        }
+        .mode-responsive .column-unit td { width: 5.5vw; max-width: 65px; }
+        .mode-responsive .print-title { font-size: min(2.5vh, 24px); padding: 0 1vh; margin-left: 1.5vh; }
+        .mode-responsive .h-check { height: 8%; }
+        .mode-responsive .h-num   { height: 5%; font-size: 1.5vh; background: #f9f9f9; }
+        .mode-responsive .h-ques  { height: 62%; writing-mode: vertical-rl; text-orientation: upright; font-size: min(2vh, 18px); padding: 1vh 2px; text-align: start; }
+        .mode-responsive .h-ans   { height: 20%; font-size: min(2.2vh, 20px); color: #e74c3c; writing-mode: vertical-rl; text-orientation: upright; }
 
-        .square {
-            width: 2.5vh;
-            height: 2.5vh;
-            border: 1px solid #000;
-            margin: auto;
+        /* --- モード2：サイズ固定（印刷・保存用） --- */
+        .mode-fixed {
+            height: 800px; /* A4横を想定した固定高 */
+            padding: 30px;
         }
+        .mode-fixed .column-unit td { width: 65px; }
+        .mode-fixed .print-title { font-size: 24px; padding: 0 10px; margin-left: 20px; }
+        .mode-fixed .h-check { height: 60px; }
+        .h-num { font-weight: bold; background: #f9f9f9; }
+        .mode-fixed .h-num   { height: 40px; font-size: 16px; }
+        .mode-fixed .h-ques  { height: 480px; writing-mode: vertical-rl; text-orientation: upright; font-size: 20px; padding: 20px 5px; text-align: start; }
+        .mode-fixed .h-ans   { height: 180px; font-size: 22px; color: #e74c3c; writing-mode: vertical-rl; text-orientation: upright; }
 
-        #close-btn {
-            position: fixed; top: 10px; left: 10px;
-            padding: 8px 16px; background: #ff4757; color: white;
-            border: none; border-radius: 20px; cursor: pointer; font-weight: bold;
-            z-index: 100;
-        }
+        .square { width: 25px; height: 25px; border: 1px solid #000; margin: auto; }
+        #close-btn { position: fixed; top: 10px; left: 10px; padding: 8px 16px; background: #ff4757; color: white; border: none; border-radius: 20px; cursor: pointer; z-index: 100; }
     </style>
 </head>
 <body>
 
-    <button id="close-btn" onclick="window.history.back()">× とじる</button>
+    <button id="close-btn" onclick="toggleMode()">モード切替 (閲覧/印刷)</button>
 
-    <div class="print-canvas">
+    <div id="main-canvas" class="print-canvas mode-responsive">
         <div class="print-title">６年　やまなし</div>
-        
-        <div id="table-area" class="kanji-table-container">
-            </div>
+        <div id="table-area" class="kanji-table-container"></div>
     </div>
 
 <script>
     const area = document.getElementById('table-area');
-    
-    // サンプル表示用
+    const canvas = document.getElementById('main-canvas');
+
+    // モード切替関数
+    function toggleMode() {
+        if (canvas.classList.contains('mode-responsive')) {
+            canvas.classList.replace('mode-responsive', 'mode-fixed');
+            alert("印刷用サイズ（固定）に切り替えました。");
+        } else {
+            canvas.classList.replace('mode-fixed', 'mode-responsive');
+            alert("閲覧用サイズ（レスポンシブ）に切り替えました。");
+        }
+    }
+
+    // 15列生成処理
     for (let i = 1; i <= 15; i++) {
         const table = document.createElement('table');
         table.className = 'column-unit';
         table.innerHTML = `
             <tr><td class="h-check"><div class="square"></div></td></tr>
-            <tr><td class="h-num-t">${i}</td></tr>
-            <tr><td class="h-ques">ここに問題文。画面を小さくしても自動で収まります。（　）</td></tr>
-            <tr><td class="h-num-b">${i}</td></tr>
+            <tr><td class="h-num">${i}</td></tr>
+            <tr><td class="h-ques">ここに漢字の問題文が表示されます。縦書きで読みやすさを重視。（　）</td></tr>
+            <tr><td class="h-num">${i}</td></tr>
             <tr><td class="h-ans">正解例</td></tr>
         `;
         area.appendChild(table);
     }
 </script>
-
 </body>
 </html>
