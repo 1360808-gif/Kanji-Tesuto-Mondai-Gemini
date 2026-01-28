@@ -31,7 +31,7 @@
         .menu-btn:hover { background: #f0f0f0; transform: translateY(-2px); }
         .btn-print { border-color: #27ae60; color: #27ae60; }
 
-        /* --- 共通：プリント表示の基本構造 --- */
+        /* --- 画面オーバーレイ --- */
         .screen-overlay {
             display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: #fff; z-index: 100; overflow: auto;
@@ -42,14 +42,14 @@
             border: none; border-radius: 20px; cursor: pointer; font-weight: bold;
         }
 
-        /* --- 閲覧モード (Responsive) --- */
+        /* --- 閲覧モード (Responsive Wide) --- */
         #view-mode-container {
             height: 100vh;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            padding: 10px;
+            padding: 20px;
             box-sizing: border-box;
             background-color: #f0f0f0;
         }
@@ -57,15 +57,15 @@
         .view-canvas {
             display: flex;
             flex-direction: row-reverse;
-            height: 80vh; 
-            max-height: 720px; 
+            /* 高さは見切れないよう控えめに、横幅はワイドに */
+            height: 72vh; 
+            width: 92vw; /* 横幅を大幅に拡大 */
+            max-width: 1400px; 
             background: white;
             border: 2px solid #000; 
             box-sizing: border-box;
-            max-width: 95vw;
             box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-            /* 表が外枠にベタ付きしないよう余白を設定 */
-            padding: 20px; 
+            padding: 25px; /* 内側余白を十分に確保 */
             overflow: hidden;
         }
 
@@ -74,13 +74,14 @@
         .view-canvas .h-num   { height: 6%; font-size: 1.4vh; }
         .view-canvas .h-ques  { 
             height: 60%; 
-            font-size: min(1.8vh, 16px); 
-            padding: 5px 2px;
+            font-size: min(2vh, 18px); /* ワイド画面に合わせて少し大きく */
+            padding: 10px 4px;
             writing-mode: vertical-rl;
             text-orientation: upright;
             text-align: start;
+            line-height: 1.6;
         }
-        .view-canvas .h-ans   { height: 18%; font-size: 1.8vh; font-weight: bold; color: #e74c3c; writing-mode: vertical-rl; text-orientation: upright;}
+        .view-canvas .h-ans   { height: 18%; font-size: 2vh; font-weight: bold; color: #e74c3c; writing-mode: vertical-rl; text-orientation: upright;}
 
         /* --- 印刷モード (Fixed Scroll) --- */
         #print-mode-container {
@@ -90,10 +91,11 @@
             display: flex;
             flex-direction: row-reverse;
             height: 800px;
+            width: 1150px; /* A4横に近い比率 */
             background: white;
             border: 2px solid #000; 
             box-sizing: border-box;
-            padding: 30px; /* 印刷時の余白 */
+            padding: 30px; 
             overflow: hidden;
         }
 
@@ -103,7 +105,7 @@
             flex-direction: row-reverse;
             height: 100%;
             flex-grow: 1;
-            border: 1px solid #000; /* 表自体の外枠（Canvasの枠と二重にならないように） */
+            border: 1px solid #000;
         }
 
         .column-unit { 
@@ -118,17 +120,17 @@
             writing-mode: vertical-rl; font-weight: bold; 
             border: 1px solid #000;
             border-left: 4px double #000;
-            padding: 0 15px; 
-            display: flex; align-items: center; font-size: 1.2rem;
+            padding: 0 1.5vw; 
+            display: flex; align-items: center; font-size: 1.4rem;
             height: 100%;
             box-sizing: border-box;
-            margin-left: 15px; /* 表とタイトルの間の余白 */
+            margin-left: 20px; 
         }
-        .square { width: min(2.2vh, 22px); height: min(2.2vh, 22px); border: 1px solid #000; margin: auto; }
+        .square { width: min(2.5vh, 25px); height: min(2.5vh, 25px); border: 1px solid #000; margin: auto; }
 
         /* ページナビ */
-        .pager-nav { margin-bottom: 15px; display: flex; gap: 15px; align-items: center; writing-mode: horizontal-tb;}
-        .pager-nav button { padding: 8px 16px; border-radius: 5px; border: 1px solid #333; cursor: pointer; background: white; font-weight: bold;}
+        .pager-nav { margin-bottom: 20px; display: flex; gap: 20px; align-items: center; writing-mode: horizontal-tb;}
+        .pager-nav button { padding: 10px 20px; border-radius: 8px; border: 1px solid #333; cursor: pointer; background: white; font-weight: bold;}
 
         @media print {
             .close-btn, .pager-nav { display: none; }
@@ -142,7 +144,7 @@
 
 <div id="menu-screen">
     <h1 style="margin-bottom: 30px;">漢字練習メニュー</h1>
-    <h2 id="current-sheet-name" style="color: #555;">やまなし</h2>
+    <h2 id="current-sheet-name" style="color: #555;">６年 やまなし</h2>
     <button class="menu-btn" onclick="alert('クイズを開始します')">はじめから</button>
     <button class="menu-btn" onclick="alert('続きから開始します')">つづきから</button>
     <button class="menu-btn" onclick="alert('苦手な漢字を抽出します')">おぼえとちゅうを練習</button>
@@ -155,7 +157,7 @@
     <div id="view-mode-container">
         <div class="pager-nav">
             <button onclick="changePage(-1)">← 前の15問</button>
-            <span id="page-info" style="font-weight: bold;"></span>
+            <span id="page-info" style="font-weight: bold; font-size: 1.1rem;"></span>
             <button onclick="changePage(1)">次の15問 →</button>
         </div>
         <div id="view-area"></div>
@@ -168,10 +170,10 @@
 </div>
 
 <script>
-    // ダミーデータ（テスト用）
-    const allQuestions = Array.from({length: 35}, (_, i) => ({
+    // ダミーデータ
+    const allQuestions = Array.from({length: 45}, (_, i) => ({
         id: i + 1,
-        q: `第${i+1}問目の漢字問題文。ここに（　　）が入ります。`,
+        q: `第${i+1}問目の漢字問題文。ここに（　　）が入ります。しっかり練習しましょう。`,
         a: `正解${i+1}`
     }));
 
