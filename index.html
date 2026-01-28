@@ -2,210 +2,146 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>漢字プリント再現システム</title>
+    <title>漢字プリント・テーブル版</title>
     <style>
         :root {
-            --paper-bg: #ffffff;
             --ink-black: #000000;
-            --perfect-green: #27ae60;
-            --main-font: "UD Digital Kyokasho N-R", "UD デジタル 教科書体 N-R", "BIZ UDPGothic", sans-serif;
+            --main-font: "UD Digital Kyokasho N-R", "UD デジタル 教科書体 N-R", sans-serif;
         }
 
-        * { box-sizing: border-box; }
-        body { margin: 0; padding: 0; background-color: #e0d8c3; font-family: var(--main-font); overflow: hidden; }
+        body { margin: 0; padding: 20px; background-color: #e0d8c3; font-family: var(--main-font); }
 
-        /* --- プリント画面 --- */
         #list-view-screen {
             display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: #fff; z-index: 200; overflow-x: auto; overflow-y: hidden;
-            padding: 20px; writing-mode: vertical-rl;
-        }
-        
-        .print-page {
-            display: inline-flex; height: 92vh; background: white;
-            border: 2px solid var(--ink-black); margin-left: 40px; padding: 0;
-            position: relative;
+            background: #fff; z-index: 200; overflow-x: auto; padding: 40px;
+            writing-mode: vertical-rl; /* 全体を縦書きに */
         }
 
-        /* 右端のタイトルエリア */
-        .print-title-area {
-            width: 70px; display: flex; align-items: center; justify-content: center;
-            border-left: 2px solid var(--ink-black); padding: 20px 5px;
-        }
-        .print-title { font-size: 24px; font-weight: bold; letter-spacing: 0.2em; }
+        .print-container { display: flex; height: 90vh; }
 
-        .print-grid { display: flex; height: 100%; }
-
-        /* 問題の各カラム（一本の太い枠のように見せる） */
-        .print-col {
-            width: 60px; border-left: 1px solid var(--ink-black); display: flex; flex-direction: column;
+        /* 15問1セットのテーブル */
+        .kanji-table {
+            border-collapse: collapse;
+            border: 2px solid var(--ink-black);
+            background: white;
+            margin-left: 50px; /* ページ間の余白 */
+            height: 100%;
         }
 
-        /* 1. □ チェックボックスエリア */
-        .checkbox-box {
-            height: 55px; border-bottom: 1px solid var(--ink-black);
-            display: flex; align-items: center; justify-content: center;
-        }
-        .check-square {
-            width: 28px; height: 28px; border: 2px solid var(--ink-black);
-            display: flex; align-items: center; justify-content: center; font-size: 22px; color: var(--perfect-green);
-        }
-
-        /* 2. 問題番号（上） */
-        .num-box-top {
-            height: 35px; border-bottom: 1px solid var(--ink-black);
-            display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: bold;
-        }
-
-        /* 3. 問題エリア（長い） */
-        .q-box {
-            flex-grow: 1; padding: 20px 4px; font-size: 18px; line-height: 1.7;
-            border-bottom: 2px solid var(--ink-black); /* 答えとの境界線を太めに */
-            display: flex; align-items: flex-start;
-        }
-
-        /* 4. 問題番号（下：答え用） */
-        .num-box-bottom {
-            height: 30px; border-bottom: 1px solid var(--ink-black);
-            display: flex; align-items: center; justify-content: center; font-size: 12px; background: #f9f9f9;
-        }
-
-        /* 5. 答えエリア（短い） */
-        .a-box {
-            height: 120px; padding: 10px 4px; font-size: 16px; font-weight: bold;
-            display: flex; align-items: center; justify-content: center; color: #e74c3c;
+        .kanji-table td {
+            border: 1px solid var(--ink-black);
+            width: 65px; /* 列の幅 */
             text-align: center;
+            vertical-align: middle;
+            padding: 5px;
         }
 
-        /* 閉じるボタン */
-        #close-list-btn {
-            position: fixed; top: 15px; right: 15px; writing-mode: horizontal-tb;
-            z-index: 210; background: #ff4757; color: white; padding: 8px 18px;
-            border-radius: 20px; cursor: pointer; border: 2px solid #000; font-weight: bold;
+        /* 1段目：チェックボックス */
+        .row-check { height: 60px; font-size: 24px; color: #27ae60; }
+        .square { width: 30px; height: 30px; border: 2px solid #000; margin: auto; display: flex; align-items: center; justify-content: center; }
+
+        /* 2段目・4段目：番号 */
+        .row-num { height: 40px; font-size: 16px; font-weight: bold; background: #f0f0f0; }
+
+        /* 3段目：問題（メイン） */
+        .row-question { 
+            height: auto; /* 残りの高さを埋める */
+            font-size: 20px; 
+            line-height: 1.8; 
+            text-align: start; 
+            vertical-align: top;
+            padding: 20px 5px;
         }
 
-        /* --- メニュー等 --- */
-        #loading { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 20px; }
-        #selector-screen { display: none; flex-direction: column; align-items: center; width: 100%; padding: 40px; }
-        .sheet-btn { width: 100%; max-width: 400px; padding: 20px; margin-bottom: 10px; font-size: 20px; border: 3px solid #333; border-radius: 15px; cursor: pointer; background: #fff; font-weight: bold; }
-        #resume-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 100; justify-content: center; align-items: center; }
-        .modal-content { background: white; padding: 25px; border-radius: 20px; border: 4px solid #333; width: 300px; text-align: center; }
-        .modal-btn { width: 100%; padding: 12px; margin: 5px 0; border: 2px solid #333; border-radius: 25px; cursor: pointer; font-weight: bold; }
+        /* 5段目：答え */
+        .row-answer { height: 150px; font-size: 18px; font-weight: bold; color: #e74c3c; }
+
+        /* タイトル（表の横に配置） */
+        .sheet-title-vertical {
+            font-size: 28px; font-weight: bold; border-left: 4px double #000;
+            padding: 20px; margin-left: 10px; height: 100%; display: flex; align-items: center;
+        }
+
+        #close-btn {
+            position: fixed; top: 20px; right: 20px; writing-mode: horizontal-tb;
+            padding: 10px 25px; background: #ff4757; color: white; border-radius: 30px; border: none; font-weight: bold; cursor: pointer;
+        }
     </style>
 </head>
 <body>
 
-<div id="loading">読み込み中...</div>
-
 <div id="list-view-screen">
-    <button id="close-list-btn" onclick="closeListView()">× とじる</button>
-    <div id="print-container"></div>
+    <button id="close-btn" onclick="document.getElementById('list-view-screen').style.display='none'">× とじる</button>
+    <div id="print-area" class="print-container"></div>
 </div>
 
-<div id="resume-modal">
-    <div class="modal-content">
-        <h3 id="modal-sheet-name"></h3>
-        <button class="modal-btn" style="background:#f1c40f;" onclick="handleResumeChoice('view')">問題一覧を見る</button>
-        <button class="modal-btn" style="background:#3498db; color:white;" onclick="handleResumeChoice('start')">練習をはじめる</button>
-        <button style="margin-top:10px; background:none; border:none; color:#999; text-decoration:underline; cursor:pointer;" onclick="document.getElementById('resume-modal').style.display='none'">キャンセル</button>
-    </div>
-</div>
-
-<div id="selector-screen">
-    <h2>📖 漢字シートをえらぶ</h2>
-    <div id="sheet-list" style="width:100%; display:flex; flex-direction:column; align-items:center;"></div>
+<div id="menu">
+    <button onclick="showPrintView('サンプルシート')">問題一覧を表示（テスト）</button>
 </div>
 
 <script>
-    const API_URL = "https://script.google.com/macros/s/AKfycbyWHprvWe-NcrfamWL2I6bWSAak6HW-JxyMCY-RZkZDFrhLkbSfLkeVmpKyznlI7g3a/exec";
-    const CACHE_KEY = "kanji_quiz_v33_final_layout";
-    const PROGRESS_KEY = "kanji_quiz_progress";
-    
-    let allData = {};
-    let allProgress = {};
-    let pendingSheet = "";
+    // 仮のデータ構造（実際はAPIから取得）
+    const sampleQuestions = Array.from({length: 35}, (_, i) => ({
+        q: `これは第${i+1}問目の（かんじ）の練習です。`,
+        a: `漢字${i+1}`
+    }));
 
-    async function fetchData() {
-        const saved = localStorage.getItem(PROGRESS_KEY);
-        if (saved) {
-            const parsed = JSON.parse(saved);
-            for (let key in parsed) {
-                allProgress[key] = { perfect: new Set(parsed[key].perfect) };
-            }
-        }
-        try {
-            const res = await fetch(API_URL);
-            allData = await res.json();
-            localStorage.setItem(CACHE_KEY, JSON.stringify(allData));
-            createMenu();
-        } catch(e) { document.getElementById('loading').innerText = "エラー"; }
-    }
+    function showPrintView(sheetName) {
+        const questions = sampleQuestions; // 実際は allData[sheetName]
+        const area = document.getElementById('print-area');
+        area.innerHTML = "";
 
-    function createMenu() {
-        document.getElementById('loading').style.display = 'none';
-        const list = document.getElementById('sheet-list');
-        list.innerHTML = "";
-        Object.keys(allData).forEach(key => {
-            const btn = document.createElement('button');
-            btn.className = "sheet-btn";
-            btn.innerText = key;
-            btn.onclick = () => { pendingSheet = key; document.getElementById('modal-sheet-name').innerText = key; document.getElementById('resume-modal').style.display='flex'; };
-            list.appendChild(btn);
-        });
-        document.getElementById('selector-screen').style.display = 'flex';
-    }
-
-    function handleResumeChoice(choice) {
-        document.getElementById('resume-modal').style.display = 'none';
-        if (choice === 'view') showListView(pendingSheet);
-        else alert("練習モードへ（ここは以前の学習コードと合体させてください）");
-    }
-
-    function showListView(sheetName) {
-        const questions = allData[sheetName];
-        const prog = allProgress[sheetName] || { perfect: new Set() };
-        const container = document.getElementById('print-container');
-        container.innerHTML = "";
-        
+        // 15問ずつテーブルを作成
         for (let i = 0; i < questions.length; i += 15) {
             const chunk = questions.slice(i, i + 15);
-            const page = document.createElement('div');
-            page.className = "print-page";
             
-            const titleArea = document.createElement('div');
-            titleArea.className = "print-title-area";
-            titleArea.innerHTML = `<div class="print-title">${sheetName}</div>`;
-            page.appendChild(titleArea);
+            // シート名
+            const title = document.createElement('div');
+            title.className = "sheet-title-vertical";
+            title.innerText = sheetName;
+            area.appendChild(title);
 
-            const grid = document.createElement('div');
-            grid.className = "print-grid";
+            // テーブル作成
+            const table = document.createElement('table');
+            table.className = "kanji-table";
 
+            // 5行の構成を作成
+            const rows = {
+                check: document.createElement('tr'),
+                numTop: document.createElement('tr'),
+                q: document.createElement('tr'),
+                numBottom: document.createElement('tr'),
+                a: document.createElement('tr')
+            };
+            
+            rows.check.className = "row-check";
+            rows.numTop.className = "row-num";
+            rows.q.className = "row-question";
+            rows.numBottom.className = "row-num";
+            rows.a.className = "row-answer";
+
+            // 各問題のデータを列(td)として追加
             chunk.forEach((q, idx) => {
-                const originalIndex = i + idx;
-                const col = document.createElement('div');
-                col.className = "print-col";
+                const qIdx = i + idx + 1;
                 
-                const isPerfect = prog.perfect.has(originalIndex);
-                
-                col.innerHTML = `
-                    <div class="checkbox-box"><div class="check-square">${isPerfect ? '✔' : ''}</div></div>
-                    <div class="num-box-top">${originalIndex + 1}</div>
-                    <div class="q-box">${q.q.replace(/[（\(].*?[）\)]/g, '（　　　）')}</div>
-                    <div class="num-box-bottom">${originalIndex + 1}</div>
-                    <div class="a-box">${q.a}</div>
-                `;
-                grid.appendChild(col);
+                // 1. チェック
+                rows.check.innerHTML += `<td><div class="square"></div></td>`;
+                // 2. 番号（上）
+                rows.numTop.innerHTML += `<td>${qIdx}</td>`;
+                // 3. 問題
+                rows.q.innerHTML += `<td>${q.q.replace(/[（\(].*?[）\)]/g, '（　　）')}</td>`;
+                // 4. 番号（下）
+                rows.numBottom.innerHTML += `<td>${qIdx}</td>`;
+                // 5. 答え
+                rows.a.innerHTML += `<td>${q.a}</td>`;
             });
-            
-            page.appendChild(grid);
-            container.appendChild(page);
+
+            Object.values(rows).forEach(row => table.appendChild(row));
+            area.appendChild(table);
         }
+
         document.getElementById('list-view-screen').style.display = "block";
     }
-
-    function closeListView() { document.getElementById('list-view-screen').style.display = "none"; }
-    fetchData();
 </script>
 </body>
 </html>
