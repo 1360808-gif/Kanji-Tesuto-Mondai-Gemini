@@ -5,133 +5,133 @@
     <style>
         :root {
             --ink-black: #000000;
-            /* 学習用として最も読みやすい教科書体フォントを指定 */
-            --main-font: "UD Digital Kyokasho N-R", "UD デジタル 教科書体 N-R", "BIZ UDPGothic", sans-serif;
+            --main-font: "UD Digital Kyokasho N-R", "UD デジタル 教科書体 N-R", sans-serif;
         }
 
         body {
             margin: 0;
-            padding: 30px;
-            background-color: #f5f5f5;
-            font-family: var(--main-font);
+            height: 100vh;
             display: flex;
-            /* 右から左へ（1番から順に）並べる設定 */
-            flex-direction: row-reverse;
             justify-content: center;
-            align-items: flex-start;
+            align-items: center;
+            background-color: #f0f0f0;
+            font-family: var(--main-font);
+            overflow: hidden; /* はみ出し防止 */
         }
 
-        /* 各「縦列」のユニット */
+        /* プリント全体のコンテナ：画面の高さに合わせて伸縮 */
+        .print-canvas {
+            display: flex;
+            flex-direction: row-reverse;
+            background: white;
+            padding: 2vh; /* 画面サイズに連動した余白 */
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            border: 1px solid #ccc;
+            height: 90vh; /* 画面の90%の高さに固定 */
+            box-sizing: border-box;
+        }
+
+        /* タイトルエリア */
+        .print-title {
+            writing-mode: vertical-rl;
+            font-size: min(2.5vh, 24px); /* 画面に合わせてフォントサイズも変化 */
+            font-weight: bold;
+            border-left: 3px double #000;
+            padding: 0 1vh;
+            margin-left: 1.5vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-top: 1px solid #000;
+            border-right: 1px solid #000;
+            border-bottom: 1px solid #000;
+        }
+
+        .kanji-table-container {
+            display: flex;
+            flex-direction: row-reverse;
+            height: 100%;
+        }
+
         .column-unit {
             border-collapse: collapse;
-            margin: 0;
-            padding: 0;
+            height: 100%;
         }
 
         .column-unit td {
             border: 1px solid var(--ink-black);
-            width: 70px; /* 漢字が書きやすいよう少し幅を広げました */
-            background: white;
+            /* 幅を画面の横幅に合わせて可変（15列＋タイトル分） */
+            width: 5.5vw; 
+            max-width: 65px;
             text-align: center;
             vertical-align: middle;
+            background: white;
             padding: 0;
-            box-sizing: border-box;
         }
 
-        /* --- 各行の高さ設定（2枚目の画像に準拠） --- */
-        
-        .h-check { 
-            height: 65px; 
-        } /* 1段目：チェック用□ */
-
-        .h-num-t { 
-            height: 45px; 
-            font-weight: bold; 
-            background: #fafafa;
-            font-size: 18px;
-        } /* 2段目：番号（上） */
-
-        .h-ques { 
-            height: 520px; /* 問題文をしっかり読ませるためのメインエリア */
-            writing-mode: vertical-rl; /* 文字を縦書きに */
-            text-orientation: upright;
-            padding: 20px 5px;
-            font-size: 20px;
-            line-height: 1.6;
-            text-align: start;
-        } /* 3段目：問題文 */
-
-        .h-num-b { 
-            height: 40px; 
-            background: #fafafa; 
-            font-size: 14px;
-            color: #666;
-        } /* 4段目：番号（下） */
-
-        .h-ans { 
-            height: 160px; /* 答えの漢字を大きく表示 */
-            color: #e74c3c; /* 採点風の赤色 */
-            font-weight: bold;
-            font-size: 22px;
+        /* --- 高さを比率（%）で配分 --- */
+        .h-check { height: 8%; } 
+        .h-num-t { height: 5%; font-size: 1.5vh; background: #f9f9f9; }
+        .h-ques  { 
+            height: 62%; 
             writing-mode: vertical-rl;
             text-orientation: upright;
-        } /* 5段目：答え */
+            font-size: min(2vh, 18px);
+            line-height: 1.5;
+            padding: 1vh 0.2vw;
+            text-align: start;
+        }
+        .h-num-b { height: 5%; font-size: 1.2vh; background: #f9f9f9; }
+        .h-ans   { 
+            height: 20%; 
+            font-size: min(2.2vh, 20px); 
+            color: #e74c3c;
+            writing-mode: vertical-rl;
+            text-orientation: upright;
+        }
 
         .square {
-            width: 32px;
-            height: 32px;
-            border: 2px solid #000;
+            width: 2.5vh;
+            height: 2.5vh;
+            border: 1px solid #000;
             margin: auto;
         }
 
-        /* 右端のタイトルエリア */
-        .print-title {
-            writing-mode: vertical-rl;
-            font-size: 28px;
-            font-weight: bold;
-            margin-left: 30px;
-            border-left: 5px double #000;
-            padding: 15px 10px;
-            height: 830px; /* テーブル全体の高さ(合計値)と合わせる */
-            display: flex;
-            align-items: center;
-            background: white;
-            border-top: 2px solid #000;
-            border-right: 2px solid #000;
-            border-bottom: 2px solid #000;
+        #close-btn {
+            position: fixed; top: 10px; left: 10px;
+            padding: 8px 16px; background: #ff4757; color: white;
+            border: none; border-radius: 20px; cursor: pointer; font-weight: bold;
+            z-index: 100;
         }
     </style>
 </head>
 <body>
 
-    <div id="print-area" style="display: flex; flex-direction: row-reverse; background: white; padding: 10px; border: 2px solid #000;">
+    <button id="close-btn" onclick="window.history.back()">× とじる</button>
+
+    <div class="print-canvas">
         <div class="print-title">６年　やまなし</div>
         
-        </div>
+        <div id="table-area" class="kanji-table-container">
+            </div>
+    </div>
 
 <script>
-    const area = document.getElementById('print-area');
+    const area = document.getElementById('table-area');
     
-    // サンプルデータ（ここに実際の問題を流し込めます）
-    const sampleData = Array.from({length: 15}, (_, i) => ({
-        id: i + 1,
-        q: "かぎりある資源を大切にする。（　　）を読む問題です。",
-        a: "しげん"
-    }));
-
-    // 15列を生成
-    sampleData.forEach(item => {
+    // サンプル表示用
+    for (let i = 1; i <= 15; i++) {
         const table = document.createElement('table');
         table.className = 'column-unit';
         table.innerHTML = `
             <tr><td class="h-check"><div class="square"></div></td></tr>
-            <tr><td class="h-num-t">${item.id}</td></tr>
-            <tr><td class="h-ques">${item.q.replace(/[（\(].*?[）\)]/g, '（　　　）')}</td></tr>
-            <tr><td class="h-num-b">${item.id}</td></tr>
-            <tr><td class="h-ans">${item.a}</td></tr>
+            <tr><td class="h-num-t">${i}</td></tr>
+            <tr><td class="h-ques">ここに問題文。画面を小さくしても自動で収まります。（　）</td></tr>
+            <tr><td class="h-num-b">${i}</td></tr>
+            <tr><td class="h-ans">正解例</td></tr>
         `;
         area.appendChild(table);
-    });
+    }
 </script>
 
 </body>
