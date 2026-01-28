@@ -10,30 +10,27 @@
             --main-font: "UD Digital Kyokasho N-R", "UD デジタル 教科書体 N-R", sans-serif;
         }
 
-        /* --- 共通設定 --- */
         body { 
             margin: 0; 
             font-family: var(--main-font); 
             background: #e0d8c3; 
-            overflow-x: hidden;
+            overflow: hidden; 
         }
 
-        /* --- 印刷用設定 (@media print) --- */
         @media print {
             @page { size: A4 landscape; margin: 5mm; }
-            body { background: white !important; overflow: visible; }
-            .view-header, .menu-screen { display: none !important; }
-            .screen-overlay { position: static !important; background: white !important; display: block !important; }
-            #view-mode-container { height: 190mm !important; padding: 0 !important; margin: 0 !important; }
+            body { background: white !important; }
+            .view-header { display: none !important; }
+            .screen-overlay { position: static !important; background: white !important; }
+            #view-mode-container { height: 190mm !important; padding: 0 !important; }
             .view-canvas { 
                 width: 285mm !important; height: 185mm !important; 
                 border: 2px solid #000 !important; box-shadow: none !important; 
-                padding: 10mm !important; /* 印刷時のセーフティマージン */
+                padding: 10mm !important; 
             }
-            .ans-text { color: black !important; } /* 印刷時は黒で出力 */
+            .ans-text { color: black !important; }
         }
 
-        /* --- 閲覧モード設定 --- */
         .screen-overlay {
             display: block; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: #f0f0f0; z-index: 100;
@@ -57,7 +54,6 @@
             box-shadow: 0 4px 15px rgba(0,0,0,0.1);
         }
 
-        /* --- 表の構造（閲覧・印刷共通） --- */
         .kanji-table-grid {
             display: flex; flex-direction: row-reverse;
             height: 100%; flex-grow: 1; border: 1px solid #000; 
@@ -67,16 +63,15 @@
         .column-unit { border-collapse: collapse; height: 100%; flex-grow: 1; table-layout: fixed; background: white; }
         .column-unit td { border: 1px solid #000; text-align: center; vertical-align: middle; padding: 0; box-sizing: border-box; }
         
-        /* 比率の最終調整（指示：問題を小さく、答えを大きく） */
         .h-check { height: 10%; }
         .h-num   { height: 6%; font-size: 1.4vh; }
         .h-ques  { 
-            height: 53%; /* 完璧なサイズ感 */
+            height: 53%; 
             writing-mode: vertical-rl; text-orientation: upright; text-align: start;
             padding: 8px 4px; font-size: min(2vh, 18px); line-height: 1.5;
         }
         .h-num2  { height: 6%; font-size: 1.4vh; }
-        .h-ans   { height: 25%; position: relative; } /* 完璧なサイズ感 */
+        .h-ans   { height: 25%; position: relative; }
 
         .ans-wrapper {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
@@ -94,6 +89,7 @@
 
         .square { width: 20px; height: 20px; border: 1px solid #000; margin: auto; }
         .btn-action { padding: 6px 16px; border-radius: 20px; border: 1px solid #333; cursor: pointer; font-weight: bold; background: white; }
+        .btn-action:disabled { opacity: 0.3; cursor: not-allowed; }
     </style>
 </head>
 <body>
@@ -101,11 +97,11 @@
 <div class="screen-overlay">
     <div class="view-header">
         <button class="btn-action" style="background:#ff4757; color:white; border:none;">× 閉じる</button>
-        <div id="page-info" style="font-weight:bold;">1 〜 15 問目</div>
+        <div id="page-info" style="font-weight:bold;">読み込み中...</div>
         <div>
             <button class="btn-action" onclick="window.print()" style="background:#2ecc71; color:white; border:none; margin-right:10px;">PDF/印刷</button>
-            <button class="btn-action">← 前へ</button>
-            <button class="btn-action">次へ →</button>
+            <button id="prevBtn" class="btn-action" onclick="changePage(-1)">← 前へ</button>
+            <button id="nextBtn" class="btn-action" onclick="changePage(1)">次へ →</button>
         </div>
     </div>
 
@@ -118,24 +114,54 @@
 </div>
 
 <script>
-    const grid = document.getElementById('grid-container');
-    // ダミーデータで15列作成
-    for (let i = 1; i <= 15; i++) {
-        const table = document.createElement('table');
-        table.className = "column-unit";
-        table.innerHTML = `
-            <tr><td class="h-check"><div class="square"></div></td></tr>
-            <tr><td class="h-num">${i}</td></tr>
-            <tr><td class="h-ques">第${i}問目の漢字問題文。ここに（　　）が入ります。</td></tr>
-            <tr><td class="h-num2">${i}</td></tr>
-            <td class="h-ans">
-                <div class="ans-wrapper">
-                    <span class="ans-text">正解${i}</span>
-                </div>
-            </td>
-        `;
-        grid.appendChild(table);
+    // 60問のダミーデータを生成
+    const allQuestions = Array.from({length: 60}, (_, i) => ({
+        id: i + 1,
+        q: `第${i+1}問目の漢字問題。ここに（　　）が入ります。しっかり練習しましょう。`,
+        a: `正解${i+1}`
+    }));
+
+    let currentPage = 0;
+    const itemsPerPage = 15;
+
+    function renderPage() {
+        const grid = document.getElementById('grid-container');
+        grid.innerHTML = ''; // 一旦クリア
+
+        const start = currentPage * itemsPerPage;
+        const end = start + itemsPerPage;
+        const pageData = allQuestions.slice(start, end);
+
+        pageData.forEach(item => {
+            const table = document.createElement('table');
+            table.className = "column-unit";
+            table.innerHTML = `
+                <tr><td class="h-check"><div class="square"></div></td></tr>
+                <tr><td class="h-num">${item.id}</td></tr>
+                <tr><td class="h-ques">${item.q}</td></tr>
+                <tr><td class="h-num2">${item.id}</td></tr>
+                <td class="h-ans">
+                    <div class="ans-wrapper">
+                        <span class="ans-text">${item.a}</span>
+                    </div>
+                </td>
+            `;
+            grid.appendChild(table);
+        });
+
+        // ヘッダー情報とボタンの状態更新
+        document.getElementById('page-info').innerText = `${start + 1} 〜 ${Math.min(end, allQuestions.length)} 問目 / 全${allQuestions.length}問`;
+        document.getElementById('prevBtn').disabled = currentPage === 0;
+        document.getElementById('nextBtn').disabled = end >= allQuestions.length;
     }
+
+    function changePage(step) {
+        currentPage += step;
+        renderPage();
+    }
+
+    // 初回実行
+    renderPage();
 </script>
 </body>
 </html>
