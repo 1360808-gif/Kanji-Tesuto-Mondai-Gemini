@@ -3,125 +3,108 @@
 <head>
     <meta charset="UTF-8">
     <style>
-        :root {
-            --ink-black: #000000;
-            --main-font: "UD Digital Kyokasho N-R", "UD デジタル 教科書体 N-R", sans-serif;
+        /* 1. 画面全体を「右から左へ流れる縦書き」に設定 */
+        html, body {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            background-color: #f0f0f0;
+            font-family: "UD Digital Kyokasho N-R", "UD デジタル 教科書体 N-R", sans-serif;
+            writing-mode: vertical-rl; /* これで右から左への縦書きになる */
         }
 
-        body { margin: 0; padding: 0; background-color: #e0d8c3; font-family: var(--main-font); }
-
-        /* プリント表示画面 */
-        #list-view-screen {
-            display: block; /* テスト用に表示状態 */
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: #fff; z-index: 200; overflow-x: auto; padding: 40px;
-            writing-mode: vertical-rl; /* 縦書き：右から左へ */
+        /* 2. プリントの台紙 */
+        #print-page {
+            display: flex;
+            background-color: white;
+            padding: 40px;
+            height: 100vh;
+            box-sizing: border-box;
+            border-left: 1px solid #ccc;
         }
 
-        .print-container { display: flex; height: 95vh; align-items: flex-start; }
+        /* 3. タイトル（右端） */
+        .sheet-title {
+            font-size: 28px;
+            font-weight: bold;
+            border-left: 4px double #000; /* 縦書きなので「左」が下の線になります */
+            padding: 10px 0 10px 20px;
+            margin-left: 20px;
+            display: flex;
+            align-items: center;
+        }
 
-        /* 15列 × 5行 のメインテーブル */
+        /* 4. メインの表（15列 × 5行） */
         .kanji-table {
             border-collapse: collapse;
-            border: 2px solid var(--ink-black);
-            background: white;
-            height: 850px; /* プリントの縦の長さを固定 */
+            border: 2px solid #000;
+            /* 縦書きモードでは、heightが横幅、widthが縦の長さに相当することがあります */
+            /* ここでは直感的なサイズ固定を行います */
         }
 
         .kanji-table td {
-            border: 1px solid var(--ink-black);
-            width: 60px; /* 1列の幅 */
+            border: 1px solid #000;
+            writing-mode: vertical-rl; /* セルの中も縦書き */
             text-align: center;
             vertical-align: middle;
-            padding: 8px 4px;
+            width: 60px; /* 列の幅 */
         }
 
-        /* 行ごとの高さ設定 */
-        .row-check  { height: 60px; }  /* 1行目：□ */
-        .row-num    { height: 40px; font-weight: bold; background: #f8f8f8; } /* 2・4行目：番号 */
-        .row-question { height: 500px; text-align: start; vertical-align: top; font-size: 1.2rem; line-height: 1.8; } /* 3行目：問題 */
-        .row-answer { height: 150px; font-weight: bold; color: #e74c3c; font-size: 1.1rem; } /* 5行目：答え */
+        /* 行の高さ（縦書きモードでの高さ） */
+        .row-check { height: 60px; }
+        .row-num   { height: 40px; background: #eee; font-weight: bold; }
+        .row-ques  { height: 500px; text-align: start; padding-top: 10px; font-size: 1.2em; }
+        .row-ans   { height: 150px; color: red; font-weight: bold; }
 
-        /* チェックボックスの見た目 */
         .square {
-            width: 30px; height: 30px; border: 2px solid var(--ink-black);
-            margin: auto; display: flex; align-items: center; justify-content: center;
-            font-size: 20px; color: #27ae60;
+            width: 30px;
+            height: 30px;
+            border: 2px solid #000;
+            margin: auto;
         }
 
-        /* タイトル */
-        .print-title {
-            font-size: 24px; font-weight: bold; margin-left: 20px;
-            border-left: 3px double #000; padding: 10px; height: 100%;
-            display: flex; align-items: center;
-        }
-
+        /* 5. 閉じるボタン（これだけは横書きに戻す） */
         #close-btn {
-            position: fixed; top: 20px; right: 20px; writing-mode: horizontal-tb;
-            padding: 10px 20px; background: #ff4757; color: white; border: none;
-            border-radius: 8px; font-weight: bold; cursor: pointer;
+            writing-mode: horizontal-tb;
+            position: fixed;
+            top: 20px;
+            left: 20px; /* 縦書きなので左側に配置 */
+            padding: 10px 20px;
+            background: #ff4757;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            z-index: 100;
         }
     </style>
 </head>
 <body>
 
-<div id="list-view-screen">
-    <button id="close-btn" onclick="this.parentElement.style.display='none'">× とじる</button>
-    
-    <div class="print-container" id="print-area">
-        </div>
+<button id="close-btn">× 閉じる</button>
+
+<div id="print-page">
+    <div class="sheet-title">６年　やまなし</div>
+
+    <table class="kanji-table">
+        <tr class="row-check" id="r1"></tr>
+        <tr class="row-num" id="r2"></tr>
+        <tr class="row-ques" id="r3"></tr>
+        <tr class="row-num" id="r4"></tr>
+        <tr class="row-ans" id="r5"></tr>
+    </table>
 </div>
 
 <script>
-    // サンプルデータ
-    const questions = Array.from({length: 15}, (_, i) => ({
-        num: i + 1,
-        q: `これは${i+1}問目の問題文です。ここに（かんじ）が入ります。`,
-        a: `漢字${i+1}`,
-        isPerfect: i % 3 === 0 // 3問に1問チェックが入るサンプル
-    }));
-
-    function generateTable(data, titleText) {
-        const area = document.getElementById('print-area');
-        
-        // タイトル追加
-        const titleDiv = document.createElement('div');
-        titleDiv.className = 'print-title';
-        titleDiv.innerText = titleText;
-        area.appendChild(titleDiv);
-
-        // テーブル作成
-        const table = document.createElement('table');
-        table.className = 'kanji-table';
-
-        // 5つの行（tr）をあらかじめ作成
-        const r1 = document.createElement('tr'); r1.className = 'row-check';
-        const r2 = document.createElement('tr'); r2.className = 'row-num';
-        const r3 = document.createElement('tr'); r3.className = 'row-question';
-        const r4 = document.createElement('tr'); r4.className = 'row-num';
-        const r5 = document.createElement('tr'); r5.className = 'row-answer';
-
-        // 15列（td）分ループして各行にセルを追加
-        data.forEach(item => {
-            r1.innerHTML += `<td><div class="square">${item.isPerfect ? '✔' : ''}</div></td>`;
-            r2.innerHTML += `<td>${item.num}</td>`;
-            r3.innerHTML += `<td>${item.q.replace(/[（\(].*?[）\)]/g, '（　　）')}</td>`;
-            r4.innerHTML += `<td>${item.num}</td>`;
-            r5.innerHTML += `<td>${item.a}</td>`;
-        });
-
-        // テーブルに行を合体
-        table.appendChild(r1);
-        table.appendChild(r2);
-        table.appendChild(r3);
-        table.appendChild(r4);
-        table.appendChild(r5);
-        
-        area.appendChild(table);
+    // 15列分を生成
+    for (let i = 1; i <= 15; i++) {
+        document.getElementById('r1').innerHTML += `<td><div class="square"></div></td>`;
+        document.getElementById('r2').innerHTML += `<td>${i}</td>`;
+        document.getElementById('r3').innerHTML += `<td>これは第${i}問目の問題文です。（　　）を埋めましょう。</td>`;
+        document.getElementById('r4').innerHTML += `<td>${i}</td>`;
+        document.getElementById('r5').innerHTML += `<td>答え${i}</td>`;
     }
-
-    // 実行
-    generateTable(questions, "６年　やまなし");
 </script>
+
 </body>
 </html>
