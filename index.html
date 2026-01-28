@@ -29,61 +29,74 @@
             cursor: pointer; background: white; transition: 0.2s;
         }
         .menu-btn:hover { background: #f0f0f0; transform: translateY(-2px); }
-        .btn-print { border-color: #27ae60; color: #27ae60; }
 
         /* --- 画面オーバーレイ --- */
         .screen-overlay {
             display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: #fff; z-index: 100; overflow: auto;
-        }
-        .close-btn {
-            position: fixed; top: 10px; left: 10px; z-index: 200;
-            padding: 10px 20px; background: #ff4757; color: white;
-            border: none; border-radius: 20px; cursor: pointer; font-weight: bold;
+            background: #f0f0f0; z-index: 100;
         }
 
-        /* --- 閲覧モード (Responsive Wide) --- */
-        #view-mode-container {
-            height: 100vh;
+        /* --- 閲覧モード：上部ナビゲーションの統合 --- */
+        .view-header {
+            width: 100%;
+            height: 60px; /* 高さを固定して圧迫を防ぐ */
             display: flex;
-            flex-direction: column;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 20px;
+            box-sizing: border-box;
+            background: #fff;
+            border-bottom: 1px solid #ccc;
+        }
+
+        .header-left { display: flex; align-items: center; gap: 15px; }
+        .header-center { font-weight: bold; font-size: 1.2rem; }
+        .header-right { display: flex; gap: 10px; }
+
+        .btn-action {
+            padding: 8px 16px; border-radius: 20px; border: 1px solid #333;
+            cursor: pointer; background: white; font-weight: bold; font-size: 0.9rem;
+        }
+        .btn-close { background: #ff4757; color: white; border: none; }
+
+        /* --- 閲覧モード：メイン領域 --- */
+        #view-mode-container {
+            height: calc(100vh - 60px); /* ヘッダー分を引く */
+            display: flex;
             align-items: center;
             justify-content: center;
-            padding: 20px;
+            padding: 15px;
             box-sizing: border-box;
-            background-color: #f0f0f0;
         }
 
         .view-canvas {
             display: flex;
             flex-direction: row-reverse;
-            /* 高さは見切れないよう控えめに、横幅はワイドに */
-            height: 72vh; 
-            width: 92vw; /* 横幅を大幅に拡大 */
-            max-width: 1400px; 
+            height: 100%; /* コンテナいっぱいに使う */
+            width: 95vw;
+            max-width: 1500px;
             background: white;
-            border: 2px solid #000; 
+            border: 2px solid #000;
             box-sizing: border-box;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-            padding: 25px; /* 内側余白を十分に確保 */
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+            padding: 15px;
             overflow: hidden;
         }
 
-        /* 閲覧モード専用のセル高さ配分 */
+        /* セル高さ配分：縦幅を最大限活かす */
         .view-canvas .h-check { height: 10%; }
-        .view-canvas .h-num   { height: 6%; font-size: 1.4vh; }
+        .view-canvas .h-num   { height: 6%; font-size: 1.5vh; }
         .view-canvas .h-ques  { 
-            height: 60%; 
-            font-size: min(2vh, 18px); /* ワイド画面に合わせて少し大きく */
-            padding: 10px 4px;
+            height: 62%; 
+            font-size: min(2.2vh, 20px); 
+            padding: 8px 4px;
             writing-mode: vertical-rl;
             text-orientation: upright;
             text-align: start;
-            line-height: 1.6;
         }
-        .view-canvas .h-ans   { height: 18%; font-size: 2vh; font-weight: bold; color: #e74c3c; writing-mode: vertical-rl; text-orientation: upright;}
+        .view-canvas .h-ans   { height: 16%; font-size: 2.2vh; font-weight: bold; color: #e74c3c; writing-mode: vertical-rl; text-orientation: upright;}
 
-        /* --- 印刷モード (Fixed Scroll) --- */
+        /* --- 印刷モード --- */
         #print-mode-container {
             display: flex; flex-direction: column; align-items: center; padding: 40px 0; gap: 50px;
         }
@@ -91,15 +104,15 @@
             display: flex;
             flex-direction: row-reverse;
             height: 800px;
-            width: 1150px; /* A4横に近い比率 */
+            width: 1150px;
             background: white;
-            border: 2px solid #000; 
+            border: 2px solid #000;
             box-sizing: border-box;
-            padding: 30px; 
+            padding: 30px;
             overflow: hidden;
         }
 
-        /* --- 共通パーツ --- */
+        /* --- 共通テーブルグリッド --- */
         .kanji-table-grid {
             display: flex;
             flex-direction: row-reverse;
@@ -107,33 +120,19 @@
             flex-grow: 1;
             border: 1px solid #000;
         }
-
-        .column-unit { 
-            border-collapse: collapse; 
-            height: 100%; 
-            flex-grow: 1; 
-            table-layout: fixed;
-        }
+        .column-unit { border-collapse: collapse; height: 100%; flex-grow: 1; table-layout: fixed; }
         .column-unit td { border: 1px solid #000; text-align: center; vertical-align: middle; background: white; padding: 0;}
         
         .print-title {
             writing-mode: vertical-rl; font-weight: bold; 
-            border: 1px solid #000;
-            border-left: 4px double #000;
-            padding: 0 1.5vw; 
-            display: flex; align-items: center; font-size: 1.4rem;
-            height: 100%;
-            box-sizing: border-box;
-            margin-left: 20px; 
+            border: 1px solid #000; border-left: 4px double #000;
+            padding: 0 15px; display: flex; align-items: center; font-size: 1.4rem;
+            height: 100%; box-sizing: border-box; margin-left: 15px;
         }
-        .square { width: min(2.5vh, 25px); height: min(2.5vh, 25px); border: 1px solid #000; margin: auto; }
-
-        /* ページナビ */
-        .pager-nav { margin-bottom: 20px; display: flex; gap: 20px; align-items: center; writing-mode: horizontal-tb;}
-        .pager-nav button { padding: 10px 20px; border-radius: 8px; border: 1px solid #333; cursor: pointer; background: white; font-weight: bold;}
+        .square { width: min(2.8vh, 28px); height: min(2.8vh, 28px); border: 1px solid #000; margin: auto; }
 
         @media print {
-            .close-btn, .pager-nav { display: none; }
+            .view-header { display: none; }
             body { background: white; overflow: visible; }
             .screen-overlay { position: static; display: block; overflow: visible; }
             .print-canvas { box-shadow: none; page-break-after: always; border: 2px solid #000 !important; }
@@ -149,28 +148,31 @@
     <button class="menu-btn" onclick="alert('続きから開始します')">つづきから</button>
     <button class="menu-btn" onclick="alert('苦手な漢字を抽出します')">おぼえとちゅうを練習</button>
     <button class="menu-btn" onclick="openViewMode()">もんだいをいちらんでみる</button>
-    <button class="menu-btn btn-print" onclick="openPrintMode()">いんさつよう</button>
+    <button class="menu-btn btn-print" onclick="openPrintMode()" style="border-color: #27ae60; color: #27ae60;">いんさつよう</button>
 </div>
 
 <div id="view-screen" class="screen-overlay">
-    <button class="close-btn" onclick="closeAll()">× もどる</button>
-    <div id="view-mode-container">
-        <div class="pager-nav">
-            <button onclick="changePage(-1)">← 前の15問</button>
-            <span id="page-info" style="font-weight: bold; font-size: 1.1rem;"></span>
-            <button onclick="changePage(1)">次の15問 →</button>
+    <div class="view-header">
+        <div class="header-left">
+            <button class="btn-action btn-close" onclick="closeAll()">× とじる</button>
         </div>
-        <div id="view-area"></div>
+        <div class="header-center" id="page-info">1 〜 15 問目</div>
+        <div class="header-right">
+            <button class="btn-action" onclick="changePage(-1)">← 前の15問</button>
+            <button class="btn-action" onclick="changePage(1)">次の15問 →</button>
+        </div>
+    </div>
+    <div id="view-mode-container">
+        <div id="view-area" style="width: 100%; height: 100%; display: flex; justify-content: center;"></div>
     </div>
 </div>
 
 <div id="print-screen" class="screen-overlay">
-    <button class="close-btn" onclick="closeAll()">× もどる</button>
+    <button class="btn-action btn-close" style="position:fixed; top:10px; left:10px; z-index:1000;" onclick="closeAll()">× とじる</button>
     <div id="print-mode-container"></div>
 </div>
 
 <script>
-    // ダミーデータ
     const allQuestions = Array.from({length: 45}, (_, i) => ({
         id: i + 1,
         q: `第${i+1}問目の漢字問題文。ここに（　　）が入ります。しっかり練習しましょう。`,
