@@ -52,7 +52,7 @@
             box-sizing: border-box;
         }
 
-        /* 外枠：指示通り高さを広げつつ、内側にマージンを確保 */
+        /* 外枠 */
         .view-canvas {
             display: flex; 
             flex-direction: row-reverse;
@@ -67,7 +67,7 @@
             box-shadow: 0 4px 15px rgba(0,0,0,0.1);
         }
 
-        /* 表のグリッド：下部のはみ出しをoverflowで完全にカット */
+        /* 表のグリッド */
         .kanji-table-grid {
             display: flex; 
             flex-direction: row-reverse;
@@ -107,19 +107,26 @@
         }
         .h-num2  { height: 6%; font-size: 1.4vh; }
         
-        /* 正解エリア：Flexboxを使用して真ん中の真ん中に配置 */
+        /* --- 正解エリア：修正版 --- */
         .h-ans { 
             height: 20%; 
-            font-size: 2.2vh; 
-            font-weight: bold; 
             color: #e74c3c;
-            writing-mode: vertical-rl; 
-            text-orientation: upright;
-            /* Flexboxでの中央揃え */
+            padding: 0;
+            /* テーブルセルの標準配置を無効化し、Flexで中央へ */
             display: flex !important;
+            flex-direction: column;
             align-items: center; 
             justify-content: center;
-            width: 100%;
+        }
+
+        /* 内部の文字だけを個別に制御 */
+        .ans-text {
+            writing-mode: vertical-rl; 
+            text-orientation: upright;
+            font-size: 2.2vh; 
+            font-weight: bold;
+            line-height: 1; /* 行間の影響をゼロにする */
+            display: block;
         }
 
         .print-title {
@@ -174,7 +181,6 @@
 </div>
 
 <script>
-    // プレースホルダーとして15列のデータを生成
     const grid = document.getElementById('grid-container');
     for (let i = 1; i <= 15; i++) {
         const table = document.createElement('table');
@@ -182,9 +188,11 @@
         table.innerHTML = `
             <tr><td class="h-check"><div class="square"></div></td></tr>
             <tr><td class="h-num">${i}</td></tr>
-            <tr><td class="h-ques">第${i}問目の漢字問題文。ここに（　　）が入ります。しっかり練習しましょう。</td></tr>
+            <tr><td class="h-ques">第${i}問目の漢字問題文。ここに（　　）が入ります。</td></tr>
             <tr><td class="h-num2">${i}</td></tr>
-            <td class="h-ans">正解${i}</td>
+            <td class="h-ans">
+                <span class="ans-text">正解${i}</span>
+            </td>
         `;
         grid.appendChild(table);
     }
