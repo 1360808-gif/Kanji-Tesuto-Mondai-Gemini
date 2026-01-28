@@ -62,31 +62,34 @@
         }
 
         .column-unit { border-collapse: collapse; height: 100%; flex-grow: 1; table-layout: fixed; background: white; }
-        .column-unit td { border: 1px solid #000; text-align: center; vertical-align: middle; padding: 0; box-sizing: border-box; }
+        .column-unit td { border: 1px solid #000; box-sizing: border-box; }
         
-        .h-check { height: 10%; }
-        .h-num   { height: 6%; font-size: 1.4vh; }
+        .h-check { height: 10%; text-align: center; vertical-align: middle; }
+        .h-num   { height: 6%; text-align: center; vertical-align: middle; font-size: 1.4vh; }
 
-        /* --- 問題文エリア：ここを修正 --- */
+        /* --- 問題文エリア：修正の核 --- */
         .h-ques { 
             height: 53%; 
             writing-mode: vertical-rl; 
             text-orientation: upright; 
-            text-align: start; /* 行内の文字を上（右）に寄せる */
-            padding: 12px 2px; /* 上下の余白を確保 */
-            font-size: min(1.9vh, 17px); /* 2行になっても収まりやすいサイズ */
-            line-height: 1.3;
+            /* Flexを使わず、テキストの中身を「開始位置（上）」に固定 */
+            text-align: start; 
+            vertical-align: top; /* セル内の上端に配置 */
+            padding: 15px 4px 10px 4px; /* 上の余白を少し多めにとる */
+            font-size: min(1.9vh, 17px);
+            line-height: 1.4;
+            letter-spacing: 0.05em;
         }
 
-        .ques-wrapper {
-            display: flex;
-            justify-content: flex-start; /* 縦書き時の開始位置（上）に揃える */
-            height: 100%;
-            width: 100%;
+        .h-num2  { height: 6%; text-align: center; vertical-align: middle; font-size: 1.4vh; }
+        
+        /* 正解エリア */
+        .h-ans { 
+            height: 25%; 
+            position: relative; 
+            text-align: center; 
+            vertical-align: middle;
         }
-
-        .h-num2  { height: 6%; font-size: 1.4vh; }
-        .h-ans   { height: 25%; position: relative; }
 
         .ans-wrapper {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
@@ -129,10 +132,9 @@
 </div>
 
 <script>
-    // 60問のダミーデータ（あえて長文にして2行にする）
     const allQuestions = Array.from({length: 60}, (_, i) => ({
         id: i + 1,
-        q: `第${i+1}問目の漢字。これは非常に長い文章のテストです。２行目も１文字目が揃うか確認。`,
+        q: `第${i+1}問目の漢字。これは非常に長い文章のテストです。２行目も１文字目が揃うか確認するための文章。`,
         a: `正解${i+1}`
     }));
 
@@ -153,9 +155,7 @@
             table.innerHTML = `
                 <tr><td class="h-check"><div class="square"></div></td></tr>
                 <tr><td class="h-num">${item.id}</td></tr>
-                <td class="h-ques">
-                    <div class="ques-wrapper">${item.q}</div>
-                </td>
+                <tr><td class="h-ques">${item.q}</td></tr>
                 <tr><td class="h-num2">${item.id}</td></tr>
                 <td class="h-ans">
                     <div class="ans-wrapper">
