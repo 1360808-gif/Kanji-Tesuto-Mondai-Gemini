@@ -8,168 +8,115 @@
         :root {
             --ink-black: #000000;
             --main-font: "UD Digital Kyokasho N-R", "UD デジタル 教科書体 N-R", sans-serif;
-            --bg-color: #e0d8c3;
         }
 
         body { 
             margin: 0; 
             font-family: var(--main-font); 
-            background: var(--bg-color); 
+            background: #e0d8c3; 
             overflow: hidden; 
         }
 
-        /* --- 画面オーバーレイ --- */
         .screen-overlay {
             display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: #f0f0f0; z-index: 100;
         }
 
-        /* --- 閲覧モード：上部ナビゲーション --- */
+        /* --- ヘッダー：スリム化 --- */
         .view-header {
             width: 100%; height: 50px; 
             display: flex; justify-content: space-between; align-items: center;
             padding: 0 20px; box-sizing: border-box; background: #fff; border-bottom: 1px solid #ccc;
         }
-        .btn-action {
-            padding: 5px 15px; border-radius: 20px; border: 1px solid #333;
-            cursor: pointer; background: white; font-weight: bold; font-size: 0.8rem;
-        }
-        .btn-close { background: #ff4757; color: white; border: none; }
 
-        /* --- 閲覧モード：メイン領域（余白をより強化） --- */
+        /* --- 指示１：メイン領域の高さ最大化 --- */
         #view-mode-container {
-            /* 高さを88%に絞り、下部に確実なマージンを確保 */
-            height: calc((100vh - 50px) * 0.88);
-            margin-top: 15px;
+            height: calc(100vh - 50px);
             display: flex; align-items: center; justify-content: center;
-            padding: 10px; box-sizing: border-box;
+            padding: 10px; /* 画面端との余白 */
+            box-sizing: border-box;
         }
 
+        /* --- 指示２：外枠を広げつつ、中の表と重ならないように調整 --- */
         .view-canvas {
             display: flex; flex-direction: row-reverse;
-            height: 100%; width: 96vw; max-width: 1600px;
-            background: white; border: 2px solid #000;
-            box-sizing: border-box; box-shadow: 0 5px 20px rgba(0,0,0,0.1);
-            /* 下パディングを増やして表の底辺を浮かせる */
-            padding: 15px 15px 25px 15px; 
+            height: 95%; /* 外枠の四角自体を大きく表示 */
+            width: 96vw;
+            background: white; border: 2px solid #000; /* これが一番外側の枠 */
+            box-sizing: border-box;
+            padding: 25px; /* 表が外枠の線に重ならないための「内側の余白」 */
             overflow: hidden;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
         }
 
-        /* --- セル高さ配分の最終微調整 --- */
-        .view-canvas .h-check { height: 10%; }
-        .view-canvas .h-num   { height: 6%; font-size: 1.4vh; }
-        .view-canvas .h-ques  { 
-            height: 52%; /* さらに短縮（54% → 52%） */
-            font-size: min(1.9vh, 18px); 
-            padding: 5px 2px;
-            writing-mode: vertical-rl; text-orientation: upright; text-align: start;
+        /* 表自体の枠組み */
+        .kanji-table-grid {
+            display: flex; flex-direction: row-reverse;
+            height: 100%; flex-grow: 1;
+            border: 1px solid #000; /* 表の境界線 */
         }
-        .view-canvas .h-num2  { height: 6%; font-size: 1.4vh; border-top: 1px solid #000; }
-        .view-canvas .h-ans   { 
-            height: 26%; /* 正解エリアに十分な遊びを持たせる（24% → 26%） */
-            font-size: 1.8vh; font-weight: bold; color: #e74c3c;
+
+        /* セル高さの配分：正解（下部）が詰まらないように調整 */
+        .column-unit { border-collapse: collapse; height: 100%; flex-grow: 1; table-layout: fixed; }
+        .column-unit td { border: 1px solid #000; text-align: center; vertical-align: middle; padding: 0;}
+        
+        .h-check { height: 10%; }
+        .h-num   { height: 6%; font-size: 1.4vh; }
+        .h-ques  { 
+            height: 58%; 
+            writing-mode: vertical-rl; text-orientation: upright; text-align: start;
+            padding: 8px 2px; font-size: min(2.2vh, 19px);
+        }
+        .h-num2  { height: 6%; font-size: 1.4vh; border-top: 1px solid #000; }
+        .h-ans   { 
+            height: 20%; 
+            font-size: 2vh; font-weight: bold; color: #e74c3c;
             writing-mode: vertical-rl; text-orientation: upright;
         }
 
-        /* --- 共通パーツ --- */
-        .kanji-table-grid { display: flex; flex-direction: row-reverse; height: 100%; flex-grow: 1; border: 1px solid #000; }
-        .column-unit { border-collapse: collapse; height: 100%; flex-grow: 1; table-layout: fixed; }
-        .column-unit td { border: 1px solid #000; text-align: center; vertical-align: middle; background: white; padding: 0;}
         .print-title {
             writing-mode: vertical-rl; font-weight: bold; border: 1px solid #000; border-left: 4px double #000;
             padding: 0 15px; display: flex; align-items: center; font-size: 1.3rem;
-            height: 100%; box-sizing: border-box; margin-left: 12px;
+            height: 100%; margin-left: 20px;
         }
-        .square { width: min(2.1vh, 21px); height: min(2.1vh, 21px); border: 1px solid #000; margin: auto; }
+        .square { width: 22px; height: 22px; border: 1px solid #000; margin: auto; }
+
+        .btn-action { padding: 6px 16px; border-radius: 20px; border: 1px solid #333; cursor: pointer; font-weight: bold; }
     </style>
 </head>
 <body>
 
-<div id="menu-screen" style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; gap: 15px;">
-    <h1>漢字学習システム</h1>
-    <button class="menu-btn" onclick="openViewMode()" style="padding: 15px 30px; font-weight: bold; cursor: pointer; border-radius: 12px; border: 2px solid #333;">閲覧モードを開始</button>
-</div>
-
-<div id="view-screen" class="screen-overlay">
+<div id="view-screen" class="screen-overlay" style="display: block;">
     <div class="view-header">
-        <div class="header-left"><button class="btn-action btn-close" onclick="closeAll()">× とじる</button></div>
-        <div class="header-center" id="page-info">1 〜 15 問目</div>
-        <div class="header-right">
-            <button class="btn-action" onclick="changePage(-1)">← 前</button>
-            <button class="btn-action" onclick="changePage(1)">次 →</button>
+        <button class="btn-action" style="background:#ff4757; color:white; border:none;">× とじる</button>
+        <div id="page-info" style="font-weight:bold;">1 〜 15 問目</div>
+        <div>
+            <button class="btn-action">← 前</button>
+            <button class="btn-action">次 →</button>
         </div>
     </div>
     <div id="view-mode-container">
-        <div id="view-area" style="width: 100%; height: 100%; display: flex; justify-content: center;"></div>
+        <div class="view-canvas" id="view-area">
+            <div class="print-title">６年 やまなし</div>
+            <div class="kanji-table-grid" id="grid-container"></div>
+        </div>
     </div>
 </div>
 
 <script>
-    const allQuestions = Array.from({length: 45}, (_, i) => ({
-        id: i + 1,
-        q: `第${i+1}問目の漢字問題文。ここに（　　）が入ります。しっかり練習しましょう。`,
-        a: `正解${i+1}`
-    }));
-
-    let currentPage = 0;
-
-    function closeAll() {
-        document.getElementById('view-screen').style.display = 'none';
-        document.body.style.overflow = 'hidden';
-    }
-
-    function openViewMode() {
-        currentPage = 0;
-        document.getElementById('view-screen').style.display = 'block';
-        renderView();
-    }
-
-    function renderView() {
-        const area = document.getElementById('view-area');
-        area.innerHTML = "";
-        const start = currentPage * 15;
-        const chunk = allQuestions.slice(start, start + 15);
-        
-        const canvas = document.createElement('div');
-        canvas.className = "view-canvas";
-        canvas.appendChild(createTitleElement());
-        canvas.appendChild(createTableGrid(chunk));
-        area.appendChild(canvas);
-
-        document.getElementById('page-info').innerText = `${start + 1} 〜 ${Math.min(start + 15, allQuestions.length)} 問目`;
-    }
-
-    function changePage(step) {
-        const next = currentPage + step;
-        if (next >= 0 && next * 15 < allQuestions.length) {
-            currentPage = next;
-            renderView();
-        }
-    }
-
-    function createTitleElement() {
-        const title = document.createElement('div');
-        title.className = "print-title";
-        title.innerText = "６年 やまなし";
-        return title;
-    }
-
-    function createTableGrid(data) {
-        const grid = document.createElement('div');
-        grid.className = "kanji-table-grid";
-        data.forEach(item => {
-            const table = document.createElement('table');
-            table.className = "column-unit";
-            table.innerHTML = `
-                <tr><td class="h-check"><div class="square"></div></td></tr>
-                <tr><td class="h-num">${item.id}</td></tr>
-                <tr><td class="h-ques">${item.q}</td></tr>
-                <tr><td class="h-num2">${item.id}</td></tr>
-                <tr><td class="h-ans">${item.a}</td></tr>
-            `;
-            grid.appendChild(table);
-        });
-        return grid;
+    // 15列分作成
+    const grid = document.getElementById('grid-container');
+    for (let i = 1; i <= 15; i++) {
+        const table = document.createElement('table');
+        table.className = "column-unit";
+        table.innerHTML = `
+            <tr><td class="h-check"><div class="square"></div></td></tr>
+            <tr><td class="h-num">${i}</td></tr>
+            <tr><td class="h-ques">第${i}問目の漢字問題文。ここに（　　）が入ります。</td></tr>
+            <tr><td class="h-num2">${i}</td></tr>
+            <tr><td class="h-ans">正解${i}</td></tr>
+        `;
+        grid.appendChild(table);
     }
 </script>
 </body>
