@@ -67,36 +67,33 @@
         .h-check { height: 10%; text-align: center; vertical-align: middle; }
         .h-num   { height: 6%; text-align: center; vertical-align: middle; font-size: 1.4vh; }
 
-        /* --- 問題文エリア：修正の核 --- */
+        /* --- 問題文エリア：横中央・縦上揃えの決定版 --- */
         .h-ques { 
             height: 53%; 
+            vertical-align: top; /* 縦は上 */
+            text-align: center;  /* 横は中央 */
+            padding: 15px 0 10px 0; 
+        }
+
+        .ques-wrapper {
+            display: inline-block; /* 内容（文字数）に合わせて幅を自動決定 */
             writing-mode: vertical-rl; 
             text-orientation: upright; 
-            /* Flexを使わず、テキストの中身を「開始位置（上）」に固定 */
-            text-align: start; 
-            vertical-align: top; /* セル内の上端に配置 */
-            padding: 15px 4px 10px 4px; /* 上の余白を少し多めにとる */
+            text-align: start;    /* 文章の書き出しを上に揃える */
             font-size: min(1.9vh, 17px);
             line-height: 1.4;
             letter-spacing: 0.05em;
+            height: 90%; /* セル内での高さ */
         }
 
         .h-num2  { height: 6%; text-align: center; vertical-align: middle; font-size: 1.4vh; }
         
-        /* 正解エリア */
-        .h-ans { 
-            height: 25%; 
-            position: relative; 
-            text-align: center; 
-            vertical-align: middle;
-        }
-
+        .h-ans { height: 25%; position: relative; text-align: center; vertical-align: middle; }
         .ans-wrapper {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             display: flex; align-items: center; justify-content: center;
             writing-mode: vertical-rl; text-orientation: upright;
         }
-
         .ans-text { font-size: 2.3vh; font-weight: bold; color: #e74c3c; line-height: 1; }
 
         .print-title {
@@ -107,7 +104,6 @@
 
         .square { width: 20px; height: 20px; border: 1px solid #000; margin: auto; }
         .btn-action { padding: 6px 16px; border-radius: 20px; border: 1px solid #333; cursor: pointer; font-weight: bold; background: white; }
-        .btn-action:disabled { opacity: 0.3; cursor: not-allowed; }
     </style>
 </head>
 <body>
@@ -155,7 +151,9 @@
             table.innerHTML = `
                 <tr><td class="h-check"><div class="square"></div></td></tr>
                 <tr><td class="h-num">${item.id}</td></tr>
-                <tr><td class="h-ques">${item.q}</td></tr>
+                <td class="h-ques">
+                    <div class="ques-wrapper">${item.q}</div>
+                </td>
                 <tr><td class="h-num2">${item.id}</td></tr>
                 <td class="h-ans">
                     <div class="ans-wrapper">
@@ -171,11 +169,7 @@
         document.getElementById('nextBtn').disabled = end >= allQuestions.length;
     }
 
-    function changePage(step) {
-        currentPage += step;
-        renderPage();
-    }
-
+    function changePage(step) { currentPage += step; renderPage(); }
     renderPage();
 </script>
 </body>
