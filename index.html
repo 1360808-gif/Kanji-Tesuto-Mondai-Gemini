@@ -3,136 +3,143 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>漢字プリント再現版</title>
+    <title>漢字プリント再現システム</title>
     <style>
         :root {
-            --paper-bg: #fffdf5;
-            --ink-black: #333;
+            --paper-bg: #ffffff;
+            --ink-black: #000000;
+            --perfect-green: #27ae60;
             --main-font: "UD Digital Kyokasho N-R", "UD デジタル 教科書体 N-R", "BIZ UDPGothic", sans-serif;
         }
 
         * { box-sizing: border-box; }
         body { margin: 0; padding: 0; background-color: #e0d8c3; font-family: var(--main-font); overflow: hidden; }
 
-        /* --- 一覧画面（テストプリント完全再現） --- */
+        /* --- プリント画面 --- */
         #list-view-screen {
             display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: #fff; z-index: 200; overflow-x: auto; overflow-y: hidden;
-            padding: 30px; writing-mode: vertical-rl; /* 縦書き設定 */
+            padding: 20px; writing-mode: vertical-rl;
         }
         
         .print-page {
-            display: inline-flex; height: 90vh; background: white;
-            border: 2px solid #000; margin-left: 50px; padding: 0;
+            display: inline-flex; height: 92vh; background: white;
+            border: 2px solid var(--ink-black); margin-left: 40px; padding: 0;
             position: relative;
         }
 
-        /* 右端のタイトル（シート名）エリア */
+        /* 右端のタイトルエリア */
         .print-title-area {
-            width: 80px; display: flex; align-items: center; justify-content: center;
-            border-left: 2px solid #000; padding: 20px 10px;
+            width: 70px; display: flex; align-items: center; justify-content: center;
+            border-left: 2px solid var(--ink-black); padding: 20px 5px;
         }
-        .print-title { font-size: 26px; font-weight: bold; letter-spacing: 0.3em; line-height: 1.2; }
+        .print-title { font-size: 24px; font-weight: bold; letter-spacing: 0.2em; }
 
         .print-grid { display: flex; height: 100%; }
 
-        /* 問題の各カラム（縦に一本の線でつながる） */
+        /* 問題の各カラム（一本の太い枠のように見せる） */
         .print-col {
-            width: 65px; border-left: 1px solid #000; display: flex; flex-direction: column;
+            width: 60px; border-left: 1px solid var(--ink-black); display: flex; flex-direction: column;
         }
-        .print-col:last-child { border-right: none; }
 
-        /* 各パーツの高さ指定 */
+        /* 1. □ チェックボックスエリア */
         .checkbox-box {
-            height: 60px; border-bottom: 1px solid #000;
+            height: 55px; border-bottom: 1px solid var(--ink-black);
             display: flex; align-items: center; justify-content: center;
         }
         .check-square {
-            width: 32px; height: 32px; border: 2px solid #000;
-            display: flex; align-items: center; justify-content: center; font-size: 24px; color: #2ecc71;
+            width: 28px; height: 28px; border: 2px solid var(--ink-black);
+            display: flex; align-items: center; justify-content: center; font-size: 22px; color: var(--perfect-green);
         }
-        .num-box {
-            height: 40px; border-bottom: 1px solid #000;
-            display: flex; align-items: center; justify-content: center; font-size: 16px; font-weight: bold;
+
+        /* 2. 問題番号（上） */
+        .num-box-top {
+            height: 35px; border-bottom: 1px solid var(--ink-black);
+            display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: bold;
         }
+
+        /* 3. 問題エリア（長い） */
         .q-box {
-            flex-grow: 1; padding: 25px 5px; font-size: 19px; line-height: 1.8;
-            border-bottom: 1px solid #000; display: flex; align-items: flex-start;
+            flex-grow: 1; padding: 20px 4px; font-size: 18px; line-height: 1.7;
+            border-bottom: 2px solid var(--ink-black); /* 答えとの境界線を太めに */
+            display: flex; align-items: flex-start;
         }
+
+        /* 4. 問題番号（下：答え用） */
+        .num-box-bottom {
+            height: 30px; border-bottom: 1px solid var(--ink-black);
+            display: flex; align-items: center; justify-content: center; font-size: 12px; background: #f9f9f9;
+        }
+
+        /* 5. 答えエリア（短い） */
         .a-box {
-            height: 140px; padding: 10px 5px; font-size: 17px; font-weight: bold;
+            height: 120px; padding: 10px 4px; font-size: 16px; font-weight: bold;
             display: flex; align-items: center; justify-content: center; color: #e74c3c;
             text-align: center;
         }
 
+        /* 閉じるボタン */
         #close-list-btn {
-            position: fixed; top: 20px; right: 20px; writing-mode: horizontal-tb;
-            z-index: 210; background: #ff4757; color: white; padding: 10px 20px;
-            border-radius: 15px; cursor: pointer; border: 2px solid #000; font-weight: bold;
+            position: fixed; top: 15px; right: 15px; writing-mode: horizontal-tb;
+            z-index: 210; background: #ff4757; color: white; padding: 8px 18px;
+            border-radius: 20px; cursor: pointer; border: 2px solid #000; font-weight: bold;
         }
 
-        /* --- セレクター・学習画面用（前回のを維持） --- */
+        /* --- メニュー等 --- */
         #loading { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 20px; }
-        #selector-screen { display: none; flex-direction: column; align-items: center; width: 100%; height: 100vh; padding: 40px; overflow-y: auto; }
-        .sheet-row { display: flex; width: 100%; max-width: 500px; gap: 10px; margin-bottom: 10px; }
-        .sheet-btn { flex-grow: 1; padding: 20px; font-size: 20px; border-radius: 15px; border: 3px solid #333; cursor: pointer; background: white; font-family: inherit; font-weight: bold; }
-        #top-update-btn { position: absolute; top: 10px; left: 10px; background: #9b59b6; color: white; border: 2px solid #333; padding: 8px 12px; border-radius: 10px; cursor: pointer; }
+        #selector-screen { display: none; flex-direction: column; align-items: center; width: 100%; padding: 40px; }
+        .sheet-btn { width: 100%; max-width: 400px; padding: 20px; margin-bottom: 10px; font-size: 20px; border: 3px solid #333; border-radius: 15px; cursor: pointer; background: #fff; font-weight: bold; }
         #resume-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 100; justify-content: center; align-items: center; }
-        .modal-content { background: white; padding: 30px; border-radius: 20px; border: 4px solid #333; width: 320px; text-align: center; }
-        .modal-btn { width: 100%; padding: 15px; margin: 5px 0; border: 2px solid #333; border-radius: 30px; font-size: 16px; font-weight: bold; cursor: pointer; font-family: inherit; }
+        .modal-content { background: white; padding: 25px; border-radius: 20px; border: 4px solid #333; width: 300px; text-align: center; }
+        .modal-btn { width: 100%; padding: 12px; margin: 5px 0; border: 2px solid #333; border-radius: 25px; cursor: pointer; font-weight: bold; }
     </style>
 </head>
 <body>
 
-<div id="loading">✨ 読み込み中... ✨</div>
-<button id="top-update-btn" onclick="fetchData(true)">🔄 こうしん</button>
+<div id="loading">読み込み中...</div>
 
 <div id="list-view-screen">
-    <button id="close-list-btn" onclick="closeListView()">× 閉じる</button>
+    <button id="close-list-btn" onclick="closeListView()">× とじる</button>
     <div id="print-container"></div>
 </div>
 
 <div id="resume-modal">
     <div class="modal-content">
-        <h3 id="modal-sheet-name" style="margin-top:0;"></h3>
-        <button class="modal-btn" style="background:#3498db; color:white;" onclick="handleResumeChoice('resume')">つづきから</button>
+        <h3 id="modal-sheet-name"></h3>
         <button class="modal-btn" style="background:#f1c40f;" onclick="handleResumeChoice('view')">問題一覧を見る</button>
-        <button class="modal-btn" style="background:#fff;" onclick="handleResumeChoice('restart')">はじめから</button>
-        <button style="margin-top:10px; background:none; border:none; color:#999; text-decoration:underline;" onclick="document.getElementById('resume-modal').style.display='none'">キャンセル</button>
+        <button class="modal-btn" style="background:#3498db; color:white;" onclick="handleResumeChoice('start')">練習をはじめる</button>
+        <button style="margin-top:10px; background:none; border:none; color:#999; text-decoration:underline; cursor:pointer;" onclick="document.getElementById('resume-modal').style.display='none'">キャンセル</button>
     </div>
 </div>
 
 <div id="selector-screen">
-    <h2>📖 問題集をえらぶ</h2>
-    <div id="sheet-list"></div>
+    <h2>📖 漢字シートをえらぶ</h2>
+    <div id="sheet-list" style="width:100%; display:flex; flex-direction:column; align-items:center;"></div>
 </div>
 
 <script>
     const API_URL = "https://script.google.com/macros/s/AKfycbyWHprvWe-NcrfamWL2I6bWSAak6HW-JxyMCY-RZkZDFrhLkbSfLkeVmpKyznlI7g3a/exec";
-    const CACHE_KEY = "kanji_quiz_v32_print_fix";
+    const CACHE_KEY = "kanji_quiz_v33_final_layout";
     const PROGRESS_KEY = "kanji_quiz_progress";
     
     let allData = {};
     let allProgress = {};
     let pendingSheet = "";
 
-    async function fetchData(force = false) {
-        document.getElementById('loading').style.display = 'block';
-        const savedProgress = localStorage.getItem(PROGRESS_KEY);
-        if (savedProgress) {
-            const parsed = JSON.parse(savedProgress);
+    async function fetchData() {
+        const saved = localStorage.getItem(PROGRESS_KEY);
+        if (saved) {
+            const parsed = JSON.parse(saved);
             for (let key in parsed) {
-                allProgress[key] = { perfect: new Set(parsed[key].perfect), lastIndex: parsed[key].lastIndex || 0 };
+                allProgress[key] = { perfect: new Set(parsed[key].perfect) };
             }
         }
-        const cached = localStorage.getItem(CACHE_KEY);
-        if (!force && cached) { allData = JSON.parse(cached); createMenu(); return; }
         try {
             const res = await fetch(API_URL);
             allData = await res.json();
             localStorage.setItem(CACHE_KEY, JSON.stringify(allData));
             createMenu();
-        } catch(e) { document.getElementById('loading').innerText = "通信エラー"; }
+        } catch(e) { document.getElementById('loading').innerText = "エラー"; }
     }
 
     function createMenu() {
@@ -140,25 +147,19 @@
         const list = document.getElementById('sheet-list');
         list.innerHTML = "";
         Object.keys(allData).forEach(key => {
-            const row = document.createElement('div'); row.className = "sheet-row";
-            const btn = document.createElement('button'); btn.className = "sheet-btn";
+            const btn = document.createElement('button');
+            btn.className = "sheet-btn";
             btn.innerText = key;
-            btn.onclick = () => selectSheet(key);
-            row.appendChild(btn); list.appendChild(row);
+            btn.onclick = () => { pendingSheet = key; document.getElementById('modal-sheet-name').innerText = key; document.getElementById('resume-modal').style.display='flex'; };
+            list.appendChild(btn);
         });
         document.getElementById('selector-screen').style.display = 'flex';
-    }
-
-    function selectSheet(sheetName) {
-        pendingSheet = sheetName;
-        document.getElementById('modal-sheet-name').innerText = sheetName;
-        document.getElementById('resume-modal').style.display = 'flex';
     }
 
     function handleResumeChoice(choice) {
         document.getElementById('resume-modal').style.display = 'none';
         if (choice === 'view') showListView(pendingSheet);
-        else alert("学習画面（準備中）へ。一覧表示を確認してください。");
+        else alert("練習モードへ（ここは以前の学習コードと合体させてください）");
     }
 
     function showListView(sheetName) {
@@ -167,13 +168,11 @@
         const container = document.getElementById('print-container');
         container.innerHTML = "";
         
-        // 15問ずつページを作成
         for (let i = 0; i < questions.length; i += 15) {
             const chunk = questions.slice(i, i + 15);
             const page = document.createElement('div');
             page.className = "print-page";
             
-            // 右端タイトル（見本通り）
             const titleArea = document.createElement('div');
             titleArea.className = "print-title-area";
             titleArea.innerHTML = `<div class="print-title">${sheetName}</div>`;
@@ -187,48 +186,25 @@
                 const col = document.createElement('div');
                 col.className = "print-col";
                 
-                // 1. □ チェックボックス
                 const isPerfect = prog.perfect.has(originalIndex);
-                const cbBox = document.createElement('div');
-                cbBox.className = "checkbox-box";
-                cbBox.innerHTML = `<div class="check-square">${isPerfect ? '✔' : ''}</div>`;
                 
-                // 2. 問題番号
-                const nBox = document.createElement('div');
-                nBox.className = "num-box";
-                nBox.innerText = originalIndex + 1;
-
-                // 3. 問題文（カッコ内を空欄に）
-                const qBox = document.createElement('div');
-                qBox.className = "q-box";
-                // カッコを大きくあける
-                qBox.innerHTML = q.q.replace(/[（\(].*?[）\)]/g, '（　　　）');
-
-                // 4. 答え
-                const aBox = document.createElement('div');
-                aBox.className = "a-box";
-                aBox.innerText = q.a;
-
-                col.appendChild(cbBox);
-                col.appendChild(nBox);
-                col.appendChild(qBox);
-                col.appendChild(aBox);
+                col.innerHTML = `
+                    <div class="checkbox-box"><div class="check-square">${isPerfect ? '✔' : ''}</div></div>
+                    <div class="num-box-top">${originalIndex + 1}</div>
+                    <div class="q-box">${q.q.replace(/[（\(].*?[）\)]/g, '（　　　）')}</div>
+                    <div class="num-box-bottom">${originalIndex + 1}</div>
+                    <div class="a-box">${q.a}</div>
+                `;
                 grid.appendChild(col);
             });
             
             page.appendChild(grid);
             container.appendChild(page);
         }
-
         document.getElementById('list-view-screen').style.display = "block";
-        document.getElementById('selector-screen').style.display = "none";
     }
 
-    function closeListView() {
-        document.getElementById('list-view-screen').style.display = "none";
-        document.getElementById('selector-screen').style.display = "flex";
-    }
-
+    function closeListView() { document.getElementById('list-view-screen').style.display = "none"; }
     fetchData();
 </script>
 </body>
