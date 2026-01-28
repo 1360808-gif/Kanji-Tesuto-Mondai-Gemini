@@ -8,115 +8,111 @@
             --main-font: "UD Digital Kyokasho N-R", "UD デジタル 教科書体 N-R", sans-serif;
         }
 
-        /* 画面全体を縦書き・右から左へ流れる設定にする */
         body {
             margin: 0;
-            padding: 40px;
-            background-color: #e0d8c3;
+            padding: 30px;
+            background-color: #f5f5f5;
             font-family: var(--main-font);
-            writing-mode: vertical-rl; /* 右から左への縦書き */
-            height: 100vh;
-            display: flex;
-            overflow-x: auto;
+            /* ブラウザの基本は横書きのまま、中のコンテナで縦書きを制御します */
         }
 
-        /* プリントのタイトル（右端に配置される） */
-        .print-title {
-            font-size: 28px;
+        /* プリントの台紙 */
+        .print-canvas {
+            background: white;
+            width: fit-content;
+            height: 90vh;
+            padding: 40px;
+            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+            display: flex;
+            writing-mode: vertical-rl; /* ここで「右から左へ」を確定 */
+            margin: auto;
+        }
+
+        /* 右端のタイトル */
+        .print-header {
+            font-size: 26px;
             font-weight: bold;
-            border-left: 5px double var(--ink-black); /* 縦書き時の「下の線」 */
-            padding: 15px 0 15px 25px;
-            margin-left: 30px;
+            border-left: 5px double #000;
+            padding: 10px 5px 10px 20px;
+            margin-left: 20px;
             display: flex;
             align-items: center;
         }
 
-        /* 15列 × 5行 のメインテーブル */
+        /* 15列 × 5行 のテーブル */
         .kanji-table {
             border-collapse: collapse;
             border: 2px solid var(--ink-black);
-            background: white;
-            height: 850px; /* 縦方向の長さを固定 */
+            height: 100%; /* 親要素(90vh)いっぱいに広げる */
         }
 
-        /* 各セル（1つのマス目）の設定 */
         .kanji-table td {
             border: 1px solid var(--ink-black);
-            width: 65px; /* 1列の幅 */
+            width: 60px; /* これが「15列」それぞれの幅になります */
             text-align: center;
             vertical-align: middle;
-            padding: 10px 5px;
+            padding: 5px;
         }
 
-        /* 各行の高さ（縦書きモードなので、画面上の「縦の長さ」） */
-        .row-check    { height: 60px; }  /* 1行目：□ */
-        .row-num-top  { height: 40px; background: #f0f0f0; font-weight: bold; } /* 2行目：番号 */
-        .row-question { height: 500px; text-align: start; vertical-align: top; font-size: 1.2rem; line-height: 1.8; } /* 3行目：問題 */
-        .row-num-btm  { height: 40px; background: #f0f0f0; font-size: 0.9rem; } /* 4行目：番号 */
-        .row-answer   { height: 160px; font-weight: bold; color: #e74c3c; font-size: 1.1rem; } /* 5行目：答え */
+        /* 5つの行（横ライン）の高さを指定 */
+        .row-1 { height: 60px; }  /* □ チェック */
+        .row-2 { height: 40px; background: #eee; font-weight: bold; } /* 番号(上) */
+        .row-3 { height: auto; text-align: start; vertical-align: top; padding-top: 15px; font-size: 1.1em; } /* 問題文 */
+        .row-4 { height: 40px; background: #eee; font-size: 0.8em; } /* 番号(下) */
+        .row-5 { height: 140px; color: red; font-weight: bold; } /* 答え */
 
-        /* □ チェックボックス */
         .square {
-            width: 32px;
-            height: 32px;
-            border: 2px solid var(--ink-black);
+            width: 28px;
+            height: 28px;
+            border: 2px solid #000;
             margin: auto;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 24px;
-            color: #27ae60;
         }
 
-        /* 閉じるボタン（これだけは横書きに戻す） */
         #close-btn {
-            writing-mode: horizontal-tb;
-            position: fixed;
-            top: 20px;
-            left: 20px;
-            padding: 12px 24px;
-            background: #ff4757;
-            color: white;
-            border: none;
-            border-radius: 30px;
-            font-weight: bold;
-            cursor: pointer;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+            position: fixed; top: 20px; left: 20px;
+            padding: 10px 20px; background: #ff4757; color: white;
+            border: none; border-radius: 5px; cursor: pointer; font-weight: bold;
         }
     </style>
 </head>
 <body>
 
-<button id="close-btn" onclick="window.history.back();">× とじる</button>
+<button id="close-btn" onclick="window.history.back()">× とじる</button>
 
-<div class="print-title">６年　やまなし</div>
+<div class="print-canvas">
+    <div class="print-header">６年　やまなし</div>
 
-<table class="kanji-table">
-    <tr class="row-check" id="r1"></tr>    <tr class="row-num-top" id="r2"></tr> <tr class="row-question" id="r3"></tr><tr class="row-num-btm" id="r4"></tr> <tr class="row-answer" id="r5"></tr>  </table>
+    <table class="kanji-table">
+        <tr class="row-1" id="line-check"></tr>
+        <tr class="row-2" id="line-num-t"></tr>
+        <tr class="row-3" id="line-ques"></tr>
+        <tr class="row-4" id="line-num-b"></tr>
+        <tr class="row-5" id="line-ans"></tr>
+    </table>
+</div>
 
 <script>
-    // サンプルデータ（実際はAPIから15件取得したものを想定）
-    const sampleData = Array.from({length: 15}, (_, i) => ({
-        id: i + 1,
-        q: i === 0 ? "かぎりある資源を大切にする。（　　）を読む問題。" : `第${i+1}問目の（かんじ）の練習問題文がここに入ります。`,
-        a: "しげん",
-        done: i === 2 || i === 5 // 3番と6番にチェックを入れる例
-    }));
+    // 15個のデータを作成
+    const dataCount = 15;
+    
+    const l1 = document.getElementById('line-check');
+    const l2 = document.getElementById('line-num-t');
+    const l3 = document.getElementById('line-ques');
+    const l4 = document.getElementById('line-num-b');
+    const l5 = document.getElementById('line-ans');
 
-    const r1 = document.getElementById('r1');
-    const r2 = document.getElementById('r2');
-    const r3 = document.getElementById('r3');
-    const r4 = document.getElementById('r4');
-    const r5 = document.getElementById('r5');
-
-    // 15列（td）を一気に生成
-    sampleData.forEach(item => {
-        r1.innerHTML += `<td><div class="square">${item.done ? '✔' : ''}</div></td>`;
-        r2.innerHTML += `<td>${item.id}</td>`;
-        r3.innerHTML += `<td>${item.q}</td>`;
-        r4.innerHTML += `<td>${item.id}</td>`;
-        r5.innerHTML += `<td>${item.a}</td>`;
-    });
+    for (let i = 1; i <= dataCount; i++) {
+        // 1行目：チェックボックス
+        l1.innerHTML += `<td><div class="square"></div></td>`;
+        // 2行目：番号（上）
+        l2.innerHTML += `<td>${i}</td>`;
+        // 3行目：問題文
+        l3.innerHTML += `<td>かぎりある資源を大切にする。（　　）を読む問題。</td>`;
+        // 4行目：番号（下）
+        l4.innerHTML += `<td>${i}</td>`;
+        // 5行目：答え
+        l5.innerHTML += `<td>しげん</td>`;
+    }
 </script>
 
 </body>
