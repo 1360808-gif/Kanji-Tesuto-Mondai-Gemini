@@ -28,7 +28,6 @@
             z-index: 100;
         }
 
-        /* --- ヘッダー --- */
         .view-header {
             width: 100%; 
             height: 50px; 
@@ -41,7 +40,6 @@
             border-bottom: 1px solid #ccc;
         }
 
-        /* --- メイン領域 --- */
         #view-mode-container {
             height: calc(100vh - 50px);
             display: flex; 
@@ -51,7 +49,6 @@
             box-sizing: border-box;
         }
 
-        /* 外枠：指示通り高さを広げつつ、内側にマージンを確保 */
         .view-canvas {
             display: flex; 
             flex-direction: row-reverse;
@@ -66,7 +63,6 @@
             box-shadow: 0 4px 15px rgba(0,0,0,0.1);
         }
 
-        /* 表のグリッド */
         .kanji-table-grid {
             display: flex; 
             flex-direction: row-reverse;
@@ -75,8 +71,8 @@
             border: 1px solid #000; 
             overflow: hidden; 
             box-sizing: border-box;
-            background: #000; /* 隙間から線が見えるように */
-            gap: 1px; /* テーブル間の細い線 */
+            background: #000;
+            gap: 1px;
         }
 
         .column-unit { 
@@ -95,23 +91,22 @@
             box-sizing: border-box;
         }
         
+        /* 高さ配分の変更 */
         .h-check { height: 10%; }
         .h-num   { height: 6%; font-size: 1.4vh; }
         .h-ques  { 
-            height: 58%; 
+            height: 53%; /* 58% -> 53% に縮小 */
             writing-mode: vertical-rl; 
             text-orientation: upright; 
             text-align: start;
             padding: 8px 4px; 
-            font-size: min(2.1vh, 18px);
+            font-size: min(2vh, 18px);
             line-height: 1.5;
         }
         .h-num2  { height: 6%; font-size: 1.4vh; }
-        
-        /* --- 正解エリア：枠線を壊さない中央揃え --- */
-        .h-ans { 
-            height: 20%; 
-            position: relative; /* 子要素の絶対配置の基準にする */
+        .h-ans   { 
+            height: 25%; /* 20% -> 25% に拡大 */
+            position: relative;
         }
 
         .ans-wrapper {
@@ -125,7 +120,7 @@
         }
 
         .ans-text {
-            font-size: 2.2vh; 
+            font-size: 2.3vh; 
             font-weight: bold; 
             color: #e74c3c;
             line-height: 1;
@@ -146,12 +141,7 @@
             background: white;
         }
 
-        .square { 
-            width: 20px; 
-            height: 20px; 
-            border: 1px solid #000; 
-            margin: auto; 
-        }
+        .square { width: 20px; height: 20px; border: 1px solid #000; margin: auto; }
 
         .btn-action { 
             padding: 6px 16px; 
