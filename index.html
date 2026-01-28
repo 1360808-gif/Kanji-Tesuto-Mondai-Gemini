@@ -36,100 +36,72 @@
             background: #f0f0f0; z-index: 100;
         }
 
-        /* --- 閲覧モード：上部ナビゲーションの統合 --- */
+        /* --- 閲覧モード：上部ナビゲーション --- */
         .view-header {
-            width: 100%;
-            height: 60px; /* 高さを固定して圧迫を防ぐ */
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 0 20px;
-            box-sizing: border-box;
-            background: #fff;
-            border-bottom: 1px solid #ccc;
+            width: 100%; height: 55px; 
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 0 20px; box-sizing: border-box; background: #fff; border-bottom: 1px solid #ccc;
         }
-
-        .header-left { display: flex; align-items: center; gap: 15px; }
-        .header-center { font-weight: bold; font-size: 1.2rem; }
-        .header-right { display: flex; gap: 10px; }
+        .header-left, .header-right { display: flex; gap: 10px; }
+        .header-center { font-weight: bold; font-size: 1.1rem; }
 
         .btn-action {
-            padding: 8px 16px; border-radius: 20px; border: 1px solid #333;
-            cursor: pointer; background: white; font-weight: bold; font-size: 0.9rem;
+            padding: 6px 16px; border-radius: 20px; border: 1px solid #333;
+            cursor: pointer; background: white; font-weight: bold; font-size: 0.85rem;
         }
         .btn-close { background: #ff4757; color: white; border: none; }
 
         /* --- 閲覧モード：メイン領域 --- */
         #view-mode-container {
-            height: calc(100vh - 60px); /* ヘッダー分を引く */
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 15px;
-            box-sizing: border-box;
+            height: calc(100vh - 55px);
+            display: flex; align-items: center; justify-content: center;
+            padding: 10px; box-sizing: border-box;
         }
 
         .view-canvas {
-            display: flex;
-            flex-direction: row-reverse;
-            height: 100%; /* コンテナいっぱいに使う */
-            width: 95vw;
-            max-width: 1500px;
-            background: white;
-            border: 2px solid #000;
-            box-sizing: border-box;
-            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
-            padding: 15px;
-            overflow: hidden;
+            display: flex; flex-direction: row-reverse;
+            height: 98%; /* 縦を限界まで使う */
+            width: 96vw; max-width: 1600px;
+            background: white; border: 2px solid #000;
+            box-sizing: border-box; box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+            padding: 12px; overflow: hidden;
         }
 
-        /* セル高さ配分：縦幅を最大限活かす */
+        /* --- 閲覧モード専用：セル高さ配分の修正 --- */
+        /* 下部の見切れを防ぐため、問題(h-ques)を58%に抑え、解答(h-ans)を確保 */
         .view-canvas .h-check { height: 10%; }
-        .view-canvas .h-num   { height: 6%; font-size: 1.5vh; }
+        .view-canvas .h-num   { height: 6%; font-size: 1.4vh; }
         .view-canvas .h-ques  { 
-            height: 62%; 
-            font-size: min(2.2vh, 20px); 
-            padding: 8px 4px;
-            writing-mode: vertical-rl;
-            text-orientation: upright;
-            text-align: start;
+            height: 58%; /* 以前より少し短くしてスペースを確保 */
+            font-size: min(2.1vh, 18px); 
+            padding: 6px 2px;
+            writing-mode: vertical-rl; text-orientation: upright; text-align: start;
         }
-        .view-canvas .h-ans   { height: 16%; font-size: 2.2vh; font-weight: bold; color: #e74c3c; writing-mode: vertical-rl; text-orientation: upright;}
+        .view-canvas .h-num2  { height: 6%; font-size: 1.4vh; border-top: 1px solid #000; }
+        .view-canvas .h-ans   { 
+            height: 20%; /* 解答欄をしっかり確保 */
+            font-size: 1.8vh; font-weight: bold; color: #e74c3c;
+            writing-mode: vertical-rl; text-orientation: upright;
+        }
 
         /* --- 印刷モード --- */
-        #print-mode-container {
-            display: flex; flex-direction: column; align-items: center; padding: 40px 0; gap: 50px;
-        }
+        #print-mode-container { display: flex; flex-direction: column; align-items: center; padding: 40px 0; gap: 50px; }
         .print-canvas {
-            display: flex;
-            flex-direction: row-reverse;
-            height: 800px;
-            width: 1150px;
-            background: white;
-            border: 2px solid #000;
-            box-sizing: border-box;
-            padding: 30px;
-            overflow: hidden;
+            display: flex; flex-direction: row-reverse; height: 800px; width: 1150px;
+            background: white; border: 2px solid #000; box-sizing: border-box; padding: 30px; overflow: hidden;
         }
 
         /* --- 共通テーブルグリッド --- */
-        .kanji-table-grid {
-            display: flex;
-            flex-direction: row-reverse;
-            height: 100%;
-            flex-grow: 1;
-            border: 1px solid #000;
-        }
+        .kanji-table-grid { display: flex; flex-direction: row-reverse; height: 100%; flex-grow: 1; border: 1px solid #000; }
         .column-unit { border-collapse: collapse; height: 100%; flex-grow: 1; table-layout: fixed; }
         .column-unit td { border: 1px solid #000; text-align: center; vertical-align: middle; background: white; padding: 0;}
         
         .print-title {
-            writing-mode: vertical-rl; font-weight: bold; 
-            border: 1px solid #000; border-left: 4px double #000;
+            writing-mode: vertical-rl; font-weight: bold; border: 1px solid #000; border-left: 4px double #000;
             padding: 0 15px; display: flex; align-items: center; font-size: 1.4rem;
-            height: 100%; box-sizing: border-box; margin-left: 15px;
+            height: 100%; box-sizing: border-box; margin-left: 12px;
         }
-        .square { width: min(2.8vh, 28px); height: min(2.8vh, 28px); border: 1px solid #000; margin: auto; }
+        .square { width: min(2.5vh, 25px); height: min(2.5vh, 25px); border: 1px solid #000; margin: auto; }
 
         @media print {
             .view-header { display: none; }
@@ -173,6 +145,7 @@
 </div>
 
 <script>
+    // テスト用データ
     const allQuestions = Array.from({length: 45}, (_, i) => ({
         id: i + 1,
         q: `第${i+1}問目の漢字問題文。ここに（　　）が入ります。しっかり練習しましょう。`,
@@ -250,7 +223,7 @@
                 <tr><td class="h-check"><div class="square"></div></td></tr>
                 <tr><td class="h-num">${item.id}</td></tr>
                 <tr><td class="h-ques">${item.q}</td></tr>
-                <tr><td class="h-num">${item.id}</td></tr>
+                <tr><td class="h-num2">${item.id}</td></tr>
                 <tr><td class="h-ans">${item.a}</td></tr>
             `;
             grid.appendChild(table);
