@@ -2,146 +2,126 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <title>漢字プリント・テーブル版</title>
     <style>
         :root {
             --ink-black: #000000;
             --main-font: "UD Digital Kyokasho N-R", "UD デジタル 教科書体 N-R", sans-serif;
         }
 
-        body { margin: 0; padding: 20px; background-color: #e0d8c3; font-family: var(--main-font); }
+        body { margin: 0; padding: 0; background-color: #e0d8c3; font-family: var(--main-font); }
 
+        /* プリント表示画面 */
         #list-view-screen {
-            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            display: block; /* テスト用に表示状態 */
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: #fff; z-index: 200; overflow-x: auto; padding: 40px;
-            writing-mode: vertical-rl; /* 全体を縦書きに */
+            writing-mode: vertical-rl; /* 縦書き：右から左へ */
         }
 
-        .print-container { display: flex; height: 90vh; }
+        .print-container { display: flex; height: 95vh; align-items: flex-start; }
 
-        /* 15問1セットのテーブル */
+        /* 15列 × 5行 のメインテーブル */
         .kanji-table {
             border-collapse: collapse;
             border: 2px solid var(--ink-black);
             background: white;
-            margin-left: 50px; /* ページ間の余白 */
-            height: 100%;
+            height: 850px; /* プリントの縦の長さを固定 */
         }
 
         .kanji-table td {
             border: 1px solid var(--ink-black);
-            width: 65px; /* 列の幅 */
+            width: 60px; /* 1列の幅 */
             text-align: center;
             vertical-align: middle;
-            padding: 5px;
+            padding: 8px 4px;
         }
 
-        /* 1段目：チェックボックス */
-        .row-check { height: 60px; font-size: 24px; color: #27ae60; }
-        .square { width: 30px; height: 30px; border: 2px solid #000; margin: auto; display: flex; align-items: center; justify-content: center; }
+        /* 行ごとの高さ設定 */
+        .row-check  { height: 60px; }  /* 1行目：□ */
+        .row-num    { height: 40px; font-weight: bold; background: #f8f8f8; } /* 2・4行目：番号 */
+        .row-question { height: 500px; text-align: start; vertical-align: top; font-size: 1.2rem; line-height: 1.8; } /* 3行目：問題 */
+        .row-answer { height: 150px; font-weight: bold; color: #e74c3c; font-size: 1.1rem; } /* 5行目：答え */
 
-        /* 2段目・4段目：番号 */
-        .row-num { height: 40px; font-size: 16px; font-weight: bold; background: #f0f0f0; }
-
-        /* 3段目：問題（メイン） */
-        .row-question { 
-            height: auto; /* 残りの高さを埋める */
-            font-size: 20px; 
-            line-height: 1.8; 
-            text-align: start; 
-            vertical-align: top;
-            padding: 20px 5px;
+        /* チェックボックスの見た目 */
+        .square {
+            width: 30px; height: 30px; border: 2px solid var(--ink-black);
+            margin: auto; display: flex; align-items: center; justify-content: center;
+            font-size: 20px; color: #27ae60;
         }
 
-        /* 5段目：答え */
-        .row-answer { height: 150px; font-size: 18px; font-weight: bold; color: #e74c3c; }
-
-        /* タイトル（表の横に配置） */
-        .sheet-title-vertical {
-            font-size: 28px; font-weight: bold; border-left: 4px double #000;
-            padding: 20px; margin-left: 10px; height: 100%; display: flex; align-items: center;
+        /* タイトル */
+        .print-title {
+            font-size: 24px; font-weight: bold; margin-left: 20px;
+            border-left: 3px double #000; padding: 10px; height: 100%;
+            display: flex; align-items: center;
         }
 
         #close-btn {
             position: fixed; top: 20px; right: 20px; writing-mode: horizontal-tb;
-            padding: 10px 25px; background: #ff4757; color: white; border-radius: 30px; border: none; font-weight: bold; cursor: pointer;
+            padding: 10px 20px; background: #ff4757; color: white; border: none;
+            border-radius: 8px; font-weight: bold; cursor: pointer;
         }
     </style>
 </head>
 <body>
 
 <div id="list-view-screen">
-    <button id="close-btn" onclick="document.getElementById('list-view-screen').style.display='none'">× とじる</button>
-    <div id="print-area" class="print-container"></div>
-</div>
-
-<div id="menu">
-    <button onclick="showPrintView('サンプルシート')">問題一覧を表示（テスト）</button>
+    <button id="close-btn" onclick="this.parentElement.style.display='none'">× とじる</button>
+    
+    <div class="print-container" id="print-area">
+        </div>
 </div>
 
 <script>
-    // 仮のデータ構造（実際はAPIから取得）
-    const sampleQuestions = Array.from({length: 35}, (_, i) => ({
-        q: `これは第${i+1}問目の（かんじ）の練習です。`,
-        a: `漢字${i+1}`
+    // サンプルデータ
+    const questions = Array.from({length: 15}, (_, i) => ({
+        num: i + 1,
+        q: `これは${i+1}問目の問題文です。ここに（かんじ）が入ります。`,
+        a: `漢字${i+1}`,
+        isPerfect: i % 3 === 0 // 3問に1問チェックが入るサンプル
     }));
 
-    function showPrintView(sheetName) {
-        const questions = sampleQuestions; // 実際は allData[sheetName]
+    function generateTable(data, titleText) {
         const area = document.getElementById('print-area');
-        area.innerHTML = "";
+        
+        // タイトル追加
+        const titleDiv = document.createElement('div');
+        titleDiv.className = 'print-title';
+        titleDiv.innerText = titleText;
+        area.appendChild(titleDiv);
 
-        // 15問ずつテーブルを作成
-        for (let i = 0; i < questions.length; i += 15) {
-            const chunk = questions.slice(i, i + 15);
-            
-            // シート名
-            const title = document.createElement('div');
-            title.className = "sheet-title-vertical";
-            title.innerText = sheetName;
-            area.appendChild(title);
+        // テーブル作成
+        const table = document.createElement('table');
+        table.className = 'kanji-table';
 
-            // テーブル作成
-            const table = document.createElement('table');
-            table.className = "kanji-table";
+        // 5つの行（tr）をあらかじめ作成
+        const r1 = document.createElement('tr'); r1.className = 'row-check';
+        const r2 = document.createElement('tr'); r2.className = 'row-num';
+        const r3 = document.createElement('tr'); r3.className = 'row-question';
+        const r4 = document.createElement('tr'); r4.className = 'row-num';
+        const r5 = document.createElement('tr'); r5.className = 'row-answer';
 
-            // 5行の構成を作成
-            const rows = {
-                check: document.createElement('tr'),
-                numTop: document.createElement('tr'),
-                q: document.createElement('tr'),
-                numBottom: document.createElement('tr'),
-                a: document.createElement('tr')
-            };
-            
-            rows.check.className = "row-check";
-            rows.numTop.className = "row-num";
-            rows.q.className = "row-question";
-            rows.numBottom.className = "row-num";
-            rows.a.className = "row-answer";
+        // 15列（td）分ループして各行にセルを追加
+        data.forEach(item => {
+            r1.innerHTML += `<td><div class="square">${item.isPerfect ? '✔' : ''}</div></td>`;
+            r2.innerHTML += `<td>${item.num}</td>`;
+            r3.innerHTML += `<td>${item.q.replace(/[（\(].*?[）\)]/g, '（　　）')}</td>`;
+            r4.innerHTML += `<td>${item.num}</td>`;
+            r5.innerHTML += `<td>${item.a}</td>`;
+        });
 
-            // 各問題のデータを列(td)として追加
-            chunk.forEach((q, idx) => {
-                const qIdx = i + idx + 1;
-                
-                // 1. チェック
-                rows.check.innerHTML += `<td><div class="square"></div></td>`;
-                // 2. 番号（上）
-                rows.numTop.innerHTML += `<td>${qIdx}</td>`;
-                // 3. 問題
-                rows.q.innerHTML += `<td>${q.q.replace(/[（\(].*?[）\)]/g, '（　　）')}</td>`;
-                // 4. 番号（下）
-                rows.numBottom.innerHTML += `<td>${qIdx}</td>`;
-                // 5. 答え
-                rows.a.innerHTML += `<td>${q.a}</td>`;
-            });
-
-            Object.values(rows).forEach(row => table.appendChild(row));
-            area.appendChild(table);
-        }
-
-        document.getElementById('list-view-screen').style.display = "block";
+        // テーブルに行を合体
+        table.appendChild(r1);
+        table.appendChild(r2);
+        table.appendChild(r3);
+        table.appendChild(r4);
+        table.appendChild(r5);
+        
+        area.appendChild(table);
     }
+
+    // 実行
+    generateTable(questions, "６年　やまなし");
 </script>
 </body>
 </html>
