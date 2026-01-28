@@ -36,11 +36,11 @@
         }
         .btn-close { background: #ff4757; color: white; border: none; }
 
-        /* --- 閲覧モード：メイン領域 --- */
+        /* --- 閲覧モード：メイン領域（余白をより強化） --- */
         #view-mode-container {
-            /* ヘッダー分を除いた高さの「92%」に抑えることで、画面下に余白を強制的に作る */
-            height: calc((100vh - 50px) * 0.92);
-            margin-top: 10px;
+            /* 高さを88%に絞り、下部に確実なマージンを確保 */
+            height: calc((100vh - 50px) * 0.88);
+            margin-top: 15px;
             display: flex; align-items: center; justify-content: center;
             padding: 10px; box-sizing: border-box;
         }
@@ -50,21 +50,23 @@
             height: 100%; width: 96vw; max-width: 1600px;
             background: white; border: 2px solid #000;
             box-sizing: border-box; box-shadow: 0 5px 20px rgba(0,0,0,0.1);
-            padding: 15px; overflow: hidden;
+            /* 下パディングを増やして表の底辺を浮かせる */
+            padding: 15px 15px 25px 15px; 
+            overflow: hidden;
         }
 
-        /* --- セル高さ配分の最終調整 --- */
+        /* --- セル高さ配分の最終微調整 --- */
         .view-canvas .h-check { height: 10%; }
         .view-canvas .h-num   { height: 6%; font-size: 1.4vh; }
         .view-canvas .h-ques  { 
-            height: 54%; /* さらに短く調整（58% → 54%） */
-            font-size: min(2vh, 18px); 
+            height: 52%; /* さらに短縮（54% → 52%） */
+            font-size: min(1.9vh, 18px); 
             padding: 5px 2px;
             writing-mode: vertical-rl; text-orientation: upright; text-align: start;
         }
         .view-canvas .h-num2  { height: 6%; font-size: 1.4vh; border-top: 1px solid #000; }
         .view-canvas .h-ans   { 
-            height: 24%; /* 正解エリアに十分な高さを提供（20% → 24%） */
+            height: 26%; /* 正解エリアに十分な遊びを持たせる（24% → 26%） */
             font-size: 1.8vh; font-weight: bold; color: #e74c3c;
             writing-mode: vertical-rl; text-orientation: upright;
         }
@@ -78,14 +80,14 @@
             padding: 0 15px; display: flex; align-items: center; font-size: 1.3rem;
             height: 100%; box-sizing: border-box; margin-left: 12px;
         }
-        .square { width: min(2.2vh, 22px); height: min(2.2vh, 22px); border: 1px solid #000; margin: auto; }
+        .square { width: min(2.1vh, 21px); height: min(2.1vh, 21px); border: 1px solid #000; margin: auto; }
     </style>
 </head>
 <body>
 
 <div id="menu-screen" style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; gap: 15px;">
     <h1>漢字学習システム</h1>
-    <button class="menu-btn" onclick="openViewMode()" style="padding: 15px 30px; font-weight: bold; cursor: pointer;">閲覧モードを開始</button>
+    <button class="menu-btn" onclick="openViewMode()" style="padding: 15px 30px; font-weight: bold; cursor: pointer; border-radius: 12px; border: 2px solid #333;">閲覧モードを開始</button>
 </div>
 
 <div id="view-screen" class="screen-overlay">
@@ -105,7 +107,7 @@
 <script>
     const allQuestions = Array.from({length: 45}, (_, i) => ({
         id: i + 1,
-        q: `第${i+1}問目の漢字問題文。ここに（　　）が入ります。`,
+        q: `第${i+1}問目の漢字問題文。ここに（　　）が入ります。しっかり練習しましょう。`,
         a: `正解${i+1}`
     }));
 
