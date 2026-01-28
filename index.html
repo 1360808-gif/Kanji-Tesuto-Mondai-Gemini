@@ -5,60 +5,60 @@
     <style>
         body {
             margin: 0;
-            padding: 40px;
+            padding: 20px;
             background-color: #f0f0f0;
-            /* 右から左へ配置するために縦書きモードを使用 */
-            writing-mode: vertical-rl;
-            height: 100vh;
+            /* 縦書きモードは解除し、横並びのレイアウトで制御します */
             display: flex;
-            justify-content: center;
+            flex-direction: row-reverse; /* 右から1番を始めるため */
+            justify-content: flex-start;
+            align-items: flex-start;
         }
 
-        .kanji-table {
+        /* 各「列」を独立したテーブルとして定義 */
+        .column-unit {
             border-collapse: collapse;
-            border: 2px solid #000;
-            background-color: white;
-            /* 表全体の高さを固定（プリントの縦の長さに相当） */
-            height: 800px; 
+            margin: 0;
+            padding: 0;
         }
 
-        .kanji-table td {
+        .column-unit td {
             border: 1px solid #000;
-            /* 1列（縦のライン）の幅を固定 */
-            width: 60px;
-            height: auto;
+            width: 60px; /* 列の幅 */
+            height: 0;   /* 下記のクラスで高さを固定 */
+            background: white;
+            text-align: center;
+            vertical-align: middle;
         }
 
-        /* 5つの行（横のライン）の高さを指定 */
-        .row-1 { height: 60px; }  /* 1行目：□用 */
-        .row-2 { height: 40px; }  /* 2行目：番号用 */
-        .row-3 { height: 450px; } /* 3行目：問題文用（一番長い） */
-        .row-4 { height: 40px; }  /* 4行目：番号用 */
-        .row-5 { height: 150px; } /* 5行目：答え用 */
+        /* 各部屋の高さ（縦の長さ） */
+        .h-check { height: 60px; }  /* 1行目：□ */
+        .h-num-t { height: 40px; }  /* 2行目：番号 */
+        .h-ques  { height: 500px; } /* 3行目：問題 */
+        .h-num-b { height: 40px; }  /* 4行目：番号 */
+        .h-ans   { height: 150px; } /* 5行目：答え */
 
     </style>
 </head>
 <body>
 
-    <table class="kanji-table">
-        <tr class="row-1" id="r1"></tr>
-        <tr class="row-2" id="r2"></tr>
-        <tr class="row-3" id="r3"></tr>
-        <tr class="row-4" id="r4"></tr>
-        <tr class="row-5" id="r5"></tr>
-    </table>
+    <div id="print-area" style="display: flex; flex-direction: row-reverse;"></div>
 
     <script>
-        // 15列分の空のセルを各行に追加
-        const rows = ['r1', 'r2', 'r3', 'r4', 'r5'];
-        rows.forEach(rowId => {
-            const rowElement = document.getElementById(rowId);
-            for (let i = 0; i < 15; i++) {
-                const td = document.createElement('td');
-                rowElement.appendChild(td);
-            }
-        });
-    </script>
+        const area = document.getElementById('print-area');
 
+        // 15回ループして「縦1列」を15本作成
+        for (let i = 1; i <= 15; i++) {
+            const table = document.createElement('table');
+            table.className = 'column-unit';
+            table.innerHTML = `
+                <tr><td class="h-check"></td></tr>
+                <tr><td class="h-num-t">${i}</td></tr>
+                <tr><td class="h-ques"></td></tr>
+                <tr><td class="h-num-b">${i}</td></tr>
+                <tr><td class="h-ans"></td></tr>
+            `;
+            area.appendChild(table);
+        }
+    </script>
 </body>
 </html>
