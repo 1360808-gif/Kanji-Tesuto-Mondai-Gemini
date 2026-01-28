@@ -1,208 +1,42 @@
-<!DOCTYPE html>
-<html lang="ja">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>漢字学習システム</title>
-    <style>
-        :root {
-            --ink-black: #000000;
-            --main-font: "UD Digital Kyokasho N-R", "UD デジタル 教科書体 N-R", sans-serif;
-            --bg-color: #e0d8c3;
-        }
+/* --- 閲覧モード (Responsive) の再定義 --- */
+#view-mode-container {
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 10px;
+    box-sizing: border-box;
+}
 
-        body { margin: 0; font-family: var(--main-font); background: var(--bg-color); }
+.view-canvas {
+    display: flex;
+    flex-direction: row-reverse;
+    /* Macの画面でも見切れないよう高さを微調整 */
+    height: 75vh; 
+    max-height: 700px; 
+    padding: 1.5vh;
+    background: white;
+    border: 1px solid #ccc;
+    box-sizing: border-box;
+    /* 横幅も画面からはみ出さないように制限 */
+    max-width: 95vw;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+}
 
-        /* --- メニュー画面 --- */
-        #menu-screen {
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-            height: 100vh; gap: 15px;
-        }
-        .menu-btn {
-            width: 80%; max-width: 400px; padding: 20px; font-size: 1.2rem;
-            font-weight: bold; border: 3px solid #333; border-radius: 15px;
-            cursor: pointer; background: white; transition: 0.2s;
-        }
-        .menu-btn:hover { background: #f0f0f0; transform: translateY(-2px); }
-        .btn-print { border-color: #27ae60; color: #27ae60; }
+/* 各セルの高さ配分（%で指定して親の高さに追従） */
+.view-canvas .h-check { height: 10%; }
+.view-canvas .h-num   { height: 6%; font-size: 1.4vh; }
+.view-canvas .h-ques  { 
+    height: 60%; 
+    font-size: min(1.8vh, 16px); /* 文字が大きすぎてはみ出さないように */
+    padding: 5px 2px;
+}
+.view-canvas .h-ans   { height: 18%; font-size: 1.8vh; }
 
-        /* --- 共通：プリント表示の基本構造 --- */
-        .screen-overlay {
-            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: #fff; z-index: 100; overflow: auto;
-        }
-        .close-btn {
-            position: fixed; top: 10px; left: 10px; z-index: 200;
-            padding: 10px 20px; background: #ff4757; color: white;
-            border: none; border-radius: 20px; cursor: pointer; font-weight: bold;
-        }
-
-        /* --- 閲覧モード (Responsive) --- */
-        #view-mode-container {
-            height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center;
-        }
-        .view-canvas {
-            display: flex; flex-direction: row-reverse; height: 85vh; padding: 2vh;
-            background: white; border: 1px solid #ccc; box-sizing: border-box;
-        }
-
-        /* --- 印刷モード (Fixed Scroll) --- */
-        #print-mode-container {
-            display: flex; flex-direction: column; align-items: center; padding: 40px 0; gap: 50px;
-        }
-        .print-canvas {
-            display: flex; flex-direction: row-reverse; height: 800px; padding: 30px;
-            background: white; border: 1px solid #000; box-shadow: 0 0 10px rgba(0,0,0,0.1);
-        }
-
-        /* --- 15列×5行の「崩れない」ユニット構造 --- */
-        .column-unit { border-collapse: collapse; height: 100%; display: inline-table; }
-        .column-unit td { border: 1px solid #000; text-align: center; vertical-align: middle; background: white; }
-
-        /* レスポンシブ用幅 */
-        .view-canvas .column-unit td { width: 5.5vw; max-width: 65px; }
-        /* 印刷用幅 */
-        .print-canvas .column-unit td { width: 65px; }
-
-        /* 行の高さ配分 */
-        .h-check { height: 8%; }
-        .h-num   { height: 5%; background: #f9f9f9; font-weight: bold; font-size: 0.9rem; }
-        .h-ques  { height: 62%; writing-mode: vertical-rl; text-orientation: upright; text-align: start; padding: 10px 2px; font-size: 1.1rem; }
-        .h-ans   { height: 20%; color: #e74c3c; writing-mode: vertical-rl; text-orientation: upright; font-weight: bold; }
-
-        .print-title {
-            writing-mode: vertical-rl; font-weight: bold; border: 1px solid #000; border-left: 4px double #000;
-            padding: 0 10px; margin-left: 20px; display: flex; align-items: center;
-        }
-        .square { width: 22px; height: 22px; border: 1px solid #000; margin: auto; }
-
-        /* ページ切り替えボタン */
-        .pager-nav { margin-bottom: 10px; display: flex; gap: 10px; }
-
-        @media print {
-            .close-btn, .pager-nav { display: none; }
-            body { background: white; }
-            .screen-overlay { position: static; display: block; overflow: visible; }
-            .print-canvas { box-shadow: none; page-break-after: always; }
-        }
-    </style>
-</head>
-<body>
-
-<div id="menu-screen">
-    <h2 id="current-sheet-name">シート名</h2>
-    <button class="menu-btn" onclick="alert('クイズ形式開始')">はじめから</button>
-    <button class="menu-btn" onclick="alert('続きから')">つづきから</button>
-    <button class="menu-btn" onclick="alert('苦手練習')">おぼえとちゅうを練習</button>
-    <button class="menu-btn" onclick="openViewMode()">もんだいをいちらんでみる</button>
-    <button class="menu-btn btn-print" onclick="openPrintMode()">いんさつよう</button>
-</div>
-
-<div id="view-screen" class="screen-overlay">
-    <button class="close-btn" onclick="closeAll()">× メニューにもどる</button>
-    <div id="view-mode-container">
-        <div class="pager-nav">
-            <button onclick="changePage(-1)">← 前の15問</button>
-            <span id="page-info" style="writing-mode: horizontal-tb; line-height: 40px; font-weight: bold;"></span>
-            <button onclick="changePage(1)">次の15問 →</button>
-        </div>
-        <div id="view-area"></div>
-    </div>
-</div>
-
-<div id="print-screen" class="screen-overlay">
-    <button class="close-btn" onclick="closeAll()">× メニューにもどる</button>
-    <div id="print-mode-container"></div>
-</div>
-
-<script>
-    // ダミーデータ（実際はGoogle Sheetから取得）
-    const allQuestions = Array.from({length: 35}, (_, i) => ({
-        id: i + 1,
-        q: `第${i+1}問目の問題文。漢字の（　　）を練習しましょう。`,
-        a: `解答${i+1}`
-    }));
-
-    let currentPage = 0;
-
-    function closeAll() {
-        document.getElementById('view-screen').style.display = 'none';
-        document.getElementById('print-screen').style.display = 'none';
-    }
-
-    // --- 閲覧モードの処理 ---
-    function openViewMode() {
-        currentPage = 0;
-        document.getElementById('view-screen').style.display = 'block';
-        renderView();
-    }
-
-    function renderView() {
-        const area = document.getElementById('view-area');
-        area.innerHTML = "";
-        const start = currentPage * 15;
-        const chunk = allQuestions.slice(start, start + 15);
-        
-        const canvas = document.createElement('div');
-        canvas.className = "view-canvas";
-        canvas.appendChild(createTitleElement());
-        canvas.appendChild(createTableGrid(chunk));
-        area.appendChild(canvas);
-
-        document.getElementById('page-info').innerText = `${start + 1}〜${Math.min(start + 15, allQuestions.length)}問目`;
-    }
-
-    function changePage(step) {
-        const next = currentPage + step;
-        if (next >= 0 && next * 15 < allQuestions.length) {
-            currentPage = next;
-            renderView();
-        }
-    }
-
-    // --- 印刷モードの処理 ---
-    function openPrintMode() {
-        const container = document.getElementById('print-mode-container');
-        container.innerHTML = "";
-        document.getElementById('print-screen').style.display = 'block';
-
-        for (let i = 0; i < allQuestions.length; i += 15) {
-            const chunk = allQuestions.slice(i, i + 15);
-            const canvas = document.createElement('div');
-            canvas.className = "print-canvas";
-            canvas.appendChild(createTitleElement());
-            canvas.appendChild(createTableGrid(chunk));
-            container.appendChild(canvas);
-        }
-    }
-
-    // --- 共通パーツ生成 ---
-    function createTitleElement() {
-        const title = document.createElement('div');
-        title.className = "print-title";
-        title.innerText = "６年 やまなし";
-        return title;
-    }
-
-    function createTableGrid(data) {
-        const grid = document.createElement('div');
-        grid.style.display = "flex";
-        grid.style.flexDirection = "row-reverse";
-        
-        data.forEach(item => {
-            const table = document.createElement('table');
-            table.className = "column-unit";
-            table.innerHTML = `
-                <tr><td class="h-check"><div class="square"></div></td></tr>
-                <tr><td class="h-num">${item.id}</td></tr>
-                <tr><td class="h-ques">${item.q}</td></tr>
-                <tr><td class="h-num">${item.id}</td></tr>
-                <tr><td class="h-ans">${item.a}</td></tr>
-            `;
-            grid.appendChild(table);
-        });
-        return grid;
-    }
-</script>
-</body>
-</html>
+/* 15列が横に並ぶ際の幅調整 */
+.view-canvas .column-unit td {
+    width: calc(90vw / 16); /* 画面幅を16等分（15列+タイトル分） */
+    max-width: 60px;
+    min-width: 30px; /* 小さくなりすぎ防止 */
+}
