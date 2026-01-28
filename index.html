@@ -3,18 +3,25 @@
 <head>
     <meta charset="UTF-8">
     <style>
+        :root {
+            --ink-black: #000000;
+            /* 学習用として最も読みやすい教科書体フォントを指定 */
+            --main-font: "UD Digital Kyokasho N-R", "UD デジタル 教科書体 N-R", "BIZ UDPGothic", sans-serif;
+        }
+
         body {
             margin: 0;
-            padding: 20px;
-            background-color: #f0f0f0;
-            /* 縦書きモードは解除し、横並びのレイアウトで制御します */
+            padding: 30px;
+            background-color: #f5f5f5;
+            font-family: var(--main-font);
             display: flex;
-            flex-direction: row-reverse; /* 右から1番を始めるため */
-            justify-content: flex-start;
+            /* 右から左へ（1番から順に）並べる設定 */
+            flex-direction: row-reverse;
+            justify-content: center;
             align-items: flex-start;
         }
 
-        /* 各「列」を独立したテーブルとして定義 */
+        /* 各「縦列」のユニット */
         .column-unit {
             border-collapse: collapse;
             margin: 0;
@@ -22,43 +29,110 @@
         }
 
         .column-unit td {
-            border: 1px solid #000;
-            width: 60px; /* 列の幅 */
-            height: 0;   /* 下記のクラスで高さを固定 */
+            border: 1px solid var(--ink-black);
+            width: 70px; /* 漢字が書きやすいよう少し幅を広げました */
             background: white;
             text-align: center;
             vertical-align: middle;
+            padding: 0;
+            box-sizing: border-box;
         }
 
-        /* 各部屋の高さ（縦の長さ） */
-        .h-check { height: 60px; }  /* 1行目：□ */
-        .h-num-t { height: 40px; }  /* 2行目：番号 */
-        .h-ques  { height: 500px; } /* 3行目：問題 */
-        .h-num-b { height: 40px; }  /* 4行目：番号 */
-        .h-ans   { height: 150px; } /* 5行目：答え */
+        /* --- 各行の高さ設定（2枚目の画像に準拠） --- */
+        
+        .h-check { 
+            height: 65px; 
+        } /* 1段目：チェック用□ */
 
+        .h-num-t { 
+            height: 45px; 
+            font-weight: bold; 
+            background: #fafafa;
+            font-size: 18px;
+        } /* 2段目：番号（上） */
+
+        .h-ques { 
+            height: 520px; /* 問題文をしっかり読ませるためのメインエリア */
+            writing-mode: vertical-rl; /* 文字を縦書きに */
+            text-orientation: upright;
+            padding: 20px 5px;
+            font-size: 20px;
+            line-height: 1.6;
+            text-align: start;
+        } /* 3段目：問題文 */
+
+        .h-num-b { 
+            height: 40px; 
+            background: #fafafa; 
+            font-size: 14px;
+            color: #666;
+        } /* 4段目：番号（下） */
+
+        .h-ans { 
+            height: 160px; /* 答えの漢字を大きく表示 */
+            color: #e74c3c; /* 採点風の赤色 */
+            font-weight: bold;
+            font-size: 22px;
+            writing-mode: vertical-rl;
+            text-orientation: upright;
+        } /* 5段目：答え */
+
+        .square {
+            width: 32px;
+            height: 32px;
+            border: 2px solid #000;
+            margin: auto;
+        }
+
+        /* 右端のタイトルエリア */
+        .print-title {
+            writing-mode: vertical-rl;
+            font-size: 28px;
+            font-weight: bold;
+            margin-left: 30px;
+            border-left: 5px double #000;
+            padding: 15px 10px;
+            height: 830px; /* テーブル全体の高さ(合計値)と合わせる */
+            display: flex;
+            align-items: center;
+            background: white;
+            border-top: 2px solid #000;
+            border-right: 2px solid #000;
+            border-bottom: 2px solid #000;
+        }
     </style>
 </head>
 <body>
 
-    <div id="print-area" style="display: flex; flex-direction: row-reverse;"></div>
+    <div id="print-area" style="display: flex; flex-direction: row-reverse; background: white; padding: 10px; border: 2px solid #000;">
+        <div class="print-title">６年　やまなし</div>
+        
+        </div>
 
-    <script>
-        const area = document.getElementById('print-area');
+<script>
+    const area = document.getElementById('print-area');
+    
+    // サンプルデータ（ここに実際の問題を流し込めます）
+    const sampleData = Array.from({length: 15}, (_, i) => ({
+        id: i + 1,
+        q: "かぎりある資源を大切にする。（　　）を読む問題です。",
+        a: "しげん"
+    }));
 
-        // 15回ループして「縦1列」を15本作成
-        for (let i = 1; i <= 15; i++) {
-            const table = document.createElement('table');
-            table.className = 'column-unit';
-            table.innerHTML = `
-                <tr><td class="h-check"></td></tr>
-                <tr><td class="h-num-t">${i}</td></tr>
-                <tr><td class="h-ques"></td></tr>
-                <tr><td class="h-num-b">${i}</td></tr>
-                <tr><td class="h-ans"></td></tr>
-            `;
-            area.appendChild(table);
-        }
-    </script>
+    // 15列を生成
+    sampleData.forEach(item => {
+        const table = document.createElement('table');
+        table.className = 'column-unit';
+        table.innerHTML = `
+            <tr><td class="h-check"><div class="square"></div></td></tr>
+            <tr><td class="h-num-t">${item.id}</td></tr>
+            <tr><td class="h-ques">${item.q.replace(/[（\(].*?[）\)]/g, '（　　　）')}</td></tr>
+            <tr><td class="h-num-b">${item.id}</td></tr>
+            <tr><td class="h-ans">${item.a}</td></tr>
+        `;
+        area.appendChild(table);
+    });
+</script>
+
 </body>
 </html>
