@@ -17,7 +17,6 @@
             overflow: hidden; 
         }
 
-        /* --- 画面オーバーレイ --- */
         .screen-overlay {
             display: block; 
             position: fixed; 
@@ -48,15 +47,15 @@
             display: flex; 
             align-items: center; 
             justify-content: center;
-            padding: 15px;
+            padding: 10px;
             box-sizing: border-box;
         }
 
-        /* 外枠 */
+        /* 外枠：指示通り高さを広げつつ、内側にマージンを確保 */
         .view-canvas {
             display: flex; 
             flex-direction: row-reverse;
-            height: 98%; 
+            height: 96%; 
             width: 96vw; 
             max-width: 1600px;
             background: white; 
@@ -76,6 +75,8 @@
             border: 1px solid #000; 
             overflow: hidden; 
             box-sizing: border-box;
+            background: #000; /* 隙間から線が見えるように */
+            gap: 1px; /* テーブル間の細い線 */
         }
 
         .column-unit { 
@@ -83,7 +84,7 @@
             height: 100%; 
             flex-grow: 1; 
             table-layout: fixed; 
-            border: none;
+            background: white;
         }
         
         .column-unit td { 
@@ -107,26 +108,27 @@
         }
         .h-num2  { height: 6%; font-size: 1.4vh; }
         
-        /* --- 正解エリア：修正版 --- */
+        /* --- 正解エリア：枠線を壊さない中央揃え --- */
         .h-ans { 
             height: 20%; 
-            color: #e74c3c;
-            padding: 0;
-            /* テーブルセルの標準配置を無効化し、Flexで中央へ */
-            display: flex !important;
-            flex-direction: column;
-            align-items: center; 
-            justify-content: center;
+            position: relative; /* 子要素の絶対配置の基準にする */
         }
 
-        /* 内部の文字だけを個別に制御 */
-        .ans-text {
-            writing-mode: vertical-rl; 
+        .ans-wrapper {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            writing-mode: vertical-rl;
             text-orientation: upright;
+        }
+
+        .ans-text {
             font-size: 2.2vh; 
-            font-weight: bold;
-            line-height: 1; /* 行間の影響をゼロにする */
-            display: block;
+            font-weight: bold; 
+            color: #e74c3c;
+            line-height: 1;
         }
 
         .print-title {
@@ -141,6 +143,7 @@
             height: 100%; 
             margin-left: 15px;
             box-sizing: border-box;
+            background: white;
         }
 
         .square { 
@@ -191,7 +194,9 @@
             <tr><td class="h-ques">第${i}問目の漢字問題文。ここに（　　）が入ります。</td></tr>
             <tr><td class="h-num2">${i}</td></tr>
             <td class="h-ans">
-                <span class="ans-text">正解${i}</span>
+                <div class="ans-wrapper">
+                    <span class="ans-text">正解${i}</span>
+                </div>
             </td>
         `;
         grid.appendChild(table);
