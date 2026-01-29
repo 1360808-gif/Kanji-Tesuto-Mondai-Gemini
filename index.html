@@ -61,27 +61,32 @@
             overflow: hidden; box-sizing: border-box; background: #000; gap: 1px;
         }
 
-        .column-unit { border-collapse: collapse; height: 100%; flex-grow: 1; table-layout: fixed; background: white; }
+        /* --- 修正箇所：ここを変えました --- */
+        .column-unit { 
+            border-collapse: collapse; 
+            height: 100%; 
+            
+            /* 【重要】flex-grow: 1 を flex: 1 に変更 */
+            /* これで「中身の量に関わらず強制的に等幅」になります */
+            flex: 1; 
+            
+            table-layout: fixed; 
+            background: white; 
+        }
+
         .column-unit td { border: 1px solid #000; box-sizing: border-box; }
         
         .h-check { height: 10%; text-align: center; vertical-align: middle; }
         .h-num   { height: 6%; text-align: center; vertical-align: middle; font-size: 1.4vh; }
 
-        /* --- 問題文エリア：ここを安全に修正しました --- */
+        /* 問題文エリア（前回の修正を維持） */
         .h-ques { 
             height: 53%; 
             writing-mode: vertical-rl; 
             text-orientation: upright; 
-            
-            /* 【変更1】上揃えを維持 */
-            text-align: start; 
-            
-            /* 【変更2】左右の中央寄せを実現（縦書きtdの特性を利用） */
-            vertical-align: middle; 
-            
-            /* 左右のpaddingを0にすることで、完全な中央配置にします */
-            padding: 15px 0 10px 0; 
-            
+            text-align: start;       /* 上揃え */
+            vertical-align: middle;  /* 左右中央寄せ */
+            padding: 15px 0 10px 0;  /* 余白調整 */
             font-size: min(1.9vh, 17px);
             line-height: 1.4;
             letter-spacing: 0.05em;
@@ -140,10 +145,10 @@
 <script>
     const allQuestions = Array.from({length: 60}, (_, i) => ({
         id: i + 1,
-        // テスト用：1行と2行が混在しても崩れないか確認用
+        // テスト用：1行と2行を混ぜて幅の違いを確認
         q: (i + 1) % 2 === 0 
-           ? `第${i+1}問目の漢字。これは非常に長い文章のテストです。２行目も１文字目が揃うか確認。` 
-           : `第${i+1}問目の問題`,
+           ? `第${i+1}問目の漢字。長い文章でも幅が広がらないか確認するためのテスト文章です。` 
+           : `第${i+1}問`,
         a: `正解${i+1}`
     }));
 
