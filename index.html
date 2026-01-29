@@ -10,10 +10,8 @@
             --main-font: "UD Digital Kyokasho N-R", "UD デジタル 教科書体 N-R", sans-serif;
             --border-width: 2px;
             --border-color: #000; 
-            
-            /* チェックマークの色 */
-            --color-perfect: #27ae60; /* 緑 */
-            --color-review: #e67e22;  /* オレンジ */
+            --color-perfect: #27ae60; 
+            --color-review: #e67e22;  
         }
 
         body { 
@@ -25,7 +23,13 @@
 
         @media print {
             @page { size: A4 landscape; margin: 0; }
-            body { background: white !important; overflow: visible !important; }
+            body { 
+                background: white !important; 
+                overflow: visible !important;
+                /* ★重要：これを追加すると、背景色（＝縦線）が強制的に印刷されます */
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
             .view-header, #menu-screen { display: none !important; }
             .screen-overlay { position: static !important; background: white !important; }
             #view-mode-container { display: block !important; height: auto !important; padding: 0 !important; }
@@ -38,8 +42,6 @@
             .view-canvas:last-child { page-break-after: auto !important; }
             .ans-text { color: black !important; opacity: 1 !important; visibility: visible !important; }
             .ans-wrapper::before { content: none !important; }
-            
-            /* ★重要：印刷時はチェックマークの中身を消す */
             .square-mark { display: none !important; }
         }
 
@@ -139,12 +141,11 @@
             height: 100%; margin-left: 15px; box-sizing: border-box; background: white;
         }
 
-        /* 四角のスタイル修正 */
         .square { 
             width: 20px; height: 20px; 
             border: 1px solid #000; 
             margin: auto; 
-            display: flex; align-items: center; justify-content: center; /* 中身を中央へ */
+            display: flex; align-items: center; justify-content: center;
             font-weight: bold;
             font-size: 16px;
             cursor: pointer;
@@ -152,11 +153,9 @@
         }
         .square.hidden { visibility: hidden; pointer-events: none; } 
         
-        /* マークのスタイル */
-        .mark-perfect { color: var(--color-perfect); } /* 緑のチェック */
-        .mark-review { color: var(--color-review); font-size: 14px; }  /* オレンジの三角 */
+        .mark-perfect { color: var(--color-perfect); } 
+        .mark-review { color: var(--color-review); font-size: 14px; }  
 
-        /* ホバー時の効果（クリックできる感） */
         body.view-mode-active .square:hover { background-color: #f9f9f9; }
 
         .btn-action { padding: 6px 16px; border-radius: 20px; border: 1px solid #333; cursor: pointer; font-weight: bold; background: white; }
@@ -250,8 +249,6 @@
     let currentMode = 'view';
     let isAllAnswersVisible = false;
 
-    // ★追加：学習状況を保存するオブジェクト（リロードで消える一時保存）
-    // key: 問題ID, value: 0(なし), 1(チェック), 2(三角)
     let studyProgress = {}; 
 
     document.addEventListener('keydown', (e) => {
@@ -274,7 +271,6 @@
         currentTitle = selectedDataset.title;
         currentPage = 0;
         currentMode = mode;
-        // シートが変わったら学習状況をリセット（本当はシートごとに保存するが今回は簡易版）
         studyProgress = {};
 
         document.getElementById('menu-screen').style.display = 'none';
@@ -304,11 +300,10 @@
         }
     }
 
-    // マークの状態定義
     const MARK_STATES = [
-        { val: 0, html: "" }, // 空
-        { val: 1, html: "<span class='square-mark mark-perfect'>✔</span>" }, // チェック
-        { val: 2, html: "<span class='square-mark mark-review'>△</span>" }  // 三角
+        { val: 0, html: "" }, 
+        { val: 1, html: "<span class='square-mark mark-perfect'>✔</span>" }, 
+        { val: 2, html: "<span class='square-mark mark-review'>△</span>" }  
     ];
 
     function createPageCanvas(pageData, title) {
@@ -338,17 +333,14 @@
             const clickAction = (currentMode === 'view' && isItemExists) ? `onclick="toggleSingleAnswer(this)"` : '';
             const cellCursorClass = (isItemExists) ? 'has-data' : ''; 
             
-            // 四角の設定
             const squareClass = isItemExists ? "square" : "square hidden";
             
-            // 現在のステータスを取得（なければ0）
             let currentStatusVal = 0;
             if (isItemExists && studyProgress[item.id] !== undefined) {
                 currentStatusVal = studyProgress[item.id];
             }
             const currentMarkHtml = MARK_STATES[currentStatusVal].html;
             
-            // 四角のクリックイベント
             const squareClick = (currentMode === 'view' && isItemExists) ? `onclick="toggleCheck(this, ${item.id})"` : '';
 
             const table = document.createElement('table');
@@ -375,20 +367,11 @@
         return canvas;
     }
 
-    // ★追加：チェックマークの切り替え処理
     function toggleCheck(squareElem, questionId) {
         if (!squareElem) return;
-
-        // 現在の状態を取得
         let currentVal = studyProgress[questionId] || 0;
-        
-        // 次の状態へ（0 -> 1 -> 2 -> 0）
         let nextVal = (currentVal + 1) % 3;
-        
-        // 保存
         studyProgress[questionId] = nextVal;
-
-        // 表示更新
         squareElem.innerHTML = MARK_STATES[nextVal].html;
     }
 
