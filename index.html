@@ -67,24 +67,32 @@
         .h-check { height: 10%; text-align: center; vertical-align: middle; }
         .h-num   { height: 6%; text-align: center; vertical-align: middle; font-size: 1.4vh; }
 
-        /* --- 問題文エリア：ここを調整しました --- */
+        /* --- 問題文エリア：ここを「外枠」として定義 --- */
         .h-ques { 
             height: 53%; 
+            padding: 15px 0 10px 0; /* 上下の余白 */
+            
+            /* 中身（.q-wrap）を「左右中央」かつ「上揃え」にする設定 */
+            display: flex;
+            justify-content: center; /* 左右の中央寄せ */
+            align-items: flex-start; /* 上揃え */
+        }
+
+        /* --- 新設：文字そのものの設定 --- */
+        .q-wrap {
+            /* 縦書き設定をここに移動 */
             writing-mode: vertical-rl; 
             text-orientation: upright; 
             
-            /* 上揃え（垂直方向）を維持 */
-            display: flex;
-            flex-direction: column;
-            justify-content: flex-start; 
-            /* 横方向の中央寄せ（1列でも2列でも中央に配置される） */
-            align-items: center; 
-            
-            padding: 15px 2px 10px 2px; 
+            /* 文字の見た目 */
             font-size: min(1.9vh, 17px);
-            line-height: 1.25; /* 2列になった時にくっつきすぎない程度に */
+            line-height: 1.4;
             letter-spacing: 0.05em;
-            text-align: start;
+            
+            /* 内部の文字揃え */
+            text-align: left; /* 行頭を揃える */
+            height: 100%;     /* 親の高さいっぱいに広げる */
+            width: auto;      /* 文字数に応じて幅が変わる（これが重要） */
         }
 
         .h-num2  { height: 6%; text-align: center; vertical-align: middle; font-size: 1.4vh; }
@@ -140,10 +148,10 @@
 <script>
     const allQuestions = Array.from({length: 60}, (_, i) => ({
         id: i + 1,
-        // テスト用：短い文と、折り返される長い文を交互に生成
+        // テスト用：短い文と、2行になる長い文を交互に出力
         q: (i + 1) % 2 === 0 
            ? `第${i+1}問目の漢字。これは非常に長い文章のテストです。２行目も１文字目が揃うか確認。` 
-           : `第${i+1}問目の短い文章。`,
+           : `第${i+1}問目の短い問題。`,
         a: `正解${i+1}`
     }));
 
@@ -164,8 +172,15 @@
             table.innerHTML = `
                 <tr><td class="h-check"><div class="square"></div></td></tr>
                 <tr><td class="h-num">${item.id}</td></tr>
-                <tr><td class="h-ques">${item.q}</td></tr>
+                
+                <tr>
+                    <td class="h-ques">
+                        <div class="q-wrap">${item.q}</div>
+                    </td>
+                </tr>
+                
                 <tr><td class="h-num2">${item.id}</td></tr>
+                
                 <tr>
                     <td class="h-ans">
                         <div class="ans-wrapper">
