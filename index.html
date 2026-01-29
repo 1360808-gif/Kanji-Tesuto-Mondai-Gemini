@@ -5,10 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>漢字学習システム</title>
     <style>
-        /* =========================================
-           【ベースラインCSS】
-           レイアウト関連は変更なし
-           ========================================= */
         :root {
             --ink-black: #000000;
             --main-font: "UD Digital Kyokasho N-R", "UD デジタル 教科書体 N-R", sans-serif;
@@ -21,7 +17,7 @@
             overflow: hidden; 
         }
 
-        /* 印刷用スタイル（変更なし・答えは強制表示） */
+        /* 印刷設定 */
         @media print {
             @page { size: A4 landscape; margin: 0; }
             body { background: white !important; overflow: visible !important; }
@@ -34,9 +30,9 @@
                 page-break-after: always !important; 
             }
             .view-canvas:last-child { page-break-after: auto !important; }
-            
-            /* ★重要：印刷時は隠しクラス（blind）を無視して強制表示＆黒字 */
             .ans-text { color: black !important; opacity: 1 !important; visibility: visible !important; }
+            /* 印刷時は「？」マークも消す */
+            .ans-wrapper::before { content: none !important; }
         }
 
         .screen-overlay {
@@ -75,35 +71,36 @@
         .h-check { height: 10%; }
         .h-num   { height: 6%; font-size: 1.4vh; }
 
-        /* 問題文エリア（レイアウトの要・変更なし） */
         .h-ques { 
             height: 53%; writing-mode: vertical-rl; text-orientation: upright; text-align: left; 
             padding: 12px 2px; font-size: min(1.9vh, 17px); line-height: 1.4; vertical-align: middle; 
         }
         .ques-wrapper { display: block; width: 100%; height: 100%; text-align: left; }
-
         .h-num2  { height: 6%; font-size: 1.4vh; }
-        
-        /* === 答えエリア（機能追加） === */
-        .h-ans { 
-            height: 25%; position: relative; 
-            transition: background 0.1s; /* クリック時の反応 */
-        }
-        /* 閲覧モード時のみ、クリックできる感（指マーク）を出す */
-        body.view-mode-active .h-ans { cursor: pointer; }
-        body.view-mode-active .h-ans:hover { background-color: #fcfcfc; }
-        body.view-mode-active .h-ans:active { background-color: #f0f0f0; }
 
+        /* === 答えエリア === */
+        .h-ans { height: 25%; position: relative; transition: background 0.1s; }
+        body.view-mode-active .h-ans { cursor: pointer; }
+        body.view-mode-active .h-ans:hover { background-color: #f0f8ff; } /* ホバー時うっすら青く */
+        
         .ans-wrapper {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             display: flex; align-items: center; justify-content: center;
             writing-mode: vertical-rl; text-orientation: upright;
-            pointer-events: none; /* クリック判定をtdに任せる */
+            pointer-events: none;
         }
 
-        .ans-text { font-size: 2.3vh; font-weight: bold; color: #e74c3c; line-height: 1; transition: opacity 0.2s; }
-        
-        /* ★答え隠し用クラス */
+        /* ★答えが隠れている時の「？」マーク（CSSで制御） */
+        .ans-wrapper.show-hint::before {
+            content: "？";
+            color: #eee; /* 非常に薄いグレー */
+            font-size: 3vh;
+            font-weight: bold;
+            position: absolute;
+            z-index: 0;
+        }
+
+        .ans-text { font-size: 2.3vh; font-weight: bold; color: #e74c3c; line-height: 1; transition: opacity 0.2s; z-index: 1; }
         .ans-text.blind { opacity: 0; }
 
         .print-title {
@@ -116,6 +113,9 @@
         .btn-action { padding: 6px 16px; border-radius: 20px; border: 1px solid #333; cursor: pointer; font-weight: bold; background: white; }
         .btn-action:hover { background: #f5f5f5; }
         .btn-action:disabled { opacity: 0.3; cursor: not-allowed; }
+
+        /* === ヘッダーのヒント文字 === */
+        .header-hint { font-size: 0.85rem; color: #e74c3c; margin-left: 10px; font-weight: normal; }
 
         /* メニュー画面用 */
         #menu-screen {
@@ -158,7 +158,10 @@
             <button id="toggle-all-btn" class="btn-action" onclick="toggleAllAnswers()">👁️ 答え表示</button>
         </div>
 
-        <div id="page-info" style="font-weight:bold;"></div>
+        <div id="page-info-container" style="display:flex; align-items:center;">
+            <div id="page-info" style="font-weight:bold;"></div>
+            <span class="header-hint" id="header-hint-text">※ マスをクリックで答え合わせ</span>
+        </div>
         
         <div id="nav-controls">
             <button id="prevBtn" class="btn-action" onclick="changePage(-1)">← 前へ</button>
@@ -166,12 +169,10 @@
         </div>
     </div>
 
-    <div id="view-mode-container">
-        </div>
+    <div id="view-mode-container"></div>
 </div>
 
 <script>
-    // ダミーデータ
     const allQuestions = Array.from({length: 60}, (_, i) => ({
         id: i + 1,
         q: `第${i+1}問目の漢字。これは非常に長い文章のテストです。２行目も１文字目が揃うか確認。`,
@@ -181,7 +182,7 @@
     let currentPage = 0;
     const itemsPerPage = 15;
     let currentMode = 'view';
-    let isAllAnswersVisible = false; // 一括表示の状態管理
+    let isAllAnswersVisible = false;
 
     function startApp(mode) {
         currentMode = mode;
@@ -189,31 +190,30 @@
         document.getElementById('app-container').style.display = 'block';
         
         const container = document.getElementById('view-mode-container');
-        const sheetTitle = document.getElementById('sheet-select').value;
         container.innerHTML = '';
 
         if (mode === 'view') {
             document.body.classList.add('view-mode-active');
             currentPage = 0;
-            isAllAnswersVisible = false; // ページを開くたびに隠す
+            isAllAnswersVisible = false;
             updateToggleBtnText();
-            
             document.body.style.overflow = 'hidden';
             document.getElementById('nav-controls').style.display = 'block';
-            document.getElementById('toggle-all-btn').style.display = 'inline-block'; // ボタン表示
+            document.getElementById('toggle-all-btn').style.display = 'inline-block';
+            document.getElementById('header-hint-text').style.display = 'inline'; // ヒント表示
             renderViewPage();
         } else {
             document.body.classList.remove('view-mode-active');
             document.body.style.overflow = 'visible';
             document.getElementById('nav-controls').style.display = 'none';
-            document.getElementById('toggle-all-btn').style.display = 'none'; // 印刷時はボタン不要
+            document.getElementById('toggle-all-btn').style.display = 'none';
+            document.getElementById('header-hint-text').style.display = 'none'; // 印刷時はヒント非表示
             document.getElementById('page-info').innerText = "印刷プレビュー";
             renderAllPages();
             setTimeout(() => { window.print(); }, 500);
         }
     }
 
-    // 1ページ生成関数
     function createPageCanvas(pageData, title) {
         const canvas = document.createElement('div');
         canvas.className = 'view-canvas';
@@ -227,10 +227,10 @@
         grid.className = 'kanji-table-grid';
 
         pageData.forEach(item => {
-            // 閲覧モードなら最初は「blind」クラスをつける。印刷モードならつけない。
-            const hiddenClass = (currentMode === 'view' && !isAllAnswersVisible) ? 'blind' : '';
-            
-            // 閲覧モードのみクリックイベント付与
+            const isHidden = (currentMode === 'view' && !isAllAnswersVisible);
+            const hiddenClass = isHidden ? 'blind' : '';
+            // ★ヒントマーク用のクラスも制御
+            const hintClass = isHidden ? 'show-hint' : '';
             const clickAction = (currentMode === 'view') ? `onclick="toggleSingleAnswer(this)"` : '';
 
             const table = document.createElement('table');
@@ -243,7 +243,7 @@
                 </td>
                 <tr><td class="h-num2">${item.id}</td></tr>
                 <td class="h-ans" ${clickAction}>
-                    <div class="ans-wrapper">
+                    <div class="ans-wrapper ${hintClass}">
                         <span class="ans-text ${hiddenClass}">${item.a}</span>
                     </div>
                 </td>
@@ -255,34 +255,39 @@
         return canvas;
     }
 
-    // ★個別クリックで答えを表示/非表示
     function toggleSingleAnswer(tdElement) {
         const span = tdElement.querySelector('.ans-text');
+        const wrapper = tdElement.querySelector('.ans-wrapper');
+        
         if (span) {
             span.classList.toggle('blind');
+            // 文字が見えたら「？」マーク(hintClass)を消す
+            wrapper.classList.toggle('show-hint');
         }
     }
 
-    // ★全表示/全非表示ボタン
     function toggleAllAnswers() {
         isAllAnswersVisible = !isAllAnswersVisible;
-        
-        // 画面内のすべての答え要素を取得
+        const allWrappers = document.querySelectorAll('.ans-wrapper');
         const allSpans = document.querySelectorAll('.ans-text');
+        
         allSpans.forEach(span => {
-            if (isAllAnswersVisible) {
-                span.classList.remove('blind');
-            } else {
-                span.classList.add('blind');
-            }
+            if (isAllAnswersVisible) span.classList.remove('blind');
+            else span.classList.add('blind');
         });
+        
+        // 「？」マークの一括制御
+        allWrappers.forEach(wrapper => {
+            if (isAllAnswersVisible) wrapper.classList.remove('show-hint');
+            else wrapper.classList.add('show-hint');
+        });
+
         updateToggleBtnText();
     }
 
     function updateToggleBtnText() {
         const btn = document.getElementById('toggle-all-btn');
         btn.innerText = isAllAnswersVisible ? '🙈 答えを隠す' : '👁️ 答え表示';
-        // 色も変えると分かりやすい
         btn.style.background = isAllAnswersVisible ? '#333' : '#fff';
         btn.style.color = isAllAnswersVisible ? '#fff' : '#333';
     }
@@ -293,8 +298,6 @@
         const start = currentPage * itemsPerPage;
         const pageData = allQuestions.slice(start, start + itemsPerPage);
         const sheetTitle = document.getElementById('sheet-select').value;
-
-        // ページめくり時、ボタンの状態に合わせて答えを生成
         container.appendChild(createPageCanvas(pageData, sheetTitle));
 
         document.getElementById('page-info').innerText = `${start + 1} 〜 ${Math.min(start + itemsPerPage, allQuestions.length)} 問目`;
@@ -314,12 +317,8 @@
 
     function changePage(step) {
         currentPage += step;
-        // ページをめくるときは「隠す」状態にリセットするのが一般的だが、
-        // 今の状態（全表示中なら次のページも全表示）を維持したければこのままでOK。
-        // ここでは「めくったら一旦隠す」方が学習アプリっぽいのでリセットします。
         isAllAnswersVisible = false; 
         updateToggleBtnText();
-        
         renderViewPage();
     }
 
