@@ -67,28 +67,28 @@
         .h-check { height: 10%; text-align: center; vertical-align: middle; }
         .h-num   { height: 6%; text-align: center; vertical-align: middle; font-size: 1.4vh; }
 
-        /* --- 問題文エリア：修正の核 --- */
+        /* --- ここを調整：問題文エリア --- */
         .h-ques { 
             height: 53%; 
-            vertical-align: top; /* 縦は上揃え */
-            text-align: center;  /* 横位置を中央に（中のinline-blockを寄せる） */
-            padding: 15px 0 10px 0; 
+            vertical-align: top; /* セルの中では上端に配置 */
+            text-align: center;  /* inline-blockを横方向中央に寄せる */
+            padding: 15px 0 10px 0; /* 左右のpaddingを0に（中央寄せを優先） */
         }
 
-        /* 文字ブロック自体を中央に浮かせ、文章の書き出しは上に固定する */
+        /* 文字のブロック：1文字目を揃えつつ横位置を中立にする */
         .ques-wrapper {
             display: inline-block;
             writing-mode: vertical-rl; 
             text-orientation: upright; 
-            text-align: start; /* 文章の1文字目を上に揃える */
+            text-align: start; /* 1行目と2行目の書き出しを上に揃える */
             font-size: min(1.9vh, 17px);
             line-height: 1.4;
             letter-spacing: 0.05em;
-            height: 90%; /* セル内での高さを確保 */
         }
 
         .h-num2  { height: 6%; text-align: center; vertical-align: middle; font-size: 1.4vh; }
         
+        /* 正解エリア */
         .h-ans { 
             height: 25%; 
             position: relative; 
@@ -139,7 +139,7 @@
 <script>
     const allQuestions = Array.from({length: 60}, (_, i) => ({
         id: i + 1,
-        q: `第${i+1}問目の漢字。これは非常に長い文章のテストです。２行目も１文字目が揃うか確認するための文章。`,
+        q: i % 3 === 0 ? `第${i+1}問目の漢字。これは非常に長い文章のテストです。２行目も１文字目が揃うか確認するための文章。` : `第${i+1}問目の短い問題です。`,
         a: `正解${i+1}`
     }));
 
