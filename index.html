@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>漢字学習システム（統合完全版）</title>
+    <title>漢字学習システム（統合完全版・レイアウト修正済）</title>
     <style>
         /* =========================================
            共通・基盤設定
@@ -26,7 +26,7 @@
             margin: 0; padding: 0; 
             background-color: #e0d8c3;
             font-family: var(--main-font);
-            /* デフォルトはスクロール禁止（練習モード基準）だが、モードによってJSで書き換える */
+            /* デフォルトはスクロール禁止（練習モード基準） */
             overflow: hidden; 
             width: 100vw; height: 100vh;
         }
@@ -39,7 +39,7 @@
 
         /* 閲覧モード用ボディ設定（スクロール可） */
         body.mode-view {
-            display: block; overflow: hidden; /* コンテナ内でスクロールさせるためbodyは固定 */
+            display: block; overflow: hidden; 
         }
 
         /* 共通：ローディング画面 */
@@ -84,7 +84,7 @@
         }
 
         /* =========================================
-           2. モード選択モーダル（新規追加）
+           2. モード選択モーダル
            ========================================= */
         #mode-select-modal {
             display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
@@ -102,7 +102,7 @@
         }
         .mode-btn:active { transform: translateY(2px); box-shadow: 0 2px 0 rgba(0,0,0,0.1); }
         
-        .btn-practice-mode { background: #f1c40f; color: #333; } /* いつもの黄色 */
+        .btn-practice-mode { background: #f1c40f; color: #333; }
         .btn-view-mode { background: var(--action-blue); color: white; }
         .btn-print-mode { background: var(--perfect-green); color: white; }
         .btn-cancel { background: #eee; color: #555; border-color: #ccc; box-shadow: none; }
@@ -114,7 +114,7 @@
             display: none; grid-template-columns: 350px 1.5fr 1.2fr 50px; 
             gap: 25px; width: 94vw; height: 90vh; padding: 10px;
         }
-        /* 練習モード用クラス群（元のまま） */
+        
         .box {
             border: 4px solid var(--ink-black); border-radius: 20px; background: var(--paper-bg);
             overflow: hidden; display: flex; flex-direction: column; box-shadow: 6px 6px 0 rgba(0,0,0,0.1);
@@ -157,7 +157,7 @@
         .hidden { display: none !important; }
 
         /* =========================================
-           4. 閲覧・印刷モード（View/Print UI）
+           4. 閲覧・印刷モード（修正版：単一テーブル）
            ========================================= */
         #view-app { display: none; width: 100%; height: 100%; }
 
@@ -178,44 +178,58 @@
             border: var(--border-width) solid var(--border-color);
             box-sizing: border-box; padding: 20px; overflow: hidden;
             box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-            flex-shrink: 0; margin-bottom: 20px; /* 複数ページ表示用 */
+            flex-shrink: 0; margin-bottom: 20px;
         }
 
+        /* 修正箇所：グリッドコンテナ */
         .kanji-table-grid {
-            display: flex; flex-direction: row-reverse;
+            display: block; 
             height: 100%; flex-grow: 1; 
             border: var(--border-width) solid var(--border-color);
             background: var(--border-color); 
-            gap: var(--border-width);        
-            overflow: hidden; box-sizing: border-box; 
+            box-sizing: border-box; 
+            overflow: hidden;
         }
 
-        .column-unit { 
-            border-collapse: collapse; height: 100%; flex: 1; width: auto; 
-            table-layout: fixed; background: white; box-sizing: border-box; border: none; 
+        /* 修正箇所：全体を1つのテーブルとして結合 */
+        .unified-table {
+            width: 100%; height: 100%;
+            border-collapse: collapse; table-layout: fixed;
+            /* 右から左へ列を並べる */
+            direction: rtl; 
+            background: white;
         }
-        
-        .column-unit td { 
-            border-bottom: var(--border-width) solid var(--border-color); 
-            text-align: center; vertical-align: middle; padding: 0; box-sizing: border-box; 
+
+        .unified-table td {
+            border: var(--border-width) solid var(--border-color);
+            text-align: center; vertical-align: middle; padding: 0; box-sizing: border-box;
+            /* 中身の文字は左書き（縦書き含む）に戻す */
+            direction: ltr; 
         }
-        .column-unit tr:last-child td { border-bottom: none; }
+
+        /* 行の高さ設定 */
+        .tr-check { height: 10%; }
+        .tr-num   { height: 6%; }
+        .tr-ques  { height: 53%; }
+        .tr-num2  { height: 6%; }
+        .tr-ans   { height: 25%; }
+
+        /* 中身のスタイル */
+        .h-num span, .h-num2 span { font-size: 1.4vh; }
         
-        .h-check { height: 10%; }
-        .h-num   { height: 6%; font-size: 1.4vh; }
-        .h-ques { 
-            height: 53%; writing-mode: vertical-rl; text-orientation: upright; text-align: left; 
-            padding: 12px 2px; font-size: min(1.9vh, 17px); line-height: 1.4; vertical-align: middle; 
+        .h-ques-inner { 
+            width: 100%; height: 100%; 
+            display: flex; align-items: center; justify-content: center; 
         }
-        .h-num2  { height: 6%; font-size: 1.4vh; }
-        .h-ans { height: 25%; position: relative; transition: background 0.1s; }
-        
-        .ques-wrapper { display: block; width: 100%; height: 100%; text-align: left; }
-        .invisible-text { visibility: hidden; pointer-events: none; }
-        
-        /* Viewモード時のインタラクション */
-        body.mode-view .h-ans.has-data { cursor: pointer; }
-        body.mode-view .h-ans.has-data:hover { background-color: #f0f8ff; }
+        .ques-wrapper {
+            writing-mode: vertical-rl; text-orientation: upright; text-align: left;
+            font-size: min(1.9vh, 17px); line-height: 1.4;
+            max-height: 100%;
+        }
+
+        .h-ans-cell { position: relative; width: 100%; height: 100%; }
+        body.mode-view .h-ans-cell.has-data { cursor: pointer; }
+        body.mode-view .h-ans-cell.has-data:hover { background-color: #f0f8ff; }
         
         .ans-wrapper {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
@@ -228,6 +242,7 @@
         }
         .ans-text { font-size: 2.3vh; font-weight: bold; color: #e74c3c; line-height: 1; transition: opacity 0.2s; z-index: 1; }
         .ans-text.blind { opacity: 0; }
+        .invisible-text { visibility: hidden; pointer-events: none; }
 
         .print-title {
             writing-mode: vertical-rl; font-weight: bold; 
@@ -251,7 +266,7 @@
         .btn-action:hover { background: #f5f5f5; }
 
         /* =========================================
-           5. 印刷用設定（最優先）
+           5. 印刷用設定
            ========================================= */
         @media print {
             @page { size: A4 landscape; margin: 0; }
@@ -263,19 +278,16 @@
                 print-color-adjust: exact;
             }
             
-            /* 不要な要素を非表示 */
             #top-update-btn, #selector-screen, #mode-select-modal, 
             #practice-app, .view-header, #loading { 
                 display: none !important; 
             }
 
-            /* 閲覧・印刷コンテナを表示 */
             #view-app { display: block !important; height: auto !important; }
             #view-mode-container { 
                 display: block !important; height: auto !important; padding: 0 !important; 
             }
             
-            /* キャンバスの強制サイズ設定 */
             .view-canvas { 
                 width: 285mm !important; height: 185mm !important; margin: 5mm auto !important;
                 border: var(--border-width) solid var(--border-color) !important; 
@@ -284,14 +296,15 @@
             }
             .view-canvas:last-child { page-break-after: auto !important; }
             
-            /* 答えを強制表示 */
             .ans-text { color: black !important; opacity: 1 !important; visibility: visible !important; }
             .ans-wrapper::before { content: none !important; }
             .square-mark { display: none !important; }
         }
     </style>
 </head>
-<body class="mode-practice"> <div id="loading">✨ データを読み込んでいます... ✨</div>
+<body class="mode-practice">
+
+    <div id="loading">✨ データを読み込んでいます... ✨</div>
 
     <button id="top-update-btn" onclick="fetchData(true)">
         🔄 こうしん
@@ -399,12 +412,10 @@
     let allProgress = {};
     let currentSheetName = "";
     
-    // 起動時処理
     async function fetchData(force = false) {
         document.getElementById('loading').style.display = 'flex';
         document.getElementById('selector-screen').style.display = 'none';
         
-        // 進捗ロード
         const savedProgress = localStorage.getItem(PROGRESS_KEY);
         if (savedProgress) {
             const parsed = JSON.parse(savedProgress);
@@ -418,7 +429,6 @@
             }
         }
 
-        // データロード
         const cached = localStorage.getItem(CACHE_KEY);
         if (!force && cached) {
             try { 
@@ -471,9 +481,6 @@
         });
     }
 
-    /* =========================================
-       モード選択ロジック
-       ========================================= */
     function openModeModal(sheetName) {
         currentSheetName = sheetName;
         document.getElementById('selector-screen').style.display = 'none';
@@ -495,8 +502,7 @@
     }
 
     function resetToMenu() {
-        // UIリセット
-        document.body.className = "mode-practice"; // デフォルト
+        document.body.className = "mode-practice";
         document.getElementById('top-update-btn').style.display = 'flex';
         document.getElementById('selector-screen').style.display = 'flex';
         document.getElementById('mode-select-modal').style.display = 'none';
@@ -651,7 +657,7 @@
     }
 
     /* =========================================
-       閲覧・印刷モード (View/Print Logic)
+       閲覧・印刷モード (View/Print Logic 修正版)
        ========================================= */
     const MARK_STATES = [
         { val: 0, html: "" }, 
@@ -661,10 +667,10 @@
     let viewPage = 0;
     const itemsPerPage = 15;
     let isAllAnswersVisible = false;
-    let viewStudyProgress = {}; // 閲覧モード用の一時的なチェック状態（保存はしない仕様）
+    let viewStudyProgress = {};
 
     function launchViewMode(mode) {
-        document.body.className = "mode-view"; // スクロール可能に
+        document.body.className = "mode-view";
         document.getElementById('mode-select-modal').style.display = 'none';
         document.getElementById('top-update-btn').style.display = 'none';
         document.getElementById('view-app').style.display = 'block';
@@ -672,21 +678,19 @@
         viewPage = 0;
         viewStudyProgress = {};
         
-        // モード別の初期設定
         if (mode === 'view') {
             isAllAnswersVisible = false;
             document.getElementById('nav-controls').style.display = 'block';
             updateToggleBtnText();
             renderViewPage();
         } else {
-            // 印刷モード
             document.getElementById('nav-controls').style.display = 'none';
             renderAllPagesForPrint();
-            // レンダリング完了を少し待ってから印刷
             setTimeout(() => { window.print(); }, 500);
         }
     }
 
+    // 修正：単一テーブル生成ロジック
     function createPageCanvas(pageData, title) {
         const canvas = document.createElement('div');
         canvas.className = 'view-canvas';
@@ -699,32 +703,69 @@
         const grid = document.createElement('div');
         grid.className = 'kanji-table-grid';
 
+        const table = document.createElement('table');
+        table.className = 'unified-table';
+
+        const trCheck = document.createElement('tr'); trCheck.className = 'tr-check';
+        const trNum1  = document.createElement('tr'); trNum1.className  = 'tr-num';
+        const trQues  = document.createElement('tr'); trQues.className  = 'tr-ques';
+        const trNum2  = document.createElement('tr'); trNum2.className  = 'tr-num2';
+        const trAns   = document.createElement('tr'); trAns.className   = 'tr-ans';
+
         for (let i = 0; i < itemsPerPage; i++) {
             const item = pageData[i]; 
             const isItemExists = !!item;
-            // 練習データの構造は {q:.., a:..} なのでIDはindexから生成
+
             const displayId = isItemExists ? item.displayId : "&nbsp;";
             const displayQ  = isItemExists ? item.q : "\u3000"; 
             const displayA  = isItemExists ? item.a : "\u3000"; 
+            
             const textVisClass = isItemExists ? "" : "invisible-text";
             const isHidden = (!isAllAnswersVisible);
+
+            const tdCheck = document.createElement('td');
+            tdCheck.innerHTML = `<div class="square ${isItemExists ? '' : 'hidden'}" onclick="toggleCheck(this, '${displayId}')"></div>`;
+            trCheck.appendChild(tdCheck);
+
+            const tdNum1 = document.createElement('td');
+            tdNum1.className = 'h-num';
+            tdNum1.innerHTML = `<span class="${textVisClass}">${displayId}</span>`;
+            trNum1.appendChild(tdNum1);
+
+            const tdQues = document.createElement('td');
+            tdQues.innerHTML = `
+                <div class="h-ques-inner">
+                    <div class="ques-wrapper ${textVisClass}">${displayQ}</div>
+                </div>`;
+            trQues.appendChild(tdQues);
+
+            const tdNum2 = document.createElement('td');
+            tdNum2.className = 'h-num2';
+            tdNum2.innerHTML = `<span class="${textVisClass}">${displayId}</span>`;
+            trNum2.appendChild(tdNum2);
+
+            const tdAns = document.createElement('td');
+            if (isItemExists) tdAns.classList.add('has-data'); 
             
-            const table = document.createElement('table');
-            table.className = "column-unit";
-            table.innerHTML = `
-                <tr><td class="h-check"><div class="square ${isItemExists ? '' : 'hidden'}" onclick="toggleCheck(this, '${displayId}')"></div></td></tr>
-                <tr><td class="h-num"><span class="${textVisClass}">${displayId}</span></td></tr>
-                <tr><td class="h-ques"><div class="ques-wrapper ${textVisClass}">${displayQ}</div></td></tr>
-                <tr><td class="h-num2"><span class="${textVisClass}">${displayId}</span></td></tr>
-                <td class="h-ans ${isItemExists ? 'has-data' : ''}" onclick="toggleSingleAnswer(this)">
+            const onclickAttr = isItemExists ? `onclick="toggleSingleAnswer(this)"` : "";
+            tdAns.innerHTML = `
+                <div class="h-ans-cell ${isItemExists ? 'has-data' : ''}" ${onclickAttr}>
                     <div class="ans-wrapper ${isItemExists && isHidden ? 'show-hint' : ''}">
                         <span class="ans-text ${isItemExists && isHidden ? 'blind' : ''} ${textVisClass}">${displayA}</span>
                     </div>
-                </td>
-            `;
-            grid.appendChild(table);
+                </div>`;
+            trAns.appendChild(tdAns);
         }
+
+        table.appendChild(trCheck);
+        table.appendChild(trNum1);
+        table.appendChild(trQues);
+        table.appendChild(trNum2);
+        table.appendChild(trAns);
+
+        grid.appendChild(table);
         canvas.appendChild(grid);
+        
         return canvas;
     }
 
@@ -738,8 +779,10 @@
     }
 
     function toggleSingleAnswer(tdElement) {
-        const span = tdElement.querySelector('.ans-text');
-        const wrapper = tdElement.querySelector('.ans-wrapper');
+        const cell = tdElement.querySelector('.h-ans-cell');
+        if (!cell) return;
+        const span = cell.querySelector('.ans-text');
+        const wrapper = cell.querySelector('.ans-wrapper');
         if (span && !span.classList.contains('invisible-text')) {
             span.classList.toggle('blind');
             wrapper.classList.toggle('show-hint');
@@ -768,7 +811,6 @@
         container.appendChild(createPageCanvas(pageItems, currentSheetName));
         document.getElementById('page-info').innerText = `${start + 1}〜${Math.min(start + itemsPerPage, sourceData.length)}問目`;
         
-        // ページ送りボタンの制御
         document.getElementById('prevBtn').disabled = (viewPage === 0);
         document.getElementById('nextBtn').disabled = ((viewPage + 1) * itemsPerPage >= sourceData.length);
         document.getElementById('prevBtn').style.opacity = (viewPage === 0) ? 0.5 : 1;
