@@ -67,14 +67,21 @@
         .h-check { height: 10%; text-align: center; vertical-align: middle; }
         .h-num   { height: 6%; text-align: center; vertical-align: middle; font-size: 1.4vh; }
 
-        /* --- 問題文エリア：初期設定に戻しました --- */
+        /* --- 問題文エリア：ここだけ調整 --- */
         .h-ques { 
             height: 53%; 
             writing-mode: vertical-rl; 
             text-orientation: upright; 
+            
+            /* ▼▼▼ 追加した3行（これで中央寄せ＋上揃えになります） ▼▼▼ */
+            display: flex;
+            align-items: center;       /* 横方向（左右）の中央寄せ */
+            justify-content: flex-start; /* 縦方向（上下）は上から開始 */
+            /* ▲▲▲ 追加ここまで ▲▲▲ */
+
             text-align: start; 
             vertical-align: top; 
-            padding: 15px 4px 10px 4px; 
+            padding: 15px 0 10px 0; /* 左右のpaddingを0にして、純粋に中央に来るように調整 */
             font-size: min(1.9vh, 17px);
             line-height: 1.4;
             letter-spacing: 0.05em;
@@ -133,7 +140,10 @@
 <script>
     const allQuestions = Array.from({length: 60}, (_, i) => ({
         id: i + 1,
-        q: `第${i+1}問目の漢字。これは非常に長い文章のテストです。２行目も１文字目が揃うか確認するための文章。`,
+        // 確認用：短い文と、2行になる長い文を交互に出します
+        q: (i + 1) % 2 === 0 
+           ? `第${i+1}問目の漢字。これは非常に長い文章のテストです。２行目も１文字目が揃うか確認するための文章。` 
+           : `第${i+1}問目の短い文`,
         a: `正解${i+1}`
     }));
 
@@ -156,7 +166,6 @@
                 <tr><td class="h-num">${item.id}</td></tr>
                 <tr><td class="h-ques">${item.q}</td></tr>
                 <tr><td class="h-num2">${item.id}</td></tr>
-                
                 <tr>
                     <td class="h-ans">
                         <div class="ans-wrapper">
