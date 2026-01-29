@@ -3,8 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>漢字学習システム（一覧・印刷モード）</title>
+    <title>漢字学習システム（統合版）</title>
     <style>
+        /* =========================================
+           共通設定 & いただいたCSS (閲覧・印刷用)
+           ========================================= */
         :root {
             --ink-black: #000000;
             --main-font: "UD Digital Kyokasho N-R", "UD デジタル 教科書体 N-R", "BIZ UDPGothic", sans-serif;
@@ -21,7 +24,7 @@
             overflow: hidden; 
         }
 
-        /* 印刷用設定 */
+        /* 印刷用設定 (閲覧モードの要素のみ表示) */
         @media print {
             @page { size: A4 landscape; margin: 0; }
             body { 
@@ -30,8 +33,11 @@
                 -webkit-print-color-adjust: exact;
                 print-color-adjust: exact;
             }
-            .view-header, #menu-screen { display: none !important; }
-            .screen-overlay { position: static !important; background: white !important; }
+            /* 練習モードやメニューは隠す */
+            #menu-screen, #practice-container, .view-header { display: none !important; }
+            
+            /* 以下、いただいたコードの印刷設定そのまま */
+            .screen-overlay { position: static !important; background: white !important; display: block !important; }
             #view-mode-container { display: block !important; height: auto !important; padding: 0 !important; }
             .view-canvas { 
                 width: 285mm !important; height: 185mm !important; margin: 5mm auto !important;
@@ -45,6 +51,7 @@
             .square-mark { display: none !important; }
         }
 
+        /* --- いただいた閲覧・印刷モードのCSS (ここから変更なし) --- */
         .screen-overlay {
             display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: #f0f0f0; z-index: 100;
@@ -158,20 +165,91 @@
         .btn-action { padding: 6px 16px; border-radius: 20px; border: 1px solid #333; cursor: pointer; font-weight: bold; background: white; }
         .btn-action:hover { background: #f5f5f5; }
 
+        /* --- メニュー画面 (統合用に少し調整) --- */
         #menu-screen {
             display: flex; flex-direction: column; align-items: center; justify-content: center;
             height: 100vh; gap: 30px; background: #e0d8c3;
+            position: fixed; top: 0; left: 0; width: 100%; z-index: 200;
         }
         .menu-card {
             background: white; padding: 40px; border-radius: 15px;
             box-shadow: 0 10px 25px rgba(0,0,0,0.1); text-align: center;
         }
         .select-box { padding: 12px; font-size: 1.1rem; width: 300px; margin-bottom: 20px; border: 2px solid #ccc; border-radius: 8px; }
-        .btn-group { display: flex; gap: 15px; justify-content: center; }
-        .btn-main { padding: 12px 25px; font-size: 1rem; border: none; border-radius: 8px; cursor: pointer; color: white; font-weight: bold; transition: 0.2s; }
+        
+        .btn-group { display: flex; flex-direction: column; gap: 15px; width: 100%; align-items: center; }
+        .btn-main { 
+            padding: 15px 25px; font-size: 1rem; border: none; border-radius: 8px; 
+            cursor: pointer; color: white; font-weight: bold; transition: 0.2s; 
+            width: 280px; text-align: center;
+            display: flex; align-items: center; justify-content: center; gap: 10px;
+        }
+        .btn-main:hover { opacity: 0.9; transform: translateY(-2px); }
+
+        .btn-practice { background: #e67e22; font-size: 1.1rem; } /* 練習モードボタン */
         .btn-view { background: #3498db; }
         .btn-print { background: #27ae60; }
-        .btn-main:hover { opacity: 0.8; transform: translateY(-2px); }
+
+
+        /* =========================================
+           練習モード用スタイル (新規追加)
+           ========================================= */
+        #practice-container {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: #fdfcf5; z-index: 150;
+            flex-direction: column;
+        }
+
+        .prac-header {
+            height: 60px; background: white; border-bottom: 2px solid #e0e0e0;
+            display: flex; align-items: center; justify-content: space-between; padding: 0 20px;
+        }
+
+        .prac-body {
+            flex: 1; display: flex; align-items: center; justify-content: center;
+            padding: 20px;
+        }
+
+        .flash-card {
+            width: 90%; max-width: 600px; height: 400px;
+            background: white; border-radius: 20px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            cursor: pointer; position: relative; border: 2px solid #333;
+            transition: transform 0.1s;
+        }
+        .flash-card:active { transform: scale(0.98); }
+
+        .card-content {
+            text-align: center; pointer-events: none;
+        }
+
+        .card-label { font-size: 1.2rem; color: #888; margin-bottom: 10px; }
+        .card-q { font-size: 2.5rem; font-weight: bold; margin-bottom: 20px; line-height: 1.5; }
+        .card-a { font-size: 4rem; color: #e74c3c; font-weight: bold; display: none; }
+        
+        .flash-card.revealed .card-q { color: #888; font-size: 1.5rem; margin-bottom: 10px; }
+        .flash-card.revealed .card-a { display: block; }
+        .flash-card.revealed { border-color: #e74c3c; background: #fff5f5; }
+
+        .prac-footer {
+            height: 100px; display: flex; align-items: center; justify-content: center; gap: 20px;
+            padding-bottom: 20px;
+        }
+        
+        .btn-circle {
+            width: 70px; height: 70px; border-radius: 50%; border: none;
+            font-size: 1.5rem; font-weight: bold; cursor: pointer;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2); transition: transform 0.1s;
+            display: flex; align-items: center; justify-content: center;
+            color: white;
+        }
+        .btn-circle:active { transform: scale(0.9); }
+        .btn-ng { background: #95a5a6; }
+        .btn-ok { background: #e74c3c; width: 80px; height: 80px; font-size: 2rem; }
+
+        .hidden-elm { display: none !important; }
+
     </style>
 </head>
 <body>
@@ -184,10 +262,39 @@
             <option value="yamanashi">６年 やまなし</option>
             <option value="curry">６年 カレーライス</option>
         </select>
+        
         <div class="btn-group">
-            <button class="btn-main btn-view" onclick="startApp('view')">画面で学習</button>
-            <button class="btn-main btn-print" onclick="startApp('print')">PDF/印刷</button>
+            <button class="btn-main btn-practice" onclick="startApp('practice')">
+                <span>▶️</span> 練習モードで始める
+            </button>
+            <button class="btn-main btn-view" onclick="startApp('view')">
+                <span>👀</span> 一覧を見て覚える
+            </button>
+            <button class="btn-main btn-print" onclick="startApp('print')">
+                <span>🖨</span> 問題を印刷する
+            </button>
         </div>
+    </div>
+</div>
+
+<div id="practice-container">
+    <div class="prac-header">
+        <button class="btn-action" onclick="goBack()" style="background:#ff4757; color:white; border:none;">× 中断</button>
+        <div style="font-weight:bold; font-size:1.2rem;" id="prac-progress">1 / 20</div>
+    </div>
+    <div class="prac-body">
+        <div class="flash-card" id="flash-card" onclick="flipCard()">
+            <div class="card-content">
+                <div class="card-label">もんだい</div>
+                <div class="card-q" id="card-q-text">ここに問題文</div>
+                <div class="card-a" id="card-a-text">答</div>
+            </div>
+            <div style="position:absolute; bottom:20px; font-size:0.9rem; color:#aaa;" id="tap-hint">タップして答えを表示</div>
+        </div>
+    </div>
+    <div class="prac-footer hidden-elm" id="prac-controls">
+        <button class="btn-circle btn-ng" onclick="nextQuestion()">次へ</button>
+        <button class="btn-circle btn-ok" onclick="nextQuestion()">覚</button>
     </div>
 </div>
 
@@ -213,7 +320,7 @@
 </div>
 
 <script>
-    // サンプルデータ（実際にはGAS等から取得可能）
+    // サンプルデータ
     const kanjiDatasets = {
         "yamanashi": {
             title: "６年 やまなし",
@@ -227,12 +334,21 @@
 
     let currentData = [];
     let currentTitle = "";
+    
+    // 閲覧・印刷用ステート
     let currentPage = 0;
     const itemsPerPage = 15;
     let currentMode = 'view';
     let isAllAnswersVisible = false;
     let studyProgress = {}; 
 
+    // 練習モード用ステート
+    let pracIndex = 0;
+    let isRevealed = false;
+
+    // ==========================================
+    // アプリ起動・モード分岐
+    // ==========================================
     function startApp(mode) {
         const selectId = document.getElementById('sheet-select').value;
         const selectedDataset = kanjiDatasets[selectId];
@@ -240,14 +356,83 @@
 
         currentData = selectedDataset.questions;
         currentTitle = selectedDataset.title;
-        currentPage = 0;
         currentMode = mode;
 
         document.getElementById('menu-screen').style.display = 'none';
+
+        if (mode === 'practice') {
+            // 練習モード起動
+            initPracticeMode();
+        } else {
+            // 閲覧・印刷モード起動
+            initViewPrintMode(mode);
+        }
+    }
+
+    function goBack() {
+        document.getElementById('menu-screen').style.display = 'flex';
+        document.getElementById('app-container').style.display = 'none'; // 閲覧モードを隠す
+        document.getElementById('practice-container').style.display = 'none'; // 練習モードを隠す
+        document.body.classList.remove('view-mode-active');
+    }
+
+    // ==========================================
+    // 練習モードのロジック (シンプル＆高機能)
+    // ==========================================
+    function initPracticeMode() {
+        document.getElementById('practice-container').style.display = 'flex';
+        pracIndex = 0;
+        renderFlashCard();
+    }
+
+    function renderFlashCard() {
+        if (pracIndex >= currentData.length) {
+            alert('全ての問題が終了しました！お疲れ様でした。');
+            goBack();
+            return;
+        }
+
+        const item = currentData[pracIndex];
+        const card = document.getElementById('flash-card');
+        
+        // リセット
+        isRevealed = false;
+        card.classList.remove('revealed');
+        document.getElementById('prac-controls').classList.add('hidden-elm');
+        document.getElementById('tap-hint').style.display = 'block';
+
+        // データセット
+        document.getElementById('card-q-text').innerText = item.q;
+        document.getElementById('card-a-text').innerText = item.a;
+        document.getElementById('prac-progress').innerText = `${pracIndex + 1} / ${currentData.length}`;
+    }
+
+    function flipCard() {
+        if (isRevealed) return; // 既に開いていれば何もしない
+
+        isRevealed = true;
+        const card = document.getElementById('flash-card');
+        card.classList.add('revealed');
+        document.getElementById('tap-hint').style.display = 'none';
+        
+        // 操作ボタンを表示
+        document.getElementById('prac-controls').classList.remove('hidden-elm');
+    }
+
+    function nextQuestion() {
+        pracIndex++;
+        renderFlashCard();
+    }
+
+    // ==========================================
+    // 閲覧・印刷モードのロジック (いただいたコードそのまま)
+    // ==========================================
+    function initViewPrintMode(mode) {
         document.getElementById('app-container').style.display = 'block';
         
         const container = document.getElementById('view-mode-container');
         container.innerHTML = '';
+        currentPage = 0;
 
         if (mode === 'view') {
             document.body.classList.add('view-mode-active');
@@ -349,6 +534,7 @@
 
     function renderAllPages() {
         const container = document.getElementById('view-mode-container');
+        container.innerHTML = '';
         for (let i = 0; i < Math.ceil(currentData.length / itemsPerPage); i++) {
             container.appendChild(createPageCanvas(currentData.slice(i * itemsPerPage, (i + 1) * itemsPerPage), currentTitle));
         }
@@ -356,12 +542,9 @@
 
     function changePage(step) {
         currentPage += step;
+        if (currentPage < 0) currentPage = 0;
+        if (currentPage * itemsPerPage >= currentData.length) currentPage--;
         renderViewPage();
-    }
-
-    function goBack() {
-        document.getElementById('menu-screen').style.display = 'flex';
-        document.getElementById('app-container').style.display = 'none';
     }
 </script>
 </body>
