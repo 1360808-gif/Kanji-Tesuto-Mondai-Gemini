@@ -8,6 +8,7 @@
         :root {
             --ink-black: #000000;
             --main-font: "UD Digital Kyokasho N-R", "UD デジタル 教科書体 N-R", sans-serif;
+            --border-color: #000; /* 線の色を一括管理 */
         }
 
         body { 
@@ -57,36 +58,57 @@
             flex-shrink: 0;
         }
 
+        /* 縦線は gap: 1px (背景色) で表現する */
         .kanji-table-grid {
             display: flex; flex-direction: row-reverse;
-            height: 100%; flex-grow: 1; border: 1px solid #000; 
-            overflow: hidden; box-sizing: border-box; background: #000; gap: 1px;
+            height: 100%; flex-grow: 1; 
+            border: 1px solid var(--border-color); /* 全体の外枠 */
+            overflow: hidden; box-sizing: border-box; 
+            background: var(--border-color); /* 隙間の色＝線の色 */
+            gap: 1px; /* これが縦線になる */
         }
 
-        /* ★変更点1: 幅を6.666%に完全固定（15等分） */
         .column-unit { 
             border-collapse: collapse; 
             height: 100%; 
-            width: 6.666%;       /* 幅を固定 */
-            flex: 0 0 6.666%;    /* flexボックス内での幅も固定 */
+            width: 6.666%;    /* 幅固定 */
+            flex: 0 0 6.666%; 
             table-layout: fixed; 
             background: white; 
             box-sizing: border-box; 
+            border: none; /* テーブル自体のボーダーは消す */
         }
         
-        .column-unit td { border: 1px solid #000; text-align: center; vertical-align: middle; padding: 0; box-sizing: border-box; }
+        /* 横線のみ td の border-bottom で表現 */
+        .column-unit td { 
+            border-bottom: 1px solid var(--border-color); 
+            border-left: none; 
+            border-right: none;
+            border-top: none;
+            text-align: center; 
+            vertical-align: middle; 
+            padding: 0; 
+            box-sizing: border-box; 
+        }
+
+        /* 一番下のセルの下線は不要（全体の枠があるため） */
+        .column-unit tr:last-child td { border-bottom: none; }
         
+        /* 高さの定義（合計100%） */
         .h-check { height: 10%; }
         .h-num   { height: 6%; font-size: 1.4vh; }
-
         .h-ques { 
             height: 53%; writing-mode: vertical-rl; text-orientation: upright; text-align: left; 
             padding: 12px 2px; font-size: min(1.9vh, 17px); line-height: 1.4; vertical-align: middle; 
         }
-        .ques-wrapper { display: block; width: 100%; height: 100%; text-align: left; }
         .h-num2  { height: 6%; font-size: 1.4vh; }
-
         .h-ans { height: 25%; position: relative; transition: background 0.1s; }
+        
+        /* 内部コンテンツのラッパー */
+        .ques-wrapper { display: block; width: 100%; height: 100%; text-align: left; }
+        
+        /* 透明なプレースホルダーのためのクラス */
+        .invisible-text { visibility: hidden; pointer-events: none; }
         
         body.view-mode-active .h-ans.has-data { cursor: pointer; }
         body.view-mode-active .h-ans.has-data:hover { background-color: #f0f8ff; }
@@ -112,7 +134,10 @@
             height: 100%; margin-left: 15px; box-sizing: border-box; background: white;
         }
 
+        /* 四角のスタイル */
         .square { width: 20px; height: 20px; border: 1px solid #000; margin: auto; }
+        .square.hidden { visibility: hidden; } /* 透明にするが場所は取る */
+
         .btn-action { padding: 6px 16px; border-radius: 20px; border: 1px solid #333; cursor: pointer; font-weight: bold; background: white; }
         .btn-action:hover { background: #f5f5f5; }
         .btn-action:disabled { opacity: 0.3; cursor: not-allowed; }
@@ -267,9 +292,14 @@
             const item = pageData[i]; 
             const isItemExists = !!item;
             
-            const displayId = isItemExists ? item.id : "";
-            const displayQ  = isItemExists ? item.q : "";
-            const displayA  = isItemExists ? item.a : "";
+            // ★変更点1：データがない場合、空文字""ではなく全角スペース等を入れる
+            // これによりブラウザの高計算を一致させる
+            const displayId = isItemExists ? item.id : "&nbsp;";
+            const displayQ  = isItemExists ? item.q : "\u3000"; // 全角スペース
+            const displayA  = isItemExists ? item.a : "\u3000"; 
+
+            // データがない場合は透明クラスを付与
+            const textVisClass = isItemExists ? "" : "invisible-text";
 
             const isHidden = (currentMode === 'view' && !isAllAnswersVisible);
             const hiddenClass = (isItemExists && isHidden) ? 'blind' : '';
@@ -277,21 +307,21 @@
             const clickAction = (currentMode === 'view' && isItemExists) ? `onclick="toggleSingleAnswer(this)"` : '';
             const cellCursorClass = (isItemExists) ? 'has-data' : ''; 
             
-            // ★変更点2: 四角（square）を削除せず、透明（hidden）にしてレイアウトを保つ
-            const checkStyle = isItemExists ? '' : 'visibility:hidden';
+            // ★変更点2：四角（square）もスタイルではなくクラスで制御
+            const squareClass = isItemExists ? "square" : "square hidden";
 
             const table = document.createElement('table');
             table.className = "column-unit";
             table.innerHTML = `
-                <tr><td class="h-check"><div class="square" style="${checkStyle}"></div></td></tr>
-                <tr><td class="h-num">${displayId}</td></tr>
+                <tr><td class="h-check"><div class="${squareClass}"></div></td></tr>
+                <tr><td class="h-num"><span class="${textVisClass}">${displayId}</span></td></tr>
                 <td class="h-ques">
-                    <div class="ques-wrapper">${displayQ}</div>
+                    <div class="ques-wrapper ${textVisClass}">${displayQ}</div>
                 </td>
-                <tr><td class="h-num2">${displayId}</td></tr>
+                <tr><td class="h-num2"><span class="${textVisClass}">${displayId}</span></td></tr>
                 <td class="h-ans ${cellCursorClass}" ${clickAction}>
                     <div class="ans-wrapper ${hintClass}">
-                        <span class="ans-text ${hiddenClass}">${displayA}</span>
+                        <span class="ans-text ${hiddenClass} ${textVisClass}">${displayA}</span>
                     </div>
                 </td>
             `;
@@ -306,7 +336,8 @@
         const span = tdElement.querySelector('.ans-text');
         const wrapper = tdElement.querySelector('.ans-wrapper');
         
-        if (span && span.innerText.trim() !== "") {
+        // データがある場合のみ反応
+        if (span && !span.classList.contains('invisible-text')) {
             span.classList.toggle('blind');
             wrapper.classList.toggle('show-hint');
         }
@@ -318,14 +349,14 @@
         const allSpans = document.querySelectorAll('.ans-text');
         
         allSpans.forEach(span => {
-            if (span.innerText === "") return;
+            if (span.classList.contains('invisible-text')) return; // 空セルは無視
             if (isAllAnswersVisible) span.classList.remove('blind');
             else span.classList.add('blind');
         });
         
         allWrappers.forEach(wrapper => {
             const span = wrapper.querySelector('.ans-text');
-            if (!span || span.innerText === "") return;
+            if (!span || span.classList.contains('invisible-text')) return;
 
             if (isAllAnswersVisible) wrapper.classList.remove('show-hint');
             else wrapper.classList.add('show-hint');
