@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>漢字学習システム（完全連動版）</title>
+    <title>漢字学習システム（完全連動・即時更新版）</title>
     <style>
         /* =========================================
            共通・基盤設定
@@ -507,9 +507,10 @@
         document.getElementById('view-app').style.display = 'none';
     }
 
+    // 修正箇所：リストに戻るとき、画面だけでなくメニュー(createMenu)も作り直す
     function backToList() {
         saveProgress();
-        resetToMenu();
+        createMenu(); 
     }
 
     function saveProgress() {
