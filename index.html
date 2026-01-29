@@ -6,7 +6,7 @@
     <title>漢字学習システム</title>
     <style>
         /* =========================================
-           CSSは前回の「完璧版」から変更なし
+           基本スタイル（変更なし）
            ========================================= */
         :root {
             --ink-black: #000000;
@@ -133,12 +133,10 @@
     <div class="menu-card">
         <h1 style="margin-top:0;">漢字学習システム</h1>
         <p>学習するシートを選択してください</p>
-        
         <select id="sheet-select" class="select-box">
             <option value="yamanashi">６年 やまなし</option>
             <option value="curry">６年 カレーライス</option>
         </select>
-        
         <div class="btn-group">
             <button class="btn-main btn-view" onclick="startApp('view')">👀 画面で学習</button>
             <button class="btn-main btn-print" onclick="startApp('print')">🖨️ PDF/印刷</button>
@@ -168,38 +166,30 @@
 </div>
 
 <script>
-    // ============================================
-    // ★データ管理エリア
-    // ここに本物のデータを追加していけばOKです
-    // ============================================
     const kanjiDatasets = {
-        // ID: yamanashi
         "yamanashi": {
             title: "６年 やまなし",
             questions: [
-                // ダミーデータ生成（後で本物に書き換えてください）
+                // 20問のデータ（16-20問目を確認するため）
                 ...Array.from({length: 20}, (_, i) => ({
                     id: i + 1,
-                    q: `やまなしの${i+1}問目。蟹の兄弟が話しています。`,
-                    a: `蟹${i+1}`
+                    q: `やまなしの${i+1}問目。レイアウト確認用です。`,
+                    a: `漢${i+1}`
                 }))
             ]
         },
-        // ID: curry
         "curry": {
             title: "６年 カレーライス",
             questions: [
-                // 別のダミーデータ
                 ...Array.from({length: 20}, (_, i) => ({
                     id: i + 1,
-                    q: `カレーライスの${i+1}問目。お父さんが料理をします。`,
-                    a: `具${i+1}`
+                    q: `カレーライスの${i+1}問目。レイアウト確認用です。`,
+                    a: `辛${i+1}`
                 }))
             ]
         }
     };
 
-    // グローバル変数
     let currentData = [];
     let currentTitle = "";
     let currentPage = 0;
@@ -207,16 +197,14 @@
     let currentMode = 'view';
     let isAllAnswersVisible = false;
 
-    // キーボード操作対応
     document.addEventListener('keydown', (e) => {
         if (currentMode === 'view' && document.getElementById('app-container').style.display === 'block') {
-            if (e.key === 'ArrowRight') changePage(1); // 次へ
-            if (e.key === 'ArrowLeft') changePage(-1); // 前へ
+            if (e.key === 'ArrowRight') changePage(1);
+            if (e.key === 'ArrowLeft') changePage(-1);
         }
     });
 
     function startApp(mode) {
-        // 1. 選択されたIDを取得
         const selectId = document.getElementById('sheet-select').value;
         const selectedDataset = kanjiDatasets[selectId];
 
@@ -225,12 +213,9 @@
             return;
         }
 
-        // 2. 現在のデータをセット
         currentData = selectedDataset.questions;
         currentTitle = selectedDataset.title;
         currentPage = 0;
-
-        // 以降は同じロジック
         currentMode = mode;
         document.getElementById('menu-screen').style.display = 'none';
         document.getElementById('app-container').style.display = 'block';
@@ -265,14 +250,13 @@
         
         const titleDiv = document.createElement('div');
         titleDiv.className = 'print-title';
-        titleDiv.innerText = title; // ★動的タイトル
+        titleDiv.innerText = title;
         canvas.appendChild(titleDiv);
 
         const grid = document.createElement('div');
         grid.className = 'kanji-table-grid';
 
-        // 15問に満たない場合の空きマス埋め処理等は必要であれば追加可能
-        // 現状はデータ数分だけ表示します
+        // 1. 通常のデータ部分を描画
         pageData.forEach(item => {
             const isHidden = (currentMode === 'view' && !isAllAnswersVisible);
             const hiddenClass = isHidden ? 'blind' : '';
@@ -297,16 +281,24 @@
             grid.appendChild(table);
         });
 
-        // レイアウト崩れ防止：1ページ15問未満の場合、空のtableで埋める？
-        // 現状flex-growで伸びる設定なので、少ないと横に伸びます。
-        // 教科書体裁を守るなら、残りを空セルで埋めるロジックが必要ですが、
-        // まずはデータ表示優先でそのままとします。
+        // 2. ★追加：データが15問未満の場合、空の枠で埋める（常に15列にする）
+        const remainingSlots = itemsPerPage - pageData.length;
+        if (remainingSlots > 0) {
+            for (let i = 0; i < remainingSlots; i++) {
+                const emptyTable = document.createElement('table');
+                emptyTable.className = "column-unit"; // 同じクラスを与えて幅を確保
+                emptyTable.innerHTML = `
+                    <tr><td class="h-check"></td></tr> <tr><td class="h-num"></td></tr>   <td class="h-ques"></td>           <tr><td class="h-num2"></td></tr>  <td class="h-ans"></td>            `;
+                grid.appendChild(emptyTable);
+            }
+        }
 
         canvas.appendChild(grid);
         return canvas;
     }
 
     function toggleSingleAnswer(tdElement) {
+        // 空のセルの場合は反応しないようにチェック
         const span = tdElement.querySelector('.ans-text');
         const wrapper = tdElement.querySelector('.ans-wrapper');
         if (span) {
@@ -341,7 +333,7 @@
         const container = document.getElementById('view-mode-container');
         container.innerHTML = '';
         const start = currentPage * itemsPerPage;
-        const pageData = currentData.slice(start, start + itemsPerPage); // ★currentData使用
+        const pageData = currentData.slice(start, start + itemsPerPage);
         
         container.appendChild(createPageCanvas(pageData, currentTitle));
 
@@ -360,7 +352,6 @@
     }
 
     function changePage(step) {
-        // 範囲チェック
         const maxPage = Math.ceil(currentData.length / itemsPerPage) - 1;
         const nextPage = currentPage + step;
         if (nextPage < 0 || nextPage > maxPage) return;
