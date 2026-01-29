@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>漢字学習システム（統合完全版・レイアウト修正済）</title>
+    <title>漢字学習システム（統合完全版）</title>
     <style>
         /* =========================================
            共通・基盤設定
@@ -157,7 +157,7 @@
         .hidden { display: none !important; }
 
         /* =========================================
-           4. 閲覧・印刷モード（修正版：単一テーブル）
+           4. 閲覧・印刷モード（単一テーブル）
            ========================================= */
         #view-app { display: none; width: 100%; height: 100%; }
 
@@ -181,7 +181,7 @@
             flex-shrink: 0; margin-bottom: 20px;
         }
 
-        /* 修正箇所：グリッドコンテナ */
+        /* グリッドコンテナ */
         .kanji-table-grid {
             display: block; 
             height: 100%; flex-grow: 1; 
@@ -191,7 +191,7 @@
             overflow: hidden;
         }
 
-        /* 修正箇所：全体を1つのテーブルとして結合 */
+        /* 全体を1つのテーブルとして結合 */
         .unified-table {
             width: 100%; height: 100%;
             border-collapse: collapse; table-layout: fixed;
@@ -321,13 +321,13 @@
             <h2 id="modal-sheet-title" style="margin-top:0; border-bottom: 2px solid #eee; padding-bottom:10px;"></h2>
             <div class="mode-btn-group">
                 <button class="mode-btn btn-practice-mode" onclick="launchPracticeMode()">
-                    ✍️ １問ずつ練習
+                    １もん ずつ れんしゅう
                 </button>
                 <button class="mode-btn btn-view-mode" onclick="launchViewMode('view')">
-                    👀 一覧を見て学習
+                    いちらんを みて れんしゅう
                 </button>
                 <button class="mode-btn btn-print-mode" onclick="launchViewMode('print')">
-                    🖨️ プリントを印刷
+                    プリントを印刷
                 </button>
                 <button class="mode-btn btn-cancel" onclick="closeModeModal()">
                     キャンセル
