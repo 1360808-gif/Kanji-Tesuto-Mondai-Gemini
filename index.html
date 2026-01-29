@@ -5,6 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>漢字学習システム</title>
     <style>
+        /* =========================================
+           CSSは前回の「完璧版」から変更なし
+           ========================================= */
         :root {
             --ink-black: #000000;
             --main-font: "UD Digital Kyokasho N-R", "UD デジタル 教科書体 N-R", sans-serif;
@@ -17,7 +20,6 @@
             overflow: hidden; 
         }
 
-        /* 印刷設定 */
         @media print {
             @page { size: A4 landscape; margin: 0; }
             body { background: white !important; overflow: visible !important; }
@@ -31,7 +33,6 @@
             }
             .view-canvas:last-child { page-break-after: auto !important; }
             .ans-text { color: black !important; opacity: 1 !important; visibility: visible !important; }
-            /* 印刷時は「？」マークも消す */
             .ans-wrapper::before { content: none !important; }
         }
 
@@ -78,10 +79,9 @@
         .ques-wrapper { display: block; width: 100%; height: 100%; text-align: left; }
         .h-num2  { height: 6%; font-size: 1.4vh; }
 
-        /* === 答えエリア === */
         .h-ans { height: 25%; position: relative; transition: background 0.1s; }
         body.view-mode-active .h-ans { cursor: pointer; }
-        body.view-mode-active .h-ans:hover { background-color: #f0f8ff; } /* ホバー時うっすら青く */
+        body.view-mode-active .h-ans:hover { background-color: #f0f8ff; }
         
         .ans-wrapper {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
@@ -90,14 +90,9 @@
             pointer-events: none;
         }
 
-        /* ★答えが隠れている時の「？」マーク（CSSで制御） */
         .ans-wrapper.show-hint::before {
-            content: "？";
-            color: #eee; /* 非常に薄いグレー */
-            font-size: 3vh;
-            font-weight: bold;
-            position: absolute;
-            z-index: 0;
+            content: "？"; color: #eee; font-size: 3vh; font-weight: bold;
+            position: absolute; z-index: 0;
         }
 
         .ans-text { font-size: 2.3vh; font-weight: bold; color: #e74c3c; line-height: 1; transition: opacity 0.2s; z-index: 1; }
@@ -114,10 +109,8 @@
         .btn-action:hover { background: #f5f5f5; }
         .btn-action:disabled { opacity: 0.3; cursor: not-allowed; }
 
-        /* === ヘッダーのヒント文字 === */
         .header-hint { font-size: 0.85rem; color: #e74c3c; margin-left: 10px; font-weight: normal; }
 
-        /* メニュー画面用 */
         #menu-screen {
             display: flex; flex-direction: column; align-items: center; justify-content: center;
             height: 100vh; gap: 30px; background: #e0d8c3;
@@ -140,10 +133,12 @@
     <div class="menu-card">
         <h1 style="margin-top:0;">漢字学習システム</h1>
         <p>学習するシートを選択してください</p>
+        
         <select id="sheet-select" class="select-box">
-            <option value="６年 やまなし">６年 やまなし</option>
-            <option value="６年 カレーライス">６年 カレーライス</option>
+            <option value="yamanashi">６年 やまなし</option>
+            <option value="curry">６年 カレーライス</option>
         </select>
+        
         <div class="btn-group">
             <button class="btn-main btn-view" onclick="startApp('view')">👀 画面で学習</button>
             <button class="btn-main btn-print" onclick="startApp('print')">🖨️ PDF/印刷</button>
@@ -173,18 +168,69 @@
 </div>
 
 <script>
-    const allQuestions = Array.from({length: 60}, (_, i) => ({
-        id: i + 1,
-        q: `第${i+1}問目の漢字。これは非常に長い文章のテストです。２行目も１文字目が揃うか確認。`,
-        a: `正解${i+1}`
-    }));
+    // ============================================
+    // ★データ管理エリア
+    // ここに本物のデータを追加していけばOKです
+    // ============================================
+    const kanjiDatasets = {
+        // ID: yamanashi
+        "yamanashi": {
+            title: "６年 やまなし",
+            questions: [
+                // ダミーデータ生成（後で本物に書き換えてください）
+                ...Array.from({length: 20}, (_, i) => ({
+                    id: i + 1,
+                    q: `やまなしの${i+1}問目。蟹の兄弟が話しています。`,
+                    a: `蟹${i+1}`
+                }))
+            ]
+        },
+        // ID: curry
+        "curry": {
+            title: "６年 カレーライス",
+            questions: [
+                // 別のダミーデータ
+                ...Array.from({length: 20}, (_, i) => ({
+                    id: i + 1,
+                    q: `カレーライスの${i+1}問目。お父さんが料理をします。`,
+                    a: `具${i+1}`
+                }))
+            ]
+        }
+    };
 
+    // グローバル変数
+    let currentData = [];
+    let currentTitle = "";
     let currentPage = 0;
     const itemsPerPage = 15;
     let currentMode = 'view';
     let isAllAnswersVisible = false;
 
+    // キーボード操作対応
+    document.addEventListener('keydown', (e) => {
+        if (currentMode === 'view' && document.getElementById('app-container').style.display === 'block') {
+            if (e.key === 'ArrowRight') changePage(1); // 次へ
+            if (e.key === 'ArrowLeft') changePage(-1); // 前へ
+        }
+    });
+
     function startApp(mode) {
+        // 1. 選択されたIDを取得
+        const selectId = document.getElementById('sheet-select').value;
+        const selectedDataset = kanjiDatasets[selectId];
+
+        if (!selectedDataset) {
+            alert("データが見つかりませんエラー");
+            return;
+        }
+
+        // 2. 現在のデータをセット
+        currentData = selectedDataset.questions;
+        currentTitle = selectedDataset.title;
+        currentPage = 0;
+
+        // 以降は同じロジック
         currentMode = mode;
         document.getElementById('menu-screen').style.display = 'none';
         document.getElementById('app-container').style.display = 'block';
@@ -194,20 +240,19 @@
 
         if (mode === 'view') {
             document.body.classList.add('view-mode-active');
-            currentPage = 0;
             isAllAnswersVisible = false;
             updateToggleBtnText();
             document.body.style.overflow = 'hidden';
             document.getElementById('nav-controls').style.display = 'block';
             document.getElementById('toggle-all-btn').style.display = 'inline-block';
-            document.getElementById('header-hint-text').style.display = 'inline'; // ヒント表示
+            document.getElementById('header-hint-text').style.display = 'inline';
             renderViewPage();
         } else {
             document.body.classList.remove('view-mode-active');
             document.body.style.overflow = 'visible';
             document.getElementById('nav-controls').style.display = 'none';
             document.getElementById('toggle-all-btn').style.display = 'none';
-            document.getElementById('header-hint-text').style.display = 'none'; // 印刷時はヒント非表示
+            document.getElementById('header-hint-text').style.display = 'none';
             document.getElementById('page-info').innerText = "印刷プレビュー";
             renderAllPages();
             setTimeout(() => { window.print(); }, 500);
@@ -220,16 +265,17 @@
         
         const titleDiv = document.createElement('div');
         titleDiv.className = 'print-title';
-        titleDiv.innerText = title;
+        titleDiv.innerText = title; // ★動的タイトル
         canvas.appendChild(titleDiv);
 
         const grid = document.createElement('div');
         grid.className = 'kanji-table-grid';
 
+        // 15問に満たない場合の空きマス埋め処理等は必要であれば追加可能
+        // 現状はデータ数分だけ表示します
         pageData.forEach(item => {
             const isHidden = (currentMode === 'view' && !isAllAnswersVisible);
             const hiddenClass = isHidden ? 'blind' : '';
-            // ★ヒントマーク用のクラスも制御
             const hintClass = isHidden ? 'show-hint' : '';
             const clickAction = (currentMode === 'view') ? `onclick="toggleSingleAnswer(this)"` : '';
 
@@ -251,6 +297,11 @@
             grid.appendChild(table);
         });
 
+        // レイアウト崩れ防止：1ページ15問未満の場合、空のtableで埋める？
+        // 現状flex-growで伸びる設定なので、少ないと横に伸びます。
+        // 教科書体裁を守るなら、残りを空セルで埋めるロジックが必要ですが、
+        // まずはデータ表示優先でそのままとします。
+
         canvas.appendChild(grid);
         return canvas;
     }
@@ -258,10 +309,8 @@
     function toggleSingleAnswer(tdElement) {
         const span = tdElement.querySelector('.ans-text');
         const wrapper = tdElement.querySelector('.ans-wrapper');
-        
         if (span) {
             span.classList.toggle('blind');
-            // 文字が見えたら「？」マーク(hintClass)を消す
             wrapper.classList.toggle('show-hint');
         }
     }
@@ -270,18 +319,14 @@
         isAllAnswersVisible = !isAllAnswersVisible;
         const allWrappers = document.querySelectorAll('.ans-wrapper');
         const allSpans = document.querySelectorAll('.ans-text');
-        
         allSpans.forEach(span => {
             if (isAllAnswersVisible) span.classList.remove('blind');
             else span.classList.add('blind');
         });
-        
-        // 「？」マークの一括制御
         allWrappers.forEach(wrapper => {
             if (isAllAnswersVisible) wrapper.classList.remove('show-hint');
             else wrapper.classList.add('show-hint');
         });
-
         updateToggleBtnText();
     }
 
@@ -296,27 +341,31 @@
         const container = document.getElementById('view-mode-container');
         container.innerHTML = '';
         const start = currentPage * itemsPerPage;
-        const pageData = allQuestions.slice(start, start + itemsPerPage);
-        const sheetTitle = document.getElementById('sheet-select').value;
-        container.appendChild(createPageCanvas(pageData, sheetTitle));
+        const pageData = currentData.slice(start, start + itemsPerPage); // ★currentData使用
+        
+        container.appendChild(createPageCanvas(pageData, currentTitle));
 
-        document.getElementById('page-info').innerText = `${start + 1} 〜 ${Math.min(start + itemsPerPage, allQuestions.length)} 問目`;
+        document.getElementById('page-info').innerText = `${start + 1} 〜 ${Math.min(start + itemsPerPage, currentData.length)} 問目 / 全${currentData.length}問`;
         document.getElementById('prevBtn').disabled = currentPage === 0;
-        document.getElementById('nextBtn').disabled = (start + itemsPerPage) >= allQuestions.length;
+        document.getElementById('nextBtn').disabled = (start + itemsPerPage) >= currentData.length;
     }
 
     function renderAllPages() {
         const container = document.getElementById('view-mode-container');
-        const sheetTitle = document.getElementById('sheet-select').value;
-        const totalPages = Math.ceil(allQuestions.length / itemsPerPage);
+        const totalPages = Math.ceil(currentData.length / itemsPerPage);
         for (let i = 0; i < totalPages; i++) {
-            const pageData = allQuestions.slice(i * itemsPerPage, (i + 1) * itemsPerPage);
-            container.appendChild(createPageCanvas(pageData, sheetTitle));
+            const pageData = currentData.slice(i * itemsPerPage, (i + 1) * itemsPerPage);
+            container.appendChild(createPageCanvas(pageData, currentTitle));
         }
     }
 
     function changePage(step) {
-        currentPage += step;
+        // 範囲チェック
+        const maxPage = Math.ceil(currentData.length / itemsPerPage) - 1;
+        const nextPage = currentPage + step;
+        if (nextPage < 0 || nextPage > maxPage) return;
+
+        currentPage = nextPage;
         isAllAnswersVisible = false; 
         updateToggleBtnText();
         renderViewPage();
