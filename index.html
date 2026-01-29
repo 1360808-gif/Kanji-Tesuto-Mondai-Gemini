@@ -110,3 +110,74 @@
     </style>
 </head>
 <body>
+
+<div class="screen-overlay">
+    <div class="view-header">
+        <button class="btn-action" style="background:#ff4757; color:white; border:none;">× 閉じる</button>
+        <div id="page-info" style="font-weight:bold;">1 〜 15 問目</div>
+        <div>
+            <button class="btn-action" onclick="window.print()" style="background:#2ecc71; color:white; border:none; margin-right:10px;">PDF/印刷</button>
+            <button id="prevBtn" class="btn-action" onclick="changePage(-1)">← 前へ</button>
+            <button id="nextBtn" class="btn-action" onclick="changePage(1)">次へ →</button>
+        </div>
+    </div>
+
+    <div id="view-mode-container">
+        <div class="view-canvas">
+            <div class="print-title">６年 やまなし</div>
+            <div class="kanji-table-grid" id="grid-container"></div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const allQuestions = Array.from({length: 60}, (_, i) => ({
+        id: i + 1,
+        q: `第${i+1}問目の漢字。これは非常に長い文章のテストです。２行目も１文字目が揃うか確認するための文章。`,
+        a: `正解${i+1}`
+    }));
+
+    let currentPage = 0;
+    const itemsPerPage = 15;
+
+    function renderPage() {
+        const grid = document.getElementById('grid-container');
+        grid.innerHTML = '';
+
+        const start = currentPage * itemsPerPage;
+        const end = start + itemsPerPage;
+        const pageData = allQuestions.slice(start, end);
+
+        pageData.forEach(item => {
+            const table = document.createElement('table');
+            table.className = "column-unit";
+            table.innerHTML = `
+                <tr><td class="h-check"><div class="square"></div></td></tr>
+                <tr><td class="h-num">${item.id}</td></tr>
+                <tr><td class="h-ques">${item.q}</td></tr>
+                <tr><td class="h-num2">${item.id}</td></tr>
+                <tr>
+                    <td class="h-ans">
+                        <div class="ans-wrapper">
+                            <span class="ans-text">${item.a}</span>
+                        </div>
+                    </td>
+                </tr>
+            `;
+            grid.appendChild(table);
+        });
+
+        document.getElementById('page-info').innerText = `${start + 1} 〜 ${Math.min(end, allQuestions.length)} 問目 / 全${allQuestions.length}問`;
+        document.getElementById('prevBtn').disabled = currentPage === 0;
+        document.getElementById('nextBtn').disabled = end >= allQuestions.length;
+    }
+
+    function changePage(step) {
+        currentPage += step;
+        renderPage();
+    }
+
+    renderPage();
+</script>
+</body>
+</html>
