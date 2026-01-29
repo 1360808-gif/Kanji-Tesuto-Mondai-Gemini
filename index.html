@@ -5,9 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>漢字学習システム</title>
     <style>
-        /* =========================================
-           スタイル（微調整なし、構造の統一で解決）
-           ========================================= */
         :root {
             --ink-black: #000000;
             --main-font: "UD Digital Kyokasho N-R", "UD デジタル 教科書体 N-R", sans-serif;
@@ -60,15 +57,23 @@
             flex-shrink: 0;
         }
 
-        /* テーブル間の線を gap で表現 */
         .kanji-table-grid {
             display: flex; flex-direction: row-reverse;
             height: 100%; flex-grow: 1; border: 1px solid #000; 
             overflow: hidden; box-sizing: border-box; background: #000; gap: 1px;
         }
 
-        .column-unit { border-collapse: collapse; height: 100%; flex-grow: 1; table-layout: fixed; background: white; }
-        /* 空のセルでも線が出るように空文字対策などを意識 */
+        /* ★変更点1: 幅を6.666%に完全固定（15等分） */
+        .column-unit { 
+            border-collapse: collapse; 
+            height: 100%; 
+            width: 6.666%;       /* 幅を固定 */
+            flex: 0 0 6.666%;    /* flexボックス内での幅も固定 */
+            table-layout: fixed; 
+            background: white; 
+            box-sizing: border-box; 
+        }
+        
         .column-unit td { border: 1px solid #000; text-align: center; vertical-align: middle; padding: 0; box-sizing: border-box; }
         
         .h-check { height: 10%; }
@@ -82,7 +87,7 @@
         .h-num2  { height: 6%; font-size: 1.4vh; }
 
         .h-ans { height: 25%; position: relative; transition: background 0.1s; }
-        /* データがある時だけポインターにするCSSはJSで制御クラスを付与する形に変更 */
+        
         body.view-mode-active .h-ans.has-data { cursor: pointer; }
         body.view-mode-active .h-ans.has-data:hover { background-color: #f0f8ff; }
         
@@ -173,7 +178,6 @@
         "yamanashi": {
             title: "６年 やまなし",
             questions: [
-                // 20問のテストデータ
                 ...Array.from({length: 20}, (_, i) => ({
                     id: i + 1,
                     q: `やまなしの${i+1}問目。レイアウト確認用です。`,
@@ -247,7 +251,6 @@
         }
     }
 
-    // ★重要変更：createPageCanvasのロジックを統一
     function createPageCanvas(pageData, title) {
         const canvas = document.createElement('div');
         canvas.className = 'view-canvas';
@@ -260,33 +263,27 @@
         const grid = document.createElement('div');
         grid.className = 'kanji-table-grid';
 
-        // ★常に15回ループする
         for (let i = 0; i < itemsPerPage; i++) {
-            const item = pageData[i]; // データがあればオブジェクト、なければundefined
-
-            // データがある場合の準備
+            const item = pageData[i]; 
             const isItemExists = !!item;
             
-            // データがない場合の空文字セット
             const displayId = isItemExists ? item.id : "";
             const displayQ  = isItemExists ? item.q : "";
             const displayA  = isItemExists ? item.a : "";
 
-            // HTMLクラス制御
-            // データがある場合のみ：クリックアクション、カーソル変化、ヒント表示、チェックボックス表示
             const isHidden = (currentMode === 'view' && !isAllAnswersVisible);
             const hiddenClass = (isItemExists && isHidden) ? 'blind' : '';
             const hintClass = (isItemExists && isHidden) ? 'show-hint' : '';
             const clickAction = (currentMode === 'view' && isItemExists) ? `onclick="toggleSingleAnswer(this)"` : '';
             const cellCursorClass = (isItemExists) ? 'has-data' : ''; 
             
-            // チェックボックスの正方形はデータがあるときだけ描画
-            const checkBoxContent = isItemExists ? '<div class="square"></div>' : '';
+            // ★変更点2: 四角（square）を削除せず、透明（hidden）にしてレイアウトを保つ
+            const checkStyle = isItemExists ? '' : 'visibility:hidden';
 
             const table = document.createElement('table');
-            table.className = "column-unit"; // ★全く同じクラスを使う
+            table.className = "column-unit";
             table.innerHTML = `
-                <tr><td class="h-check">${checkBoxContent}</td></tr>
+                <tr><td class="h-check"><div class="square" style="${checkStyle}"></div></td></tr>
                 <tr><td class="h-num">${displayId}</td></tr>
                 <td class="h-ques">
                     <div class="ques-wrapper">${displayQ}</div>
@@ -306,11 +303,9 @@
     }
 
     function toggleSingleAnswer(tdElement) {
-        // データがないセル（クリックイベントを持っていない）なら何もしないが、一応ガード
         const span = tdElement.querySelector('.ans-text');
         const wrapper = tdElement.querySelector('.ans-wrapper');
         
-        // データがある場合のみ反応
         if (span && span.innerText.trim() !== "") {
             span.classList.toggle('blind');
             wrapper.classList.toggle('show-hint');
@@ -319,18 +314,16 @@
 
     function toggleAllAnswers() {
         isAllAnswersVisible = !isAllAnswersVisible;
-        // データが入っているセル（.ans-textが空でない）のみ対象にする
         const allWrappers = document.querySelectorAll('.ans-wrapper');
         const allSpans = document.querySelectorAll('.ans-text');
         
         allSpans.forEach(span => {
-            if (span.innerText === "") return; // 空セルは無視
+            if (span.innerText === "") return;
             if (isAllAnswersVisible) span.classList.remove('blind');
             else span.classList.add('blind');
         });
         
         allWrappers.forEach(wrapper => {
-            // 中のテキストがあるか確認（簡易的）
             const span = wrapper.querySelector('.ans-text');
             if (!span || span.innerText === "") return;
 
@@ -351,7 +344,6 @@
         const container = document.getElementById('view-mode-container');
         container.innerHTML = '';
         const start = currentPage * itemsPerPage;
-        // データ配列のスライス（データがない部分は要素数が減る）
         const pageData = currentData.slice(start, start + itemsPerPage);
         
         container.appendChild(createPageCanvas(pageData, currentTitle));
