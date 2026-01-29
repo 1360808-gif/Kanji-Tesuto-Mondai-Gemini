@@ -62,27 +62,49 @@
         }
 
         .column-unit { border-collapse: collapse; height: 100%; flex-grow: 1; table-layout: fixed; background: white; }
-        .column-unit td { border: 1px solid #000; text-align: center; vertical-align: middle; padding: 0; box-sizing: border-box; }
+        
+        /* 基本のセル設定：水平・垂直ともに中央揃え（border含む） */
+        .column-unit td { 
+            border: 1px solid #000; 
+            text-align: center; 
+            vertical-align: middle; 
+            padding: 0; 
+            box-sizing: border-box; 
+        }
         
         .h-check { height: 10%; }
         .h-num   { height: 6%; font-size: 1.4vh; }
 
-        /* --- 問題文エリア：ここを修正 --- */
+        /* === 修正箇所：問題文エリア === */
+        /* Flexboxをやめ、シンプルなBlock配置 + text-align で制御します */
         .h-ques { 
             height: 53%; 
             writing-mode: vertical-rl; 
             text-orientation: upright; 
-            text-align: start; /* 行内の文字を上（右）に寄せる */
-            padding: 12px 2px; /* 上下の余白を確保 */
-            font-size: min(1.9vh, 17px); /* 2行になっても収まりやすいサイズ */
-            line-height: 1.3;
+            
+            /* 重要: 縦書きモードでの「left」は、物理的な「上」を意味します */
+            text-align: left; 
+            
+            padding: 12px 2px;
+            font-size: min(1.9vh, 17px);
+            line-height: 1.4; /* 行間を少し広げて読みやすく */
+            
+            /* 重要: セル全体の中での配置。
+               middleにすると、文章量にかかわらず左右中央（縦書きの列の中央）に来ます。
+               topにすると、右端（書き出し位置）に寄ります。通常はmiddleでOK。 */
+            vertical-align: middle; 
         }
 
         .ques-wrapper {
-            display: flex;
-            justify-content: flex-start; /* 縦書き時の開始位置（上）に揃える */
-            height: 100%;
+            /* ★ここが修正の肝★ */
+            /* Flexbox (display: flex) を削除し、ブロック要素として扱います */
+            display: block; 
+            
             width: 100%;
+            height: 100%;
+            
+            /* 親要素(.h-ques)のtext-alignを継承させますが、念のため明示 */
+            text-align: left; 
         }
 
         .h-num2  { height: 6%; font-size: 1.4vh; }
@@ -130,6 +152,7 @@
 
 <script>
     // 60問のダミーデータ（あえて長文にして2行にする）
+    // 「。」や「、」の位置、2行目の頭の揃いを確認してください
     const allQuestions = Array.from({length: 60}, (_, i) => ({
         id: i + 1,
         q: `第${i+1}問目の漢字。これは非常に長い文章のテストです。２行目も１文字目が揃うか確認。`,
