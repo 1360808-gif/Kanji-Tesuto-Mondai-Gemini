@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>漢字練習（完全統合版）</title>
+    <title>漢字練習（V3完成版）</title>
     <style>
         :root {
             --paper-bg: #fffdf5;
@@ -12,7 +12,7 @@
             --retry-orange: #f39c12;
             --action-blue: #3498db;
             --update-purple: #9b59b6;
-            --print-border: #555;
+            --print-gray: #555;
             --main-font: "UD Digital Kyokasho N-R", "UD デジタル 教科書体 N-R", "BIZ UDPGothic", sans-serif;
         }
 
@@ -48,9 +48,8 @@
             display: flex; flex-direction: column; align-items: center; line-height: 1.2;
         }
         #top-update-btn:active { transform: translate(2px, 2px); box-shadow: 2px 2px 0 rgba(0,0,0,0.1); }
-        #top-update-btn small { font-size: 10px; font-weight: normal; margin-top: 2px; }
 
-        /* --- メニュー（セレクター）画面 --- */
+        /* --- メニュー画面 --- */
         #selector-screen {
             display: none; flex-direction: column; align-items: center;
             background: var(--paper-bg); padding: 30px; border-radius: 30px;
@@ -74,9 +73,13 @@
         .modal-content {
             background: white; padding: 25px; border-radius: 20px; border: 4px solid var(--ink-black);
             text-align: center; width: 340px; box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            position: relative;
         }
         .modal-btn-group { display: flex; flex-direction: column; gap: 12px; margin-top: 20px; }
         .btn-modal-action { width: 100%; min-height: 55px; border-radius: 50px; font-size: 18px; font-weight: bold; }
+
+        /* 印刷設定サブ画面（モーダル内切り替え） */
+        #print-options-view { display: none; flex-direction: column; gap: 15px; margin-top: 15px; }
 
         /* --- 練習モード（カード画面） --- */
         .main-container {
@@ -88,12 +91,10 @@
             overflow: hidden; display: flex; flex-direction: column; box-shadow: 6px 6px 0 rgba(0,0,0,0.1);
         }
         
-        /* 左カラム（統計・メニュー） */
         .left-column { padding: 25px; height: 100%; }
         .stats p { margin: 15px 0; font-size: 19px; border-bottom: 2px dotted #bbb; padding-bottom: 10px; }
         .stats span { font-size: 30px; font-weight: bold; color: var(--action-blue); }
 
-        /* 中カラム（解答・ボタン） */
         .middle-column { display: flex; flex-direction: column; gap: 15px; align-items: center; height: 100%; padding: 20px; }
         .answer-container {
             width: 100%; flex-grow: 1; max-height: 60%; border: 3px dashed #ccc; border-radius: 15px; background: white;
@@ -104,7 +105,6 @@
         .btn-group { display: flex; flex-direction: column; gap: 12px; width: 100%; align-items: center; flex-shrink: 0; }
         .btn-card { width: 95%; max-width: 300px; min-height: 70px; border-radius: 50px; font-size: 20px; font-weight: bold; box-shadow: 0 4px 0 var(--ink-black); background: white; }
         
-        /* 右カラム（問題文） */
         .right-column { display: flex; flex-direction: row-reverse; gap: 10px; height: 100%; padding: 20px; }
         .q-num-box {
             border: 3px solid var(--ink-black); min-width: 45px; height: 45px;
@@ -117,7 +117,7 @@
         }
         .title-column { writing-mode: vertical-rl; display: flex; align-items: center; font-size: 16px; font-weight: bold; color: #666; padding-top: 10px; }
 
-        /* --- 一覧・印刷モード（新機能） --- */
+        /* --- 一覧・印刷モード --- */
         #list-view-screen {
             display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: white; z-index: 200; overflow-y: auto;
@@ -146,7 +146,7 @@
         }
 
         .list-a-box {
-            width: 80px; height: 100px; border: 2px solid var(--print-border); position: relative;
+            width: 80px; height: 100px; border: 2px solid var(--print-gray); position: relative;
             display: flex; justify-content: center; align-items: center;
             background-image: 
                 linear-gradient(dashed #ccc 1px, transparent 1px),
@@ -156,7 +156,7 @@
 
         .list-a-text {
             font-size: 42px; font-family: "Klee One", "Yu Kyokasho", serif; color: #e74c3c;
-            display: none; /* デフォルトは非表示（印刷用設定で制御） */
+            display: none; /* デフォルト非表示 */
         }
         
         .check-area {
@@ -169,6 +169,7 @@
         .btn-retry { background: var(--retry-orange); color: white; }
         .btn-show { background: var(--action-blue); color: white; }
         .btn-print { background: #34495e; color: white; }
+        .btn-list { background: #1abc9c; color: white; }
         .btn-special { background: #e67e22; color: white; }
         .btn-suspend { background: #95a5a6; color: white; }
 
@@ -185,9 +186,8 @@
             .list-item { border: 1px solid #555; border-radius: 0; box-shadow: none; break-inside: avoid; }
             .list-q { font-size: 14px; line-height: 1.5; }
             .list-a-box { width: 60px; height: 80px; border: 1px solid #888; }
-            .check-area { display: none; } /* 印刷時はチェックボックス消す */
+            .check-area { display: none; }
             
-            /* 答えを表示するかどうかの制御 */
             body.print-with-ans .list-a-text { display: block; }
             body.print-no-ans .list-a-text { display: none; }
         }
@@ -200,7 +200,7 @@
 
 <button id="top-update-btn" onclick="fetchData(true)">
     🔄 こうしん
-    <small>(先生からお知らせがあったときにおす)</small>
+    <small>(先生からお知らせがあったとき)</small>
 </button>
 
 <div id="selector-screen">
@@ -211,13 +211,25 @@
 <div id="resume-modal">
     <div class="modal-content">
         <h3 id="modal-sheet-name" style="margin-top:0; border-bottom:2px solid #eee; padding-bottom:10px;"></h3>
-        <div class="modal-btn-group">
+        
+        <div id="modal-main-menu" class="modal-btn-group">
             <button id="modal-resume-btn" class="btn btn-show btn-modal-action" onclick="handleModalChoice('resume')">つづきから</button>
             <button id="modal-start-btn" class="btn btn-show btn-modal-action" style="background:#fff; color:#333;" onclick="handleModalChoice('start')">はじめから</button>
             <button id="modal-special-btn" class="btn btn-special btn-modal-action" onclick="handleModalChoice('special')">おぼえちゅうを練習</button>
-            <button class="btn btn-print btn-modal-action" onclick="handleModalChoice('list')">🖨️ 一覧を見る・印刷</button>
-            <button style="background:none; border:none; color:#999; cursor:pointer; text-decoration:underline; margin-top:5px;" onclick="document.getElementById('resume-modal').style.display='none'">キャンセル</button>
+            
+            <button class="btn btn-list btn-modal-action" onclick="handleModalChoice('list')">👀 いちらんで確認</button>
+            <button class="btn btn-print btn-modal-action" onclick="showPrintMenu()">🖨️ テストをつくる</button>
+
+            <button style="background:none; border:none; color:#999; cursor:pointer; text-decoration:underline; margin-top:5px;" onclick="closeModal()">キャンセル</button>
         </div>
+
+        <div id="print-options-view">
+            <h4 style="margin:0;">🖨️ どんなテストにしますか？</h4>
+            <button class="btn btn-print btn-modal-action" style="background:white; color:#333;" onclick="executePrint(false)">📝 答えなし<br><small>(テスト用)</small></button>
+            <button class="btn btn-print btn-modal-action" onclick="executePrint(true)">💮 答えあり<br><small>(練習用)</small></button>
+            <button class="btn btn-modal-action" style="background:#eee; height:40px; font-size:14px;" onclick="backToMainMenu()">⬅️ もどる</button>
+        </div>
+
     </div>
 </div>
 
@@ -241,14 +253,12 @@
         <div class="answer-container" id="a-text"></div>
         <div class="btn-group">
             <button id="show-btn" class="btn btn-show btn-card" onclick="showAnswer()">答えをみる</button>
-            
             <div id="judgement-btns" class="hidden" style="width:100%; display:flex; flex-direction:column; align-items:center; gap:10px;">
                 <div style="display:flex; gap:12px; width:98%;">
                     <button class="btn btn-perfect btn-card" style="flex:1;" onclick="record('perfect')">かんぺき！</button>
                     <button class="btn btn-retry btn-card" style="flex:1;" onclick="record('retry')">おぼえちゅう</button>
                 </div>
             </div>
-
             <div id="retry-options" class="hidden" style="width:100%; display:flex; flex-direction:column; align-items:center; gap:10px;">
                 <div style="display:flex; gap:12px; width:98%;">
                     <button class="btn btn-card" style="flex:1; background:#fff;" onclick="nextStep()">次の問題 ＞</button>
@@ -269,18 +279,14 @@
     <div class="list-header no-print">
         <button class="btn" onclick="closeListView()" style="padding: 10px 20px; font-size: 16px;">⬅️ もどる</button>
         <h2 id="list-view-title" style="margin:0; font-size:20px;"></h2>
-        <div style="display:flex; gap:10px;">
-            <button class="btn btn-print" onclick="printList(false)" style="padding: 10px 15px;">🖨️ そのまま印刷</button>
-            <button class="btn btn-print" onclick="printList(true)" style="padding: 10px 15px; background:white; color:#333;">🖨️ 答えを消して印刷</button>
-        </div>
-    </div>
+        <div style="width:60px;"></div> </div>
     <div id="list-grid" class="list-container"></div>
 </div>
 
 
 <script>
     const API_URL = "https://script.google.com/macros/s/AKfycbyWHprvWe-NcrfamWL2I6bWSAak6HW-JxyMCY-RZkZDFrhLkbSfLkeVmpKyznlI7g3a/exec";
-    const CACHE_KEY = "kanji_quiz_v2_final";
+    const CACHE_KEY = "kanji_quiz_v3_final";
     const PROGRESS_KEY = "kanji_quiz_progress";
     
     let allData = {};
@@ -313,11 +319,7 @@
 
         const cached = localStorage.getItem(CACHE_KEY);
         if (!force && cached) {
-            try { 
-                allData = JSON.parse(cached); 
-                createMenu(); 
-                return; 
-            } catch(e) {}
+            try { allData = JSON.parse(cached); createMenu(); return; } catch(e) {}
         }
 
         try {
@@ -376,23 +378,53 @@
 
         document.getElementById('modal-sheet-name').innerText = sheetName;
         document.getElementById('modal-resume-btn').style.display = hasResume ? "block" : "none";
-        document.getElementById('modal-start-btn').style.display = hasResume ? "block" : "none";
         
-        // 「はじめから」ボタンの文言調整
-        document.getElementById('modal-start-btn').innerText = hasResume ? "はじめから" : "スタート！";
-        document.getElementById('modal-start-btn').style.display = hasResume ? "block" : (hasResume ? "none" : "block");
-        if(!hasResume) document.getElementById('modal-start-btn').classList.remove('btn-show'); // 色調整
+        const startBtn = document.getElementById('modal-start-btn');
+        startBtn.innerText = hasResume ? "はじめから" : "スタート！";
+        startBtn.style.display = hasResume ? "block" : (hasResume ? "none" : "block");
+        if(!hasResume) startBtn.classList.remove('btn-show');
 
         document.getElementById('modal-special-btn').style.display = (retryCount > 0) ? "block" : "none";
+        
+        // メニューの初期状態
+        document.getElementById('modal-main-menu').style.display = 'flex';
+        document.getElementById('print-options-view').style.display = 'none';
         document.getElementById('resume-modal').style.display = 'flex';
     }
 
-    function handleModalChoice(choice) {
+    function showPrintMenu() {
+        document.getElementById('modal-main-menu').style.display = 'none';
+        document.getElementById('print-options-view').style.display = 'flex';
+    }
+
+    function backToMainMenu() {
+        document.getElementById('print-options-view').style.display = 'none';
+        document.getElementById('modal-main-menu').style.display = 'flex';
+    }
+
+    function closeModal() {
         document.getElementById('resume-modal').style.display = 'none';
+    }
+
+    function handleModalChoice(choice) {
+        closeModal();
         if (choice === 'resume') startQuiz(pendingSheet, allProgress[pendingSheet].lastIndex);
         else if (choice === 'start') startQuiz(pendingSheet, 0);
         else if (choice === 'special') startQuiz(pendingSheet, 0, true);
         else if (choice === 'list') renderListView(pendingSheet);
+    }
+
+    // --- 印刷実行フロー ---
+    function executePrint(withAnswer) {
+        // まずリストを描画
+        renderListView(pendingSheet);
+        closeModal();
+        
+        // 描画を待ってから印刷ダイアログを出す
+        setTimeout(() => {
+            document.body.className = withAnswer ? 'print-with-ans' : 'print-no-ans';
+            window.print();
+        }, 300);
     }
 
     // --- 練習モード（クイズ） ---
@@ -513,14 +545,8 @@
         questions.forEach((q, idx) => {
             const item = document.createElement('div');
             item.className = "list-item";
-            
-            // チェック状態（perfectに含まれていればチェック）
             const isPerfect = prog.perfect.has(idx);
-
-            // 問題文（ハイライト処理付き）
             const qText = q.q.replace(/[（\(](.*?)[）\)]/g, '<span style="text-decoration:underline;">$1</span>');
-            
-            // 解答（複数ある場合は改行）
             const aText = (q.a || "").replace(/[、,，]/g, '<br>');
 
             item.innerHTML = `
@@ -547,7 +573,6 @@
             prog.retry.delete(index);
         } else {
             prog.perfect.delete(index);
-            // チェック外しても即「おぼえちゅう」にはしない（中立に戻す）
         }
         saveProgress();
     }
@@ -556,12 +581,6 @@
         backToList();
     }
 
-    function printList(hideAnswer) {
-        document.body.className = hideAnswer ? 'print-no-ans' : 'print-with-ans';
-        window.print();
-    }
-
-    // --- 共通機能 ---
     function startRetryOnlyMode() {
         const retryCount = allProgress[currentSheetName]?.retry.size || 0;
         if (retryCount === 0) return alert("おぼえちゅうの漢字はありません！");
