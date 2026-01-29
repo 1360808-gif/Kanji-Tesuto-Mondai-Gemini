@@ -67,17 +67,36 @@
         .h-check { height: 10%; text-align: center; vertical-align: middle; }
         .h-num   { height: 6%; text-align: center; vertical-align: middle; font-size: 1.4vh; }
 
-        /* --- 問題文エリア：初期の状態に固定 --- */
+        /* --- 修正箇所：td（外枠）の設定 --- */
+        /* 指示通り、writing-modeやFlexboxは全て削除し、単なる「箱」に徹させます */
         .h-ques { 
             height: 53%; 
-            writing-mode: vertical-rl; 
-            text-orientation: upright; 
-            text-align: start; 
+            padding: 0; /* paddingも内側に任せるため0にします */
             vertical-align: top; 
-            padding: 15px 4px 10px 4px; 
+        }
+
+        /* --- 修正箇所：内側のラッパー（新規作成） --- */
+        /* ここに「縦書き」と「整列（Flex）」を閉じ込めます */
+        .ques-inner {
+            width: 100%;
+            height: 100%;
+            box-sizing: border-box; /* paddingを含めたサイズ計算 */
+            
+            /* 縦書き設定をここに移動 */
+            writing-mode: vertical-rl;
+            text-orientation: upright;
+
+            /* 整列設定 */
+            display: flex;
+            align-items: center;       /* 横方向（左右）の中央寄せ */
+            justify-content: flex-start; /* 縦方向（上下）の上揃え */
+
+            /* 文字の装飾と余白 */
+            padding: 15px 0 10px 0; /* 上の余白確保 */
             font-size: min(1.9vh, 17px);
             line-height: 1.4;
             letter-spacing: 0.05em;
+            text-align: left; /* 複数行になった時の行頭揃え */
         }
 
         .h-num2  { height: 6%; text-align: center; vertical-align: middle; font-size: 1.4vh; }
@@ -133,7 +152,10 @@
 <script>
     const allQuestions = Array.from({length: 60}, (_, i) => ({
         id: i + 1,
-        q: `第${i+1}問目の漢字。これは非常に長い文章のテストです。２行目も１文字目が揃うか確認するための文章。`,
+        // テスト用：1行の短い文と、2行になる長い文を交互に配置
+        q: (i + 1) % 2 === 0 
+           ? `第${i+1}問目の漢字。これは非常に長い文章のテストです。２行目も１文字目が揃うか確認するための文章。` 
+           : `第${i+1}問目の問題`,
         a: `正解${i+1}`
     }));
 
@@ -151,10 +173,18 @@
         pageData.forEach(item => {
             const table = document.createElement('table');
             table.className = "column-unit";
+            /* 【重要】HTML構造の変更
+               td.h-ques の中に div.ques-inner を作成し、
+               文字はその div の中に入れました。
+            */
             table.innerHTML = `
                 <tr><td class="h-check"><div class="square"></div></td></tr>
                 <tr><td class="h-num">${item.id}</td></tr>
-                <tr><td class="h-ques">${item.q}</td></tr>
+                <tr>
+                    <td class="h-ques">
+                        <div class="ques-inner">${item.q}</div>
+                    </td>
+                </tr>
                 <tr><td class="h-num2">${item.id}</td></tr>
                 <tr>
                     <td class="h-ans">
