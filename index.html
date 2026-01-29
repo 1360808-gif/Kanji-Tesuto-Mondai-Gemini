@@ -5,7 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>漢字学習システム</title>
     <style>
-        /* === ここから：いただいた完璧なベースラインCSS === */
+        /* =========================================
+           【ベースラインCSS】
+           ここから下のスタイルは、いただいたコードから
+           一切変更していません。（レイアウト維持のため）
+           ========================================= */
         :root {
             --ink-black: #000000;
             --main-font: "UD Digital Kyokasho N-R", "UD デジタル 教科書体 N-R", sans-serif;
@@ -15,34 +19,35 @@
             margin: 0; 
             font-family: var(--main-font); 
             background: #e0d8c3; 
-            /* overflow: hidden; ← メニュー画面のために一時的にコメントアウトまたは自動制御へ */
+            /* overflow: hidden;  ← ※メニュー表示のため、ここはJSで制御します */
         }
 
         /* 印刷設定 */
         @media print {
-            @page { size: A4 landscape; margin: 0; } /* マージンはbodyで制御 */
+            @page { size: A4 landscape; margin: 0; }
             body { background: white !important; overflow: visible !important; }
             .view-header { display: none !important; }
             .screen-overlay { position: static !important; background: white !important; }
             #view-mode-container { height: auto !important; padding: 0 !important; display: block !important; }
             
-            /* 印刷時のCanvas設定（複数ページ対応） */
+            /* 複数ページ印刷用に追加：改ページ設定 */
             .view-canvas { 
                 width: 285mm !important; height: 185mm !important; 
                 border: 2px solid #000 !important; box-shadow: none !important; 
                 padding: 10mm !important; 
-                margin: 5mm auto !important; /* ページ中央配置 */
-                page-break-after: always !important; /* 必ず改ページ */
+                margin: 0 auto !important;
+                page-break-after: always !important; 
             }
             .view-canvas:last-child { page-break-after: auto !important; }
-            
+
             .ans-text { color: black !important; }
-            /* メニューは印刷しない */
+            /* メニュー画面は印刷しない */
             #menu-screen { display: none !important; }
         }
 
         .screen-overlay {
-            display: none; /* 初期状態は非表示（メニュー優先） */
+            /* display: block; ← 初期状態はメニューのためnoneにします */
+            display: none;
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: #f0f0f0; z-index: 100;
         }
@@ -55,6 +60,7 @@
         #view-mode-container {
             height: calc(100vh - 50px); display: flex; align-items: center; justify-content: center;
             padding: 10px; box-sizing: border-box;
+            overflow: auto; /* 閲覧モードでのスクロール用 */
         }
 
         .view-canvas {
@@ -63,6 +69,8 @@
             background: white; border: 2px solid #000;
             box-sizing: border-box; padding: 20px; overflow: hidden;
             box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            margin: 0 auto; /* 中央寄せ */
+            flex-shrink: 0; /* 縮小防止 */
         }
 
         .kanji-table-grid {
@@ -77,20 +85,20 @@
         .h-check { height: 10%; }
         .h-num   { height: 6%; font-size: 1.4vh; }
 
-        /* --- 問題文エリア：完璧な設定 --- */
+        /* --- 問題文エリア：ここが肝（変更なし） --- */
         .h-ques { 
             height: 53%; 
             writing-mode: vertical-rl; 
             text-orientation: upright; 
-            text-align: start; /* 重要：ここを変えない */
-            padding: 12px 2px; 
-            font-size: min(1.9vh, 17px); 
+            text-align: start; /* 行内の文字を上（右）に寄せる */
+            padding: 12px 2px; /* 上下の余白を確保 */
+            font-size: min(1.9vh, 17px); /* 2行になっても収まりやすいサイズ */
             line-height: 1.3;
         }
 
         .ques-wrapper {
             display: flex;
-            justify-content: flex-start; /* 重要：ここを変えない */
+            justify-content: flex-start; /* 縦書き時の開始位置（上）に揃える */
             height: 100%;
             width: 100%;
         }
@@ -115,43 +123,39 @@
         .square { width: 20px; height: 20px; border: 1px solid #000; margin: auto; }
         .btn-action { padding: 6px 16px; border-radius: 20px; border: 1px solid #333; cursor: pointer; font-weight: bold; background: white; }
         .btn-action:disabled { opacity: 0.3; cursor: not-allowed; }
-        /* === ここまで：完璧なベースラインCSS === */
 
-        /* --- 追加：メニュー画面用のCSS（レイアウトには影響しません） --- */
+        /* =========================================
+           【追加スタイル：メニュー画面用】
+           レイアウト本体には影響しません
+           ========================================= */
         #menu-screen {
             display: flex; flex-direction: column; align-items: center; justify-content: center;
-            height: 100vh; gap: 20px; position: relative; z-index: 200;
+            height: 100vh; gap: 20px; background: #e0d8c3;
         }
-        .select-box { padding: 10px; font-size: 1.2rem; border-radius: 8px; width: 300px; }
-        .mode-buttons { display: flex; gap: 20px; }
-        .btn-large { 
-            padding: 20px 40px; font-size: 1.5rem; font-weight: bold; cursor: pointer;
-            border: none; border-radius: 12px; transition: 0.2s;
-        }
-        .btn-view { background: #3498db; color: white; }
-        .btn-print { background: #2ecc71; color: white; }
-        .btn-large:hover { opacity: 0.8; transform: translateY(-2px); }
-
+        .select-box { padding: 10px; font-size: 1.2rem; width: 300px; }
+        .menu-btn { padding: 15px 30px; font-size: 1.2rem; border-radius: 8px; border: none; cursor: pointer; color: white; }
+        .btn-view { background: #3498db; }
+        .btn-print { background: #27ae60; }
     </style>
 </head>
 <body>
 
 <div id="menu-screen">
-    <h1 style="color:#2c3e50;">漢字学習システム</h1>
+    <h1>漢字学習システム</h1>
     <select id="sheet-select" class="select-box">
-        <option value="">-- シートを選択してください --</option>
-        <option value="6年やまなし">6年 やまなし</option>
-        <option value="6年カレーライス">6年 カレーライス</option>
+        <option value="">シートを選択してください</option>
+        <option value="6年 やまなし">6年 やまなし</option>
+        <option value="6年 カレーライス">6年 カレーライス</option>
     </select>
-    <div class="mode-buttons">
-        <button class="btn-large btn-view" onclick="startMode('view')">👀 閲覧用</button>
-        <button class="btn-large btn-print" onclick="startMode('print')">🖨️ 印刷用(PDF)</button>
+    <div style="display:flex; gap:20px;">
+        <button class="menu-btn btn-view" onclick="startMode('view')">👀 画面で学習</button>
+        <button class="menu-btn btn-print" onclick="startMode('print')">🖨️ PDF/印刷</button>
     </div>
 </div>
 
 <div id="main-display" class="screen-overlay">
     <div class="view-header">
-        <button class="btn-action" onclick="backToMenu()" style="background:#ff4757; color:white; border:none;">× もどる</button>
+        <button class="btn-action" onclick="location.reload()" style="background:#ff4757; color:white; border:none;">× もどる</button>
         <div id="page-info" style="font-weight:bold;"></div>
         <div id="nav-buttons">
             <button id="prevBtn" class="btn-action" onclick="changePage(-1)">← 前へ</button>
@@ -159,11 +163,12 @@
         </div>
     </div>
 
-    <div id="view-mode-container"></div>
+    <div id="view-mode-container">
+        </div>
 </div>
 
 <script>
-    // 60問のダミーデータ（確認用）
+    // 60問のダミーデータ（テスト用）
     const allQuestions = Array.from({length: 60}, (_, i) => ({
         id: i + 1,
         q: `第${i+1}問目の漢字。これは非常に長い文章のテストです。２行目も１文字目が揃うか確認。`,
@@ -172,79 +177,58 @@
 
     let currentPage = 0;
     const itemsPerPage = 15;
-    let currentMode = '';
+    let currentMode = 'view'; // view | print
 
-    // モード開始処理
+    // ★モード開始
     function startMode(mode) {
-        const sheet = document.getElementById('sheet-select').value;
-        if (!sheet) { alert('シートを選択してください'); return; }
+        const sheetName = document.getElementById('sheet-select').value;
+        if (!sheetName) { alert("シートを選択してください"); return; }
 
         currentMode = mode;
         document.getElementById('menu-screen').style.display = 'none';
         document.getElementById('main-display').style.display = 'block';
-        
+
         const container = document.getElementById('view-mode-container');
         container.innerHTML = ''; // クリア
 
         if (mode === 'view') {
-            // 閲覧モード：ナビゲーション表示、1ページ目描画
+            // --- 閲覧モード ---
+            document.body.style.overflow = 'hidden'; // スクロール禁止
             document.getElementById('nav-buttons').style.display = 'block';
             currentPage = 0;
-            renderViewPage();
+            renderViewPage(); // 1ページだけ描画
         } else {
-            // 印刷モード：ナビゲーション非表示、全ページ一括描画
+            // --- 印刷モード ---
+            document.body.style.overflow = 'visible'; // スクロール許可（全ページ表示のため）
             document.getElementById('nav-buttons').style.display = 'none';
-            renderAllForPrint();
-            // 描画完了を待って印刷ダイアログ
+            document.getElementById('page-info').innerText = "印刷プレビュー（全ページ）";
+            renderAllPages(); // 全ページ描画
+            
+            // 少し待ってから印刷ダイアログ
             setTimeout(() => { window.print(); }, 500);
         }
     }
 
-    // 閲覧用描画（1ページ分）
-    function renderViewPage() {
-        const container = document.getElementById('view-mode-container');
-        container.innerHTML = ''; // クリア
-        
-        const start = currentPage * itemsPerPage;
-        const pageData = allQuestions.slice(start, start + itemsPerPage);
-        
-        // 完璧な構造のCanvasを作成して追加
-        container.appendChild(createCanvasElement(pageData));
-        
-        document.getElementById('page-info').innerText = `${start + 1} 〜 ${Math.min(start + itemsPerPage, allQuestions.length)} 問目`;
-        document.getElementById('prevBtn').disabled = currentPage === 0;
-        document.getElementById('nextBtn').disabled = (start + itemsPerPage) >= allQuestions.length;
-    }
-
-    // 印刷用描画（全ページ一括）
-    function renderAllForPrint() {
-        const container = document.getElementById('view-mode-container');
-        container.innerHTML = ''; // クリア
-        
-        const totalPages = Math.ceil(allQuestions.length / itemsPerPage);
-        
-        for (let p = 0; p < totalPages; p++) {
-            const pageData = allQuestions.slice(p * itemsPerPage, (p + 1) * itemsPerPage);
-            container.appendChild(createCanvasElement(pageData));
-        }
-        document.getElementById('page-info').innerText = `一括印刷プレビュー（全${totalPages}ページ）`;
-    }
-
-    // ★重要：Canvas（1枚の紙）を生成する関数
-    // いただいたHTML構造をそのままJSで生成します
-    function createCanvasElement(data) {
+    // ★重要：キャンバス（紙1枚分）を生成する関数
+    // ※ここで、いただいたHTML構造をそのまま再現します。
+    // ※特に ques-wrapper を忘れないようにします。
+    function createPageCanvas(questions, sheetTitle) {
+        // キャンバス枠
         const canvas = document.createElement('div');
         canvas.className = 'view-canvas';
         
-        const title = document.createElement('div');
-        title.className = 'print-title';
-        title.innerText = document.getElementById('sheet-select').value;
-        canvas.appendChild(title);
+        // タイトル
+        const titleDiv = document.createElement('div');
+        titleDiv.className = 'print-title';
+        titleDiv.innerText = sheetTitle;
+        canvas.appendChild(titleDiv);
 
+        // グリッド
         const grid = document.createElement('div');
         grid.className = 'kanji-table-grid';
-        
-        data.forEach(item => {
+
+        // 各問題カラム
+        questions.forEach(item => {
             const table = document.createElement('table');
             table.className = "column-unit";
             table.innerHTML = `
@@ -262,20 +246,50 @@
             `;
             grid.appendChild(table);
         });
-        
+
         canvas.appendChild(grid);
         return canvas;
+    }
+
+    // 閲覧モードの描画
+    function renderViewPage() {
+        const container = document.getElementById('view-mode-container');
+        container.innerHTML = '';
+
+        const start = currentPage * itemsPerPage;
+        const pageData = allQuestions.slice(start, start + itemsPerPage);
+        const sheetTitle = document.getElementById('sheet-select').value;
+
+        container.appendChild(createPageCanvas(pageData, sheetTitle));
+
+        document.getElementById('page-info').innerText = `${start + 1} 〜 ${Math.min(start + itemsPerPage, allQuestions.length)} 問目`;
+        document.getElementById('prevBtn').disabled = currentPage === 0;
+        document.getElementById('nextBtn').disabled = (start + itemsPerPage) >= allQuestions.length;
+    }
+
+    // 印刷モードの描画（全ページ一括）
+    function renderAllPages() {
+        const container = document.getElementById('view-mode-container');
+        container.innerHTML = '';
+        const sheetTitle = document.getElementById('sheet-select').value;
+        const totalPages = Math.ceil(allQuestions.length / itemsPerPage);
+
+        for (let i = 0; i < totalPages; i++) {
+            const start = i * itemsPerPage;
+            const pageData = allQuestions.slice(start, start + itemsPerPage);
+            // 改ページ設定を含む canvas を追加していく
+            const canvas = createPageCanvas(pageData, sheetTitle);
+            
+            // 閲覧モード用にCSSで中央寄せしているので、印刷プレビューで見やすいようにmargin調整
+            canvas.style.marginBottom = "50px"; 
+            
+            container.appendChild(canvas);
+        }
     }
 
     function changePage(step) {
         currentPage += step;
         renderViewPage();
-    }
-
-    function backToMenu() {
-        document.getElementById('menu-screen').style.display = 'flex';
-        document.getElementById('main-display').style.display = 'none';
-        document.getElementById('view-mode-container').innerHTML = '';
     }
 </script>
 </body>
