@@ -9,7 +9,7 @@
             --ink-black: #000000;
             --main-font: "UD Digital Kyokasho N-R", "UD デジタル 教科書体 N-R", sans-serif;
             
-            /* ★変更点: ここで線の太さを一括管理（2pxに変更） */
+            /* 線の太さ（2pxで統一） */
             --border-width: 2px;
             --border-color: #000; 
         }
@@ -29,7 +29,6 @@
             #view-mode-container { display: block !important; height: auto !important; padding: 0 !important; }
             .view-canvas { 
                 width: 285mm !important; height: 185mm !important; margin: 5mm auto !important;
-                /* 外枠の太さも変数に合わせる */
                 border: var(--border-width) solid var(--border-color) !important; 
                 box-shadow: none !important; 
                 page-break-after: always !important; 
@@ -58,7 +57,6 @@
             display: flex; flex-direction: row-reverse;
             height: 96%; width: 96vw; max-width: 1600px;
             background: white; 
-            /* キャンバス自体の枠線 */
             border: var(--border-width) solid var(--border-color);
             box-sizing: border-box; padding: 20px; overflow: hidden;
             box-shadow: 0 4px 15px rgba(0,0,0,0.1);
@@ -68,34 +66,25 @@
         .kanji-table-grid {
             display: flex; flex-direction: row-reverse;
             height: 100%; flex-grow: 1; 
-            
-            /* ★変更点: 外枠と中の隙間(gap)を同じ太さ(--border-width)にする */
             border: var(--border-width) solid var(--border-color);
-            background: var(--border-color); /* 背景色が隙間（線）の色になる */
-            gap: var(--border-width);        /* これが縦線の太さになる */
-            
+            background: var(--border-color); 
+            gap: var(--border-width);        
             overflow: hidden; box-sizing: border-box; 
         }
 
         .column-unit { 
             border-collapse: collapse; 
             height: 100%; 
-            
-            /* ★変更点: gapを使う場合は % 指定より flex:1 の方が安全（隙間分を自動計算してくれる） */
-            flex: 1;
+            flex: 1; /* 自動幅計算 */
             width: auto; 
-            
             table-layout: fixed; 
             background: white; 
             box-sizing: border-box; 
             border: none; 
         }
         
-        /* 横線 */
         .column-unit td { 
-            /* ★変更点: 横線も変数の太さ(2px)に合わせる */
             border-bottom: var(--border-width) solid var(--border-color); 
-            
             border-left: none; 
             border-right: none;
             border-top: none;
@@ -105,10 +94,8 @@
             box-sizing: border-box; 
         }
 
-        /* 一番下のセルの下線は不要（全体の枠があるため） */
         .column-unit tr:last-child td { border-bottom: none; }
         
-        /* 高さの定義（合計100%） */
         .h-check { height: 10%; }
         .h-num   { height: 6%; font-size: 1.4vh; }
         .h-ques { 
@@ -120,7 +107,6 @@
         
         .ques-wrapper { display: block; width: 100%; height: 100%; text-align: left; }
         
-        /* 透明なプレースホルダーのためのクラス */
         .invisible-text { visibility: hidden; pointer-events: none; }
         
         body.view-mode-active .h-ans.has-data { cursor: pointer; }
@@ -143,11 +129,8 @@
 
         .print-title {
             writing-mode: vertical-rl; font-weight: bold; 
-            
-            /* タイトル枠も統一感を持たせる */
             border: var(--border-width) solid var(--border-color); 
             border-left: 4px double #000;
-            
             padding: 0 15px; display: flex; align-items: center; font-size: 1.3rem;
             height: 100%; margin-left: 15px; box-sizing: border-box; background: white;
         }
@@ -188,8 +171,8 @@
             <option value="curry">６年 カレーライス</option>
         </select>
         <div class="btn-group">
-            <button class="btn-main btn-view" onclick="startApp('view')">👀 画面で学習</button>
-            <button class="btn-main btn-print" onclick="startApp('print')">🖨️ PDF/印刷</button>
+            <button class="btn-main btn-view" onclick="startApp('view')">画面で学習</button>
+            <button class="btn-main btn-print" onclick="startApp('print')">PDF/印刷</button>
         </div>
     </div>
 </div>
@@ -198,7 +181,7 @@
     <div class="view-header">
         <div style="display:flex; gap:10px;">
             <button class="btn-action" onclick="goBack()" style="background:#ff4757; color:white; border:none;">× 閉じる</button>
-            <button id="toggle-all-btn" class="btn-action" onclick="toggleAllAnswers()">👁️ 答え表示</button>
+            <button id="toggle-all-btn" class="btn-action" onclick="toggleAllAnswers()">答えを表示</button>
         </div>
 
         <div id="page-info-container" style="display:flex; align-items:center;">
@@ -376,7 +359,8 @@
 
     function updateToggleBtnText() {
         const btn = document.getElementById('toggle-all-btn');
-        btn.innerText = isAllAnswersVisible ? '🙈 答えを隠す' : '👁️ 答え表示';
+        // ★変更点：ここもテキストのみに変更
+        btn.innerText = isAllAnswersVisible ? '答えを隠す' : '答えを表示';
         btn.style.background = isAllAnswersVisible ? '#333' : '#fff';
         btn.style.color = isAllAnswersVisible ? '#fff' : '#333';
     }
