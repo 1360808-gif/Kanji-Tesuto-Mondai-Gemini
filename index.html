@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>漢字学習システム（完全連動・即時更新版）</title>
+    <title>漢字学習システム（完全連動・スタイル統一版）</title>
     <style>
         /* =========================================
            共通・基盤設定
@@ -152,7 +152,15 @@
         .left-column { padding: 25px; height: 100%; }
         .stats p { margin: 15px 0; font-size: 19px; border-bottom: 2px dotted #bbb; padding-bottom: 10px; }
         .stats span { font-size: 30px; font-weight: bold; color: var(--action-blue); }
-        .highlight { color: #e74c3c; text-decoration: underline #e74c3c 5px; text-underline-offset: -0.1em; display: inline; }
+        
+        /* 共通ハイライト設定（練習・一覧両方で使用） */
+        .highlight { 
+            color: #e74c3c; 
+            text-decoration: underline #e74c3c 5px; 
+            text-underline-offset: -0.1em; 
+            display: inline; 
+        }
+        
         .hidden { display: none !important; }
 
         /* =========================================
@@ -507,7 +515,6 @@
         document.getElementById('view-app').style.display = 'none';
     }
 
-    // 修正箇所：リストに戻るとき、画面だけでなくメニュー(createMenu)も作り直す
     function backToList() {
         saveProgress();
         createMenu(); 
@@ -590,6 +597,8 @@
         }
         const q = currentQuestions[currentIndex];
         document.getElementById('q-number').innerText = isRetryOnlyMode ? (currentIndex + 1) : (q.originalIndex + 1);
+        
+        // 練習モードの問題表示：カッコ内をハイライト
         document.getElementById('q-text').innerHTML = q.q.replace(/[（\(](.*?)[）\)]/g, '<span class="highlight">$1</span>');
         
         const answerArea = document.getElementById('a-text');
@@ -719,7 +728,13 @@
             const isItemExists = !!item;
 
             const displayId = isItemExists ? item.displayId : "&nbsp;";
-            const displayQ  = isItemExists ? item.q : "\u3000"; 
+            
+            // 修正箇所：一覧モードでも、カッコ書きを赤文字＋右傍線に変換する
+            let displayQ = "\u3000";
+            if (isItemExists) {
+                displayQ = item.q.replace(/[（\(](.*?)[）\)]/g, '<span class="highlight">$1</span>');
+            }
+
             const displayA  = isItemExists ? item.a : "\u3000"; 
             
             const textVisClass = isItemExists ? "" : "invisible-text";
@@ -747,6 +762,7 @@
             trNum1.appendChild(tdNum1);
 
             const tdQues = document.createElement('td');
+            // innerHTMLでタグ付きのテキストを挿入
             tdQues.innerHTML = `
                 <div class="h-ques-inner">
                     <div class="ques-wrapper ${textVisClass}">${displayQ}</div>
