@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>漢字学習システム（安定版）</title>
+    <title>漢字学習システム（上揃え版）</title>
     <style>
         /* =========================================
            共通・基盤設定
@@ -112,8 +112,24 @@
         .tr-num2  { height: 6%; }
         .tr-ans   { height: 25%; }
 
-        .h-ques-inner { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; }
-        .ques-wrapper { writing-mode: vertical-rl; text-orientation: upright; text-align: left; font-size: min(1.9vh, 17px); line-height: 1.4; }
+        /* ▼▼▼ ここを調整しました（上揃え設定） ▼▼▼ */
+        .h-ques-inner { 
+            width: 100%; 
+            height: 100%; 
+            display: flex; 
+            justify-content: center; /* 左右は中央 */
+            align-items: flex-start; /* 上下は上揃え(start) */
+            padding-top: 15px;       /* 上に少し余白を持たせる */
+        }
+        .ques-wrapper { 
+            writing-mode: vertical-rl; 
+            text-orientation: upright; 
+            text-align: left;        /* 縦書きの左＝物理的な上 */
+            font-size: min(1.9vh, 17px); 
+            line-height: 1.4; 
+        }
+        /* ▲▲▲ 調整完了 ▲▲▲ */
+
         .ans-text { font-size: 2.3vh; font-weight: bold; color: #e74c3c; }
         .ans-text.blind { opacity: 0; }
         .ans-wrapper.show-hint::before { content: "？"; color: #eee; font-size: 3vh; position: absolute; z-index: 0; }
