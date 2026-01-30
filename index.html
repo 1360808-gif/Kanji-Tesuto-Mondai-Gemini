@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>漢字学習システム（スッキリ傍線版）</title>
+    <title>漢字学習システム（スッキリ傍線・機能修正版）</title>
     <style>
         /* =========================================
            共通・基盤設定
@@ -153,12 +153,10 @@
         .stats p { margin: 15px 0; font-size: 19px; border-bottom: 2px dotted #bbb; padding-bottom: 10px; }
         .stats span { font-size: 30px; font-weight: bold; color: var(--action-blue); }
         
-        /* 共通ハイライト設定（スッキリ細め版） */
+        /* 共通ハイライト設定（スッキリ細め・隙間あり版） */
         .highlight { 
             color: #e74c3c; 
-            /* 線の太さを 5px → 2px に変更 */
             text-decoration: underline #e74c3c 2px; 
-            /* 文字と線の間隔を広げる（文字に重ならないように） */
             text-underline-offset: 3px; 
             display: inline; 
         }
@@ -774,11 +772,14 @@
             trNum2.appendChild(tdNum2);
 
             const tdAns = document.createElement('td');
-            if (isItemExists) tdAns.classList.add('has-data'); 
+            if (isItemExists) {
+                tdAns.classList.add('has-data'); 
+                // 修正：td自体にクリックイベントを設定
+                tdAns.onclick = function() { toggleSingleAnswer(this); };
+            }
             
-            const onclickAttr = isItemExists ? `onclick="toggleSingleAnswer(this)"` : "";
             tdAns.innerHTML = `
-                <div class="h-ans-cell ${isItemExists ? 'has-data' : ''}" ${onclickAttr}>
+                <div class="h-ans-cell ${isItemExists ? 'has-data' : ''}">
                     <div class="ans-wrapper ${isItemExists && isHidden ? 'show-hint' : ''}">
                         <span class="ans-text ${isItemExists && isHidden ? 'blind' : ''} ${textVisClass}">${displayA}</span>
                     </div>
@@ -825,6 +826,7 @@
     }
 
     function toggleSingleAnswer(tdElement) {
+        // 受け取った要素がtdであれば、そこからクラスを探す（変更なしでOK）
         const cell = tdElement.querySelector('.h-ans-cell');
         if (!cell) return;
         const span = cell.querySelector('.ans-text');
