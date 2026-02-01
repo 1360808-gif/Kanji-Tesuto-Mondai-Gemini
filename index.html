@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>漢字学習システム（修正完了版）</title>
+    <title>漢字学習システム（視認性向上版）</title>
     <style>
         /* =========================================
            共通・基盤設定
@@ -122,31 +122,32 @@
             font-size: min(1.9vh, 17px); line-height: 1.4; 
         }
 
-        /* ▼▼▼ ここを修正しました（答え配置の完全修正） ▼▼▼ */
+        /* 答え配置 */
         .ans-wrapper {
-            position: relative;        /* 基準点 */
+            position: relative; 
             width: 100%; height: 100%;
             display: flex; 
-            justify-content: center;   /* 縦書き要素を中央に */
+            justify-content: center; 
             align-items: center;
         }
         .ans-text { 
-            writing-mode: vertical-rl; /* 縦書き */
-            text-orientation: upright; /* 正立 */
+            writing-mode: vertical-rl; 
+            text-orientation: upright; 
             font-size: 2.3vh; 
             font-weight: bold; 
             color: #e74c3c;
-            white-space: nowrap;       /* 勝手に改行させない */
+            white-space: nowrap;
         }
-        /* 「？」マークを絶対配置で強制的にど真ん中へ */
+
+        /* ▼▼▼ ここを修正しました（？の色を濃く調整） ▼▼▼ */
         .ans-wrapper.show-hint::before { 
             content: "？"; 
-            color: #eee; 
+            color: #ccc;               /* 薄すぎないグレーに変更 */
             font-size: 3vh; 
             position: absolute; 
             top: 50%;
             left: 50%;
-            transform: translate(-50%, -50%); /* 完全に中心へ */
+            transform: translate(-50%, -50%); 
             z-index: 0; 
         }
         /* ▲▲▲ 修正完了 ▲▲▲ */
