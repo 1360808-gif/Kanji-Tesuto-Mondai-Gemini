@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>漢字学習システム（上揃え版）</title>
+    <title>漢字学習システム（修正完了版）</title>
     <style>
         /* =========================================
            共通・基盤設定
@@ -112,27 +112,46 @@
         .tr-num2  { height: 6%; }
         .tr-ans   { height: 25%; }
 
-        /* ▼▼▼ ここを調整しました（上揃え設定） ▼▼▼ */
+        /* 問題文設定（上揃え） */
         .h-ques-inner { 
-            width: 100%; 
-            height: 100%; 
-            display: flex; 
-            justify-content: center; /* 左右は中央 */
-            align-items: flex-start; /* 上下は上揃え(start) */
-            padding-top: 15px;       /* 上に少し余白を持たせる */
+            width: 100%; height: 100%; display: flex; 
+            justify-content: center; align-items: flex-start; padding-top: 15px; 
         }
         .ques-wrapper { 
-            writing-mode: vertical-rl; 
-            text-orientation: upright; 
-            text-align: left;        /* 縦書きの左＝物理的な上 */
-            font-size: min(1.9vh, 17px); 
-            line-height: 1.4; 
+            writing-mode: vertical-rl; text-orientation: upright; text-align: left; 
+            font-size: min(1.9vh, 17px); line-height: 1.4; 
         }
-        /* ▲▲▲ 調整完了 ▲▲▲ */
 
-        .ans-text { font-size: 2.3vh; font-weight: bold; color: #e74c3c; }
+        /* ▼▼▼ ここを修正しました（答え配置の完全修正） ▼▼▼ */
+        .ans-wrapper {
+            position: relative;        /* 基準点 */
+            width: 100%; height: 100%;
+            display: flex; 
+            justify-content: center;   /* 縦書き要素を中央に */
+            align-items: center;
+        }
+        .ans-text { 
+            writing-mode: vertical-rl; /* 縦書き */
+            text-orientation: upright; /* 正立 */
+            font-size: 2.3vh; 
+            font-weight: bold; 
+            color: #e74c3c;
+            white-space: nowrap;       /* 勝手に改行させない */
+        }
+        /* 「？」マークを絶対配置で強制的にど真ん中へ */
+        .ans-wrapper.show-hint::before { 
+            content: "？"; 
+            color: #eee; 
+            font-size: 3vh; 
+            position: absolute; 
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%); /* 完全に中心へ */
+            z-index: 0; 
+        }
+        /* ▲▲▲ 修正完了 ▲▲▲ */
+
         .ans-text.blind { opacity: 0; }
-        .ans-wrapper.show-hint::before { content: "？"; color: #eee; font-size: 3vh; position: absolute; z-index: 0; }
         .print-title { writing-mode: vertical-rl; font-weight: bold; border: var(--border-width) solid var(--border-color); border-left: 4px double #000; padding: 0 15px; margin-left: 15px; background: white; }
         .square { width: 20px; height: 20px; border: 1px solid #000; margin: auto; cursor: pointer; }
         .hidden { display: none !important; }
