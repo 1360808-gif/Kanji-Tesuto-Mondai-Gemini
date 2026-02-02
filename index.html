@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>漢字学習システム（特訓＆復習機能付き）</title>
+    <title>漢字学習システム（チェック連動版 v39）</title>
     <style>
         /* =========================================
            共通・基盤設定
@@ -17,7 +17,7 @@
             --update-purple: #9b59b6;
             --suspend-gray: #95a5a6;
             --special-orange: #e67e22;
-            --special-green: #27ae60; /* 復習モード用 */
+            --special-green: #27ae60;
             --main-font: "UD Digital Kyokasho N-R", "UD デジタル 教科書体 N-R", "BIZ UDPGothic", sans-serif;
             --border-width: 2px;
             --border-color: #000; 
@@ -104,11 +104,11 @@
         .btn-retry { background: var(--retry-orange); color: white; }
         .btn-suspend { background: var(--suspend-gray); color: white; font-size: 16px; }
         .btn-special { background: var(--special-orange); color: white; }
-        .btn-special-check { background: var(--special-green); color: white; } /* 新規：復習ボタン */
+        .btn-special-check { background: var(--special-green); color: white; }
         .btn-cancel { background: transparent; border: none; box-shadow: none; color: #999; text-decoration: underline; margin-top: 10px; }
 
         /* =========================================
-           練習モード UI (1問ずつ)
+           練習モード UI
            ========================================= */
         #practice-app {
             display: none; grid-template-columns: 350px 1.5fr 1.2fr 50px; 
@@ -146,7 +146,7 @@
         .title-column { writing-mode: vertical-rl; display: flex; align-items: center; font-size: 16px; font-weight: bold; color: #666; padding-top: 10px; }
 
         /* =========================================
-           閲覧・印刷モード UI (一覧)
+           閲覧・印刷モード UI (グリッド＋チェック機能)
            ========================================= */
         #view-app { display: none; width: 100%; height: 100%; }
         .view-header { width: 100%; height: 50px; display: flex; justify-content: space-between; align-items: center; padding: 0 20px; background: #fff; border-bottom: 1px solid #ccc; }
@@ -169,7 +169,18 @@
         .ans-text.blind { opacity: 0; }
         .ans-wrapper.show-hint::before { content: "？"; color: #ccc; font-size: 3vh; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 0; }
         .print-title { writing-mode: vertical-rl; font-weight: bold; border: var(--border-width) solid var(--border-color); border-left: 4px double #000; padding: 0 15px; margin-left: 15px; background: white; }
-        .square { width: 20px; height: 20px; border: 1px solid #000; margin: auto; cursor: pointer; }
+        
+        /* ■■ チェックボックス機能用スタイル ■■ */
+        .square { 
+            width: 25px; height: 25px; border: 2px solid #000; margin: auto; cursor: pointer; 
+            display: flex; justify-content: center; align-items: center;
+            font-weight: bold; user-select: none; font-size: 20px;
+        }
+        /* 状態1: かんぺき(✔) */
+        .square[data-state="1"]::after { content: "✔"; color: var(--perfect-green); }
+        /* 状態2: おしい/おぼえちゅう(△) */
+        .square[data-state="2"]::after { content: "△"; color: var(--retry-orange); font-size: 16px; }
+
         .btn-action { padding: 5px 15px; background: #eee; border: 1px solid #999; border-radius: 5px; cursor: pointer; }
 
         @media print {
@@ -180,6 +191,9 @@
             .view-canvas { margin: 5mm auto !important; page-break-after: always !important; box-shadow: none !important; border: var(--border-width) solid var(--border-color) !important; }
             .ans-text { color: black !important; opacity: 1 !important; visibility: visible !important; }
             .ans-wrapper::before { content: none !important; }
+            /* 印刷時は現在のステータスをそのまま印字 */
+            .square[data-state="1"]::after { color: #000 !important; } 
+            .square[data-state="2"]::after { color: #000 !important; }
         }
     </style>
 </head>
@@ -214,11 +228,8 @@
             <h3>この問題集は練習したことがあるよ！</h3>
             <div class="mode-btn-group">
                 <button id="opt-resume-btn" class="btn btn-view" onclick="confirmPracticeStart('resume')">🔄 つづきから</button>
-                
                 <button id="opt-special-btn" class="btn btn-special" onclick="confirmPracticeStart('special')">🔥 おぼえちゅうを特訓</button>
-                
                 <button id="opt-perfect-btn" class="btn btn-special-check" onclick="confirmPracticeStart('perfect_check')">✨ かんぺきをたしかめる</button>
-
                 <button class="btn" onclick="confirmPracticeStart('restart')">🆕 はじめから</button>
                 <button class="btn btn-cancel" onclick="closeAllModals()">キャンセル</button>
             </div>
@@ -235,9 +246,7 @@
             </div>
             <div style="margin-top:auto; display:grid; gap:10px;">
                 <button id="side-special-btn" class="btn btn-special hidden" onclick="startSidebarSpecial()">🔥 おぼえちゅうを特訓</button>
-                
                 <button id="side-perfect-btn" class="btn btn-special-check hidden" onclick="startSidebarPerfect()">✨ かんぺきをたしかめる</button>
-                
                 <button class="btn btn-suspend" onclick="suspendQuiz()">⏸ ちゅうだんする</button>
                 <button class="btn" style="background:#eee; font-size:16px;" onclick="backToList()">🏠 リストに戻る</button>
             </div>
@@ -282,16 +291,14 @@
 
 <script>
     const API_URL = "https://script.google.com/macros/s/AKfycbyWHprvWe-NcrfamWL2I6bWSAak6HW-JxyMCY-RZkZDFrhLkbSfLkeVmpKyznlI7g3a/exec";
-    const CACHE_KEY = "kanji_quiz_v37_perfect_mode"; // バージョン更新
-    const PROGRESS_KEY = "kanji_quiz_prog_v37_perfect_mode";
+    const CACHE_KEY = "kanji_quiz_v39_sync"; 
+    const PROGRESS_KEY = "kanji_quiz_prog_v39_sync";
     
     let allData = {};
     let allProgress = {};
     let currentSheetName = "";
     let currentQuestions = [];
     let currentIndex = 0;
-    
-    // モード管理: 'normal', 'retry', 'perfect'
     let currentModeType = 'normal';
     
     // View Mode Variables
@@ -408,13 +415,9 @@
             const hasHistory = prog && (prog.lastIndex > 0 || prog.retry.size > 0 || prog.perfect.size > 0);
             
             if (hasHistory) {
-                // 続きからボタン
                 document.getElementById('opt-resume-btn').style.display = (prog.lastIndex > 0) ? 'block' : 'none';
-                // 特訓ボタン（おぼえちゅうがある時）
                 document.getElementById('opt-special-btn').style.display = (prog.retry.size > 0) ? 'block' : 'none';
-                // 復習ボタン（かんぺきがある時）
                 document.getElementById('opt-perfect-btn').style.display = (prog.perfect.size > 0) ? 'block' : 'none';
-
                 document.getElementById('practice-options-modal').style.display = 'flex';
             } else {
                 launchPracticeMode('restart');
@@ -429,10 +432,7 @@
         launchPracticeMode(type);
     }
 
-    function backToList() { 
-        saveProgress(); 
-        createMenu(); 
-    }
+    function backToList() { saveProgress(); createMenu(); }
     
     function clearProg(name) { 
         if(confirm(`「${name}」の記録をすべて消しますか？`)) { 
@@ -451,13 +451,10 @@
         if (!allProgress[currentSheetName]) allProgress[currentSheetName] = { perfect: new Set(), retry: new Set(), lastIndex: 0 };
         
         const master = allData[currentSheetName];
-        
-        // バッジリセット
         document.getElementById('mode-badge').classList.add('hidden');
         document.getElementById('mode-badge-perfect').classList.add('hidden');
 
         if (type === 'special') {
-            // おぼえちゅう特訓モード
             currentModeType = 'retry';
             const indices = Array.from(allProgress[currentSheetName].retry).sort((a,b)=>a-b);
             currentQuestions = indices.map(idx => ({...master[idx], originalIndex: idx}));
@@ -465,7 +462,6 @@
             document.getElementById('mode-badge').classList.remove('hidden');
 
         } else if (type === 'perfect_check') {
-            // かんぺき復習モード
             currentModeType = 'perfect';
             const indices = Array.from(allProgress[currentSheetName].perfect).sort((a,b)=>a-b);
             currentQuestions = indices.map(idx => ({...master[idx], originalIndex: idx}));
@@ -473,7 +469,6 @@
             document.getElementById('mode-badge-perfect').classList.remove('hidden');
 
         } else {
-            // 通常モード
             currentModeType = 'normal';
             currentQuestions = master.map((q, i) => ({...q, originalIndex: i}));
             currentIndex = (type === 'resume') ? allProgress[currentSheetName].lastIndex : 0;
@@ -483,11 +478,9 @@
         showQuestion();
     }
 
-    // サイドバー：おぼえちゅう特訓
     function startSidebarSpecial() {
         const p = allProgress[currentSheetName];
         if(!p || p.retry.size === 0) return alert("おぼえちゅうの問題はありません");
-        
         if(confirm(`現在「おぼえちゅう」の ${p.retry.size} 問だけを特訓しますか？`)) {
             if(currentModeType === 'normal') p.lastIndex = currentIndex;
             saveProgress();
@@ -495,11 +488,9 @@
         }
     }
 
-    // サイドバー：かんぺき確認
     function startSidebarPerfect() {
         const p = allProgress[currentSheetName];
         if(!p || p.perfect.size === 0) return alert("かんぺきの問題はありません");
-        
         if(confirm(`現在「かんぺき」の ${p.perfect.size} 問を復習（テスト）しますか？`)) {
             if(currentModeType === 'normal') p.lastIndex = currentIndex;
             saveProgress();
@@ -512,12 +503,8 @@
             let msg = "最後まで終わりました！\n最初に戻ります。";
             if (currentModeType === 'retry') msg = "特訓おつかれさま！\nリストに戻ります。";
             if (currentModeType === 'perfect') msg = "復習おつかれさま！\nリストに戻ります。";
-            
             alert(msg);
-            
-            if (currentModeType === 'normal') {
-                allProgress[currentSheetName].lastIndex = 0;
-            }
+            if (currentModeType === 'normal') allProgress[currentSheetName].lastIndex = 0;
             return backToList();
         }
         
@@ -546,13 +533,11 @@
     function record(type) {
         const p = allProgress[currentSheetName];
         const idx = currentQuestions[currentIndex].originalIndex;
-        
         if (type === 'perfect') {
             p.perfect.add(idx); p.retry.delete(idx); 
             updateStats();
             nextStep();
         } else {
-            // おぼえちゅう
             p.retry.add(idx); p.perfect.delete(idx);
             updateStats();
             document.getElementById('judgement-btns').classList.add('hidden');
@@ -567,7 +552,6 @@
         document.getElementById('retry-options').classList.add('hidden'); 
         document.getElementById('show-btn').classList.remove('hidden'); 
     }
-
     function suspendQuiz() {
         if(confirm("ここまでの状態を保存して、リストに戻りますか？")) {
             saveProgress();
@@ -581,26 +565,15 @@
         document.getElementById('stat-perfect').innerText = p.perfect.size;
         document.getElementById('stat-retry').innerText = p.retry.size;
 
-        // サイドバーボタン制御
         const sideSpecialBtn = document.getElementById('side-special-btn');
         const sidePerfectBtn = document.getElementById('side-perfect-btn');
-
-        // 特訓ボタンは「retryモード以外」かつ「retryがある」とき表示
-        if (currentModeType !== 'retry' && p.retry.size > 0) {
-            sideSpecialBtn.classList.remove('hidden');
-        } else {
-            sideSpecialBtn.classList.add('hidden');
-        }
-
-        // 復習ボタンは「perfectモード以外」かつ「perfectがある」とき表示
-        if (currentModeType !== 'perfect' && p.perfect.size > 0) {
-            sidePerfectBtn.classList.remove('hidden');
-        } else {
-            sidePerfectBtn.classList.add('hidden');
-        }
+        if (currentModeType !== 'retry' && p.retry.size > 0) sideSpecialBtn.classList.remove('hidden');
+        else sideSpecialBtn.classList.add('hidden');
+        if (currentModeType !== 'perfect' && p.perfect.size > 0) sidePerfectBtn.classList.remove('hidden');
+        else sidePerfectBtn.classList.add('hidden');
     }
 
-    // --- 閲覧・印刷モードロジック ---
+    // --- 閲覧・印刷モードロジック (チェック機能連動) ---
     function launchViewMode(mode) {
         document.body.className = "mode-view";
         document.getElementById('selector-screen').style.display = 'none';
@@ -619,7 +592,32 @@
         }
     }
 
-    function createPageCanvas(pageData, title) {
+    // ■■■ 修正：四角クリック処理 ■■■
+    function toggleSquare(el, sheet, idx) {
+        // 現在の状態を取得 (0:無, 1:完, 2:特)
+        let current = parseInt(el.getAttribute('data-state') || '0');
+        // 次の状態へ (0->1->2->0)
+        let next = (current + 1) % 3;
+        el.setAttribute('data-state', next);
+
+        // データ更新
+        if (!allProgress[sheet]) allProgress[sheet] = { perfect: new Set(), retry: new Set(), lastIndex: 0 };
+        const p = allProgress[sheet];
+
+        if (next === 1) { // かんぺき
+            p.perfect.add(idx);
+            p.retry.delete(idx);
+        } else if (next === 2) { // おぼえちゅう
+            p.retry.add(idx);
+            p.perfect.delete(idx);
+        } else { // なし
+            p.perfect.delete(idx);
+            p.retry.delete(idx);
+        }
+        saveProgress(); // 即時保存
+    }
+
+    function createPageCanvas(pageData, title, startIndex) {
         const canvas = document.createElement('div');
         canvas.className = 'view-canvas';
         const titleDiv = document.createElement('div');
@@ -637,14 +635,35 @@
         for (let i = 0; i < itemsPerPage; i++) {
             const qObj = pageData[i];
             const isExist = !!qObj;
-            const qIdx = isExist ? (allData[currentSheetName].indexOf(qObj) + 1) : "";
+            
+            // 本当のインデックス (全データ内の位置)
+            const realIdx = startIndex + i;
+            
+            // 表示用番号 (1始まり)
+            const qIdxDisplay = isExist ? (realIdx + 1) : "";
+
+            // ■■■ 修正：初期状態の判定 ■■■
+            let initialState = 0;
+            if (isExist && allProgress[currentSheetName]) {
+                const p = allProgress[currentSheetName];
+                if (p.perfect.has(realIdx)) initialState = 1;
+                else if (p.retry.has(realIdx)) initialState = 2;
+            }
+
             const qText = isExist ? qObj.q.replace(/[（\(](.*?)[）\)]/g, '<span class="highlight">$1</span>') : "";
             const qAns = isExist ? qObj.a : "";
 
-            rows[0].innerHTML += `<td><div class="square ${isExist ? '' : 'hidden'}"></div></td>`;
-            rows[1].innerHTML += `<td><span>${qIdx}</span></td>`;
+            // ■■■ 修正：squareにonclickとstateを付与 ■■■
+            rows[0].innerHTML += `<td>
+                <div class="square ${isExist ? '' : 'hidden'}" 
+                     data-state="${initialState}" 
+                     onclick="toggleSquare(this, '${currentSheetName}', ${realIdx})">
+                </div>
+            </td>`;
+            
+            rows[1].innerHTML += `<td><span>${qIdxDisplay}</span></td>`;
             rows[2].innerHTML += `<td><div class="h-ques-inner"><div class="ques-wrapper">${qText}</div></div></td>`;
-            rows[3].innerHTML += `<td><span>${qIdx}</span></td>`;
+            rows[3].innerHTML += `<td><span>${qIdxDisplay}</span></td>`;
             rows[4].innerHTML += `<td class="h-ans-cell" onclick="toggleSingleAns(this)">
                 <div class="ans-wrapper ${!isAllAnswersVisible && isExist ? 'show-hint' : ''}">
                     <span class="ans-text ${!isAllAnswersVisible && isExist ? 'blind' : ''}">${qAns}</span>
@@ -660,8 +679,9 @@
     function renderViewPage() {
         const container = document.getElementById('view-mode-container');
         container.innerHTML = "";
-        const data = allData[currentSheetName].slice(viewPage * itemsPerPage, (viewPage + 1) * itemsPerPage);
-        container.appendChild(createPageCanvas(data, currentSheetName));
+        const startIdx = viewPage * itemsPerPage;
+        const data = allData[currentSheetName].slice(startIdx, startIdx + itemsPerPage);
+        container.appendChild(createPageCanvas(data, currentSheetName, startIdx));
         document.getElementById('page-info').innerText = `${viewPage + 1} / ${Math.ceil(allData[currentSheetName].length / itemsPerPage)}`;
     }
 
@@ -670,7 +690,8 @@
         container.innerHTML = "";
         const fullData = allData[currentSheetName];
         for (let i = 0; i < Math.ceil(fullData.length / itemsPerPage); i++) {
-            container.appendChild(createPageCanvas(fullData.slice(i * itemsPerPage, (i + 1) * itemsPerPage), currentSheetName));
+            const startIdx = i * itemsPerPage;
+            container.appendChild(createPageCanvas(fullData.slice(startIdx, startIdx + itemsPerPage), currentSheetName, startIdx));
         }
     }
 
