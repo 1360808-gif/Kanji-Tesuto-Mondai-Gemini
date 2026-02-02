@@ -165,7 +165,16 @@
         .view-canvas { display: flex; flex-direction: row-reverse; height: 185mm; width: 285mm; background: white; border: var(--border-width) solid var(--border-color); padding: 20px; margin-bottom: 20px; flex-shrink: 0; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
         .kanji-table-grid { display: block; height: 100%; flex-grow: 1; border: var(--border-width) solid var(--border-color); background: var(--border-color); }
         .unified-table { width: 100%; height: 100%; border-collapse: collapse; table-layout: fixed; direction: rtl; background: white; }
-        .unified-table td { border: var(--border-width) solid var(--border-color); text-align: center; vertical-align: middle; padding: 0; direction: ltr; }
+        .unified-table td { 
+            border: var(--border-width) solid var(--border-color); 
+            text-align: center; 
+            vertical-align: middle; 
+            padding: 0; 
+            direction: ltr;
+            
+            /* ▼ 追加：ここを基準にするという命令 */
+            position: relative;
+        }
         
         .tr-check { height: 10%; }
         .tr-num   { height: 6%; }
@@ -174,10 +183,20 @@
         .tr-ans   { height: 25%; }
 
         .h-ques-inner { 
-            width: 100%; height: 100%; display: flex; justify-content: center; 
-            align-items: flex-start; /* 上寄せ */
-            padding-top: 15px;       /* 上部の余白 */
-            overflow: hidden;
+            /* ▼ 絶対配置に変更（これで親の枠を無視しなくなります） */
+            position: absolute;
+            top: 0;
+            left: 0;
+            
+            width: 100%; 
+            height: 100%; 
+            display: flex; 
+            justify-content: center; 
+            align-items: flex-start; 
+            padding-top: 15px;
+            
+            /* ▼ はみ出した部分を隠す */
+            overflow: hidden; 
         }
 
         .ques-wrapper { writing-mode: vertical-rl; text-orientation: upright; font-size: 1.8vh; }
