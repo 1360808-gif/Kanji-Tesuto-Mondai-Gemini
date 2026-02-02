@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>漢字学習システム：極 v42-Final</title>
+    <title>漢字学習システム：極 v43-Random</title>
     <style>
         /* =========================================
            共通・基盤設定
@@ -18,6 +18,7 @@
             --suspend-gray: #95a5a6;
             --special-orange: #e67e22;
             --special-green: #27ae60;
+            --random-purple: #8e44ad; /* ランダムモード色 */
             --main-font: "UD Digital Kyokasho N-R", "UD デジタル 教科書体 N-R", BIZ UDPGothic, sans-serif;
             --border-width: 2px;
             --border-color: #000; 
@@ -98,6 +99,7 @@
         .btn:active { transform: translateY(2px); box-shadow: 0 2px 0 rgba(0,0,0,0.1); }
         
         .btn-practice { background: #f1c40f; }
+        .btn-random { background: var(--random-purple); color: white; }
         .btn-view { background: var(--action-blue); color: white; }
         .btn-print { background: var(--perfect-green); color: white; }
         .btn-perfect { background: var(--perfect-green); color: white; }
@@ -227,7 +229,8 @@
         <div class="modal-card">
             <h2 id="modal-sheet-title"></h2>
             <div class="mode-btn-group">
-                <button class="btn btn-practice" onclick="handleModeSelection('practice')">１もん ずつ れんしゅう</button>
+                <button class="btn btn-practice" onclick="handleModeSelection('practice')">１もん ずつ (じゅんばん)</button>
+                <button class="btn btn-random" onclick="handleModeSelection('random')">🎲 ランダムで れんしゅう</button>
                 <button class="btn btn-view" onclick="handleModeSelection('view')">いちらんを みて れんしゅう</button>
                 <button class="btn btn-print" onclick="handleModeSelection('print')">プリントを印刷</button>
                 <button class="btn btn-cancel" onclick="closeAllModals()">キャンセル</button>
@@ -267,6 +270,7 @@
         <div class="box middle-column" style="flex-grow:1;">
             <div id="mode-badge" class="hidden" style="background:var(--special-orange); color:white; padding:5px 15px; border-radius:10px;">🔥 とっくんモード</div>
             <div id="mode-badge-perfect" class="hidden" style="background:var(--special-green); color:white; padding:5px 15px; border-radius:10px;">✨ ふくしゅうモード</div>
+            <div id="mode-badge-random" class="hidden" style="background:var(--random-purple); color:white; padding:5px 15px; border-radius:10px;">🎲 ランダムモード</div>
             <div class="answer-container" id="a-text"></div>
             <div style="width:100%; display:flex; flex-direction:column; align-items:center; gap:10px;">
                 <button id="show-btn" class="btn btn-view" style="width:90%; min-height:70px; font-size:22px;" onclick="showAnswer()">答えをみる</button>
@@ -408,7 +412,10 @@
 
     function handleModeSelection(mode) {
         document.getElementById('mode-select-modal').style.display = 'none';
-        if (mode === 'practice') {
+        if (mode === 'random') {
+            // ランダムの場合は即座に開始（続きから機能は使わない）
+            launchPracticeMode('random');
+        } else if (mode === 'practice') {
             const prog = allProgress[currentSheetName];
             if (prog && (prog.lastIndex > 0 || prog.retry.size > 0 || prog.perfect.size > 0)) {
                 document.getElementById('opt-resume-btn').style.display = (prog.lastIndex > 0) ? 'block' : 'none';
@@ -424,6 +431,15 @@
         launchPracticeMode(type);
     }
 
+    // 配列をシャッフルする関数
+    function shuffleArray(array) {
+        for (let i = array.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [array[i], array[j]] = [array[j], array[i]];
+        }
+        return array;
+    }
+
     function launchPracticeMode(type) {
         document.getElementById('selector-screen').style.display = 'none';
         document.getElementById('practice-app').style.display = 'grid';
@@ -431,8 +447,11 @@
         document.body.className = "mode-practice";
         if (!allProgress[currentSheetName]) allProgress[currentSheetName] = { perfect: new Set(), retry: new Set(), lastIndex: 0 };
         const master = allData[currentSheetName];
+        
+        // バッジを一旦すべてリセット
         document.getElementById('mode-badge').classList.add('hidden');
         document.getElementById('mode-badge-perfect').classList.add('hidden');
+        document.getElementById('mode-badge-random').classList.add('hidden');
 
         if (type === 'special') {
             currentModeType = 'retry';
@@ -446,7 +465,17 @@
             currentQuestions = indices.map(idx => ({...master[idx], originalIndex: idx}));
             currentIndex = 0;
             document.getElementById('mode-badge-perfect').classList.remove('hidden');
+        } else if (type === 'random') {
+            // ランダムモード
+            currentModeType = 'random';
+            // まずオリジナル番号を付与してから
+            let temp = master.map((q, i) => ({...q, originalIndex: i}));
+            // シャッフルする
+            currentQuestions = shuffleArray(temp);
+            currentIndex = 0;
+            document.getElementById('mode-badge-random').classList.remove('hidden');
         } else {
+            // 通常（順番通り）
             currentModeType = 'normal';
             currentQuestions = master.map((q, i) => ({...q, originalIndex: i}));
             currentIndex = (type === 'resume') ? allProgress[currentSheetName].lastIndex : 0;
@@ -462,6 +491,7 @@
             return backToList();
         }
         const q = currentQuestions[currentIndex];
+        // ランダムや特訓のときは「今の問題数」、通常のときは「本来の番号」を表示
         document.getElementById('q-number').innerText = (currentModeType !== 'normal') ? (currentIndex + 1) : (q.originalIndex + 1);
         document.getElementById('q-text').innerHTML = q.q.replace(/[（\(](.*?)[）\)]/g, '<span class="highlight">$1</span>');
         const ansArea = document.getElementById('a-text');
@@ -470,6 +500,8 @@
         document.getElementById('show-btn').classList.remove('hidden');
         document.getElementById('judgement-btns').classList.add('hidden');
         document.getElementById('retry-options').classList.add('hidden');
+        
+        // 順番通りのときだけ、どこまで進んだかを記録する
         if (currentModeType === 'normal') allProgress[currentSheetName].lastIndex = currentIndex;
         updateStats();
     }
@@ -482,6 +514,7 @@
 
     function record(type) {
         const p = allProgress[currentSheetName];
+        // ランダムでも、元の番号(originalIndex)を使って記録するので安全！
         const idx = currentQuestions[currentIndex].originalIndex;
         if (type === 'perfect') {
             p.perfect.add(idx); p.retry.delete(idx); nextStep();
@@ -505,9 +538,16 @@
         document.getElementById('stat-total').innerText = `${currentIndex+1}/${currentQuestions.length}`;
         document.getElementById('stat-perfect').innerText = p.perfect.size;
         document.getElementById('stat-retry').innerText = p.retry.size;
+        
         const sBtn = document.getElementById('side-special-btn'), pBtn = document.getElementById('side-perfect-btn');
-        (currentModeType !== 'retry' && p.retry.size > 0) ? sBtn.classList.remove('hidden') : sBtn.classList.add('hidden');
-        (currentModeType !== 'perfect' && p.perfect.size > 0) ? pBtn.classList.remove('hidden') : pBtn.classList.add('hidden');
+        // ランダムモード中はサイドバーの特訓ボタンなどは隠す（混乱防止）
+        if (currentModeType === 'random') {
+             sBtn.classList.add('hidden');
+             pBtn.classList.add('hidden');
+        } else {
+             (currentModeType !== 'retry' && p.retry.size > 0) ? sBtn.classList.remove('hidden') : sBtn.classList.add('hidden');
+             (currentModeType !== 'perfect' && p.perfect.size > 0) ? pBtn.classList.remove('hidden') : pBtn.classList.add('hidden');
+        }
     }
 
     function launchViewMode(mode) {
