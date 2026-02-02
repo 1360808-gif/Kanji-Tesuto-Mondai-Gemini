@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>漢字学習システム（更新ボタン修正版）</title>
+    <title>漢字学習システム（完全統合版）</title>
     <style>
         /* =========================================
            共通・基盤設定
@@ -15,6 +15,8 @@
             --retry-orange: #f39c12;
             --action-blue: #3498db;
             --update-purple: #9b59b6;
+            --suspend-gray: #95a5a6;
+            --special-orange: #e67e22;
             --main-font: "UD Digital Kyokasho N-R", "UD デジタル 教科書体 N-R", "BIZ UDPGothic", sans-serif;
             --border-width: 2px;
             --border-color: #000; 
@@ -40,16 +42,18 @@
             font-size: 24px; font-weight: bold; color: #555;
         }
 
-        /* 更新ボタン：初期状態は非表示 */
+        /* --- こうしんボタン --- */
         #top-update-btn {
             position: absolute; top: 15px; left: 15px; z-index: 50;
             background: var(--update-purple); color: white;
             border: 3px solid var(--ink-black); padding: 8px 15px;
             border-radius: 12px; cursor: pointer; font-weight: bold; font-size: 14px;
             box-shadow: 4px 4px 0 rgba(0,0,0,0.1);
-            display: none; /* ← ここを none に変更 */
+            display: none; /* 初期は非表示 */
             flex-direction: column; align-items: center; line-height: 1.2;
         }
+        #top-update-btn:active { transform: translate(2px, 2px); box-shadow: 2px 2px 0 rgba(0,0,0,0.1); }
+        #top-update-btn small { font-size: 10px; font-weight: normal; margin-top: 2px; }
 
         /* セレクター画面 */
         #selector-screen {
@@ -70,36 +74,86 @@
             border-radius: 12px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 20px;
         }
 
-        /* モーダル */
-        #mode-select-modal {
+        /* 共通モーダル設定 */
+        .modal-overlay {
             display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0,0,0,0.6); z-index: 2000; justify-content: center; align-items: center;
         }
-        .mode-select-card {
+        .modal-card {
             background: white; padding: 30px; border-radius: 25px; border: 5px solid var(--ink-black);
-            text-align: center; width: 90%; max-width: 400px;
+            text-align: center; width: 90%; max-width: 400px; box-shadow: 0 10px 25px rgba(0,0,0,0.2);
         }
         .mode-btn-group { display: flex; flex-direction: column; gap: 12px; margin-top: 20px; }
-        .mode-btn { padding: 15px; border: 3px solid var(--ink-black); border-radius: 15px; font-size: 18px; font-weight: bold; cursor: pointer; font-family: var(--main-font); }
-        .btn-practice-mode { background: #f1c40f; }
-        .btn-view-mode { background: var(--action-blue); color: white; }
-        .btn-print-mode { background: var(--perfect-green); color: white; }
+        
+        /* ボタン共通スタイル（練習モード用） */
+        .btn {
+            width: 100%; padding: 12px; border: 3px solid var(--ink-black); border-radius: 15px;
+            font-size: 18px; font-weight: bold; cursor: pointer; font-family: var(--main-font);
+            display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 4px 0 rgba(0,0,0,0.1); background: white;
+        }
+        .btn:active { transform: translateY(2px); box-shadow: 0 2px 0 rgba(0,0,0,0.1); }
+        
+        .btn-practice { background: #f1c40f; }
+        .btn-view { background: var(--action-blue); color: white; }
+        .btn-print { background: var(--perfect-green); color: white; }
+        .btn-perfect { background: var(--perfect-green); color: white; }
+        .btn-retry { background: var(--retry-orange); color: white; }
+        .btn-suspend { background: var(--suspend-gray); color: white; font-size: 16px; }
+        .btn-special { background: var(--special-orange); color: white; }
+        .btn-cancel { background: transparent; border: none; box-shadow: none; color: #999; text-decoration: underline; margin-top: 10px; }
 
-        /* 練習モード UI */
+        /* =========================================
+           練習モード UI (Code A style)
+           ========================================= */
         #practice-app {
             display: none; grid-template-columns: 350px 1.5fr 1.2fr 50px; 
             gap: 25px; width: 94vw; height: 90vh; padding: 10px;
         }
-        .box { border: 4px solid var(--ink-black); border-radius: 20px; background: var(--paper-bg); overflow: hidden; display: flex; flex-direction: column; }
-        .right-column { display: flex; flex-direction: row-reverse; gap: 10px; height: 100%; padding: 20px; }
-        .q-num-box { border: 3px solid var(--ink-black); min-width: 45px; height: 45px; display: flex; align-items: center; justify-content: center; font-size: 22px; font-weight: bold; background: white; border-radius: 10px; }
-        .q-area { flex-grow: 1; writing-mode: vertical-rl; font-size: clamp(22px, 4vh, 34px); line-height: 2.2; padding: 10px 15px 30px; background-image: radial-gradient(#ddd 1.5px, transparent 1.5px); background-size: 35px 35px; overflow-y: auto; }
-        .answer-container { width: 100%; flex-grow: 1; display: flex; flex-direction: row-reverse; justify-content: center; align-items: center; gap: 60px; padding: 20px; opacity: 0; transform: scale(0.95); }
-        .answer-container.visible { opacity: 1; transform: scale(1); transition: 0.2s ease-out; }
-        .ans-column { writing-mode: vertical-rl; font-size: clamp(50px, 11vh, 95px); color: #e74c3c; font-weight: bold; }
-        .highlight { color: #e74c3c; text-decoration: underline #e74c3c 2px; text-underline-offset: 3px; display: inline; }
+        .box { 
+            border: 4px solid var(--ink-black); border-radius: 20px; background: var(--paper-bg); 
+            overflow: hidden; display: flex; flex-direction: column; box-shadow: 6px 6px 0 rgba(0,0,0,0.1);
+        }
+        
+        /* 左カラム：ステータス */
+        .left-column { padding: 25px; height: 100%; }
+        .stats p { margin: 15px 0; font-size: 19px; border-bottom: 2px dotted #bbb; padding-bottom: 10px; }
+        .stats span { font-size: 30px; font-weight: bold; color: var(--action-blue); }
 
-        /* 閲覧・印刷モード */
+        /* 中央カラム：答えと操作 */
+        .middle-column { display: flex; flex-direction: column; gap: 15px; align-items: center; height: 100%; padding: 20px; }
+        .answer-container {
+            width: 100%; flex-grow: 1; max-height: 60%; border: 3px dashed #ccc; border-radius: 15px; background: white;
+            display: flex; flex-direction: row-reverse; justify-content: center; align-items: center; gap: 60px; padding: 20px; 
+            opacity: 0; transform: scale(0.95);
+        }
+        .answer-container.visible { opacity: 1; transform: scale(1); transition: 0.2s ease-out; }
+        .ans-column { writing-mode: vertical-rl; font-size: clamp(50px, 11vh, 95px); color: #e74c3c; font-weight: bold; white-space: nowrap; }
+        
+        .ans-wrapper.show-hint::before { 
+            content: "？"; color: #ccc; font-size: 3vh; 
+            position: absolute; top: 50%; left: 50%;
+            transform: translate(-50%, -50%); z-index: 0; 
+        }
+
+        /* 右カラム：問題表示 */
+        .right-column { display: flex; flex-direction: row-reverse; gap: 10px; height: 100%; padding: 20px; }
+        .q-num-box { 
+            border: 3px solid var(--ink-black); min-width: 45px; height: 45px; 
+            display: flex; align-items: center; justify-content: center; font-size: 22px; font-weight: bold; background: white; border-radius: 10px; 
+        }
+        .q-area { 
+            flex-grow: 1; writing-mode: vertical-rl; font-size: clamp(22px, 4vh, 34px); line-height: 2.2; 
+            padding: 10px 15px 30px; background-image: radial-gradient(#ddd 1.5px, transparent 1.5px); 
+            background-size: 35px 35px; overflow-y: auto; 
+        }
+        .highlight { color: #e74c3c; text-decoration: underline #e74c3c 2px; text-underline-offset: 3px; display: inline; }
+        
+        .title-column { writing-mode: vertical-rl; display: flex; align-items: center; font-size: 16px; font-weight: bold; color: #666; padding-top: 10px; }
+
+        /* =========================================
+           閲覧・印刷モード UI (Code B style)
+           ========================================= */
         #view-app { display: none; width: 100%; height: 100%; }
         .view-header { width: 100%; height: 50px; display: flex; justify-content: space-between; align-items: center; padding: 0 20px; background: #fff; border-bottom: 1px solid #ccc; }
         #view-mode-container { height: calc(100vh - 50px); display: flex; flex-direction: column; align-items: center; padding: 10px; overflow-y: auto; }
@@ -114,42 +168,20 @@
         .tr-num2  { height: 6%; }
         .tr-ans   { height: 25%; }
 
-        /* 問題文（上揃え） */
-        .h-ques-inner { 
-            width: 100%; height: 100%; display: flex; 
-            justify-content: center; align-items: flex-start; padding-top: 15px; 
-        }
-        .ques-wrapper { 
-            writing-mode: vertical-rl; text-orientation: upright; text-align: left; 
-            font-size: min(1.9vh, 17px); line-height: 1.4; 
-        }
-
-        /* 答え（縦書き・中央） */
-        .ans-wrapper {
-            position: relative; 
-            width: 100%; height: 100%;
-            display: flex; justify-content: center; align-items: center;
-        }
-        .ans-text { 
-            writing-mode: vertical-rl; text-orientation: upright; 
-            font-size: 2.3vh; font-weight: bold; color: #e74c3c;
-            white-space: nowrap;
-        }
-        .ans-wrapper.show-hint::before { 
-            content: "？"; color: #ccc; font-size: 3vh; 
-            position: absolute; top: 50%; left: 50%;
-            transform: translate(-50%, -50%); z-index: 0; 
-        }
-
+        .h-ques-inner { width: 100%; height: 100%; display: flex; justify-content: center; align-items: flex-start; padding-top: 15px; }
+        .ques-wrapper { writing-mode: vertical-rl; text-orientation: upright; text-align: left; font-size: min(1.9vh, 17px); line-height: 1.4; }
+        .ans-wrapper { position: relative; width: 100%; height: 100%; display: flex; justify-content: center; align-items: center; }
+        .ans-text { writing-mode: vertical-rl; text-orientation: upright; font-size: 2.3vh; font-weight: bold; color: #e74c3c; white-space: nowrap; }
         .ans-text.blind { opacity: 0; }
         .print-title { writing-mode: vertical-rl; font-weight: bold; border: var(--border-width) solid var(--border-color); border-left: 4px double #000; padding: 0 15px; margin-left: 15px; background: white; }
         .square { width: 20px; height: 20px; border: 1px solid #000; margin: auto; cursor: pointer; }
         .hidden { display: none !important; }
+        .btn-action { padding: 5px 15px; background: #eee; border: 1px solid #999; border-radius: 5px; cursor: pointer; }
 
         @media print {
             @page { size: A4 landscape; margin: 0; }
             body { background: white !important; overflow: visible !important; }
-            #top-update-btn, .view-header, #loading, #selector-screen, #mode-select-modal, #practice-app { display: none !important; }
+            #top-update-btn, .view-header, #loading, #selector-screen, .modal-overlay, #practice-app { display: none !important; }
             #view-app { display: block !important; }
             .view-canvas { margin: 5mm auto !important; page-break-after: always !important; box-shadow: none !important; border: var(--border-width) solid var(--border-color) !important; }
             .ans-text { color: black !important; opacity: 1 !important; visibility: visible !important; }
@@ -171,46 +203,56 @@
         <div id="sheet-list" style="width:100%;"></div>
     </div>
 
-    <div id="mode-select-modal">
-        <div class="mode-select-card">
+    <div id="mode-select-modal" class="modal-overlay">
+        <div class="modal-card">
             <h2 id="modal-sheet-title"></h2>
             <div class="mode-btn-group">
-                <button class="mode-btn btn-practice-mode" onclick="launchPracticeMode()">１もん ずつ れんしゅう</button>
-                <button class="mode-btn btn-view-mode" onclick="launchViewMode('view')">いちらんを みて れんしゅう</button>
-                <button class="mode-btn btn-print-mode" onclick="launchViewMode('print')">プリントを印刷</button>
-                <button class="mode-btn" onclick="closeModeModal()">キャンセル</button>
+                <button class="btn btn-practice" onclick="handleModeSelection('practice')">✏️ １もん ずつ れんしゅう</button>
+                <button class="btn btn-view" onclick="handleModeSelection('view')">👀 いちらんを みて れんしゅう</button>
+                <button class="btn btn-print" onclick="handleModeSelection('print')">🖨️ プリントを印刷</button>
+                <button class="btn btn-cancel" onclick="closeAllModals()">キャンセル</button>
             </div>
-            <div id="resume-options" style="display:none; margin-top:15px; border-top:2px dashed #ccc; padding-top:10px;">
-                <button class="mode-btn btn-practice-mode" style="width:100%" onclick="launchPracticeMode(true)">続きから再開</button>
+        </div>
+    </div>
+
+    <div id="practice-options-modal" class="modal-overlay">
+        <div class="modal-card">
+            <h3>この問題集は練習したことがあるよ！</h3>
+            <div class="mode-btn-group">
+                <button id="opt-resume-btn" class="btn btn-view" onclick="confirmPracticeStart('resume')">🔄 つづきから</button>
+                <button id="opt-special-btn" class="btn btn-special" onclick="confirmPracticeStart('special')">🔥 おぼえちゅうを特訓</button>
+                <button class="btn" onclick="confirmPracticeStart('restart')">🆕 はじめから</button>
+                <button class="btn btn-cancel" onclick="closeAllModals()">キャンセル</button>
             </div>
         </div>
     </div>
 
     <div id="practice-app">
-        <div class="box left-column" style="padding:25px; height:100%;">
-            <h4 style="text-align:center; font-size: 24px; margin-bottom: 20px;">📔 学習の記録</h4>
+        <div class="box left-column">
+            <h4 style="text-align:center; font-size: 24px; margin: 0 0 20px 0;">📔 学習の記録</h4>
             <div class="stats">
                 <p>進行度：<span id="stat-total">0/0</span></p>
                 <p>かんぺき：<span id="stat-perfect" style="color:var(--perfect-green)">0</span></p>
                 <p>おぼえちゅう：<span id="stat-retry" style="color:var(--retry-orange)">0</span></p>
             </div>
             <div style="margin-top:auto; display:grid; gap:10px;">
-                <button id="special-retry-btn" class="mode-btn btn-practice-mode" style="font-size:16px;" onclick="startRetryOnlyMode()">おぼえちゅうを特訓</button>
-                <button class="mode-btn" style="background:#eee; font-size:16px;" onclick="backToList()">🏠 リストに戻る</button>
+                <button class="btn btn-suspend" onclick="suspendQuiz()">⏸ ちゅうだんする</button>
+                <button class="btn" style="background:#eee; font-size:16px;" onclick="backToList()">🏠 リストに戻る</button>
             </div>
         </div>
-        <div class="box middle-column" style="flex-grow:1; padding:20px; align-items:center; gap:15px;">
-            <div id="mode-badge" class="hidden" style="background:var(--retry-orange); color:white; padding:5px 15px; border-radius:10px;">🔥 特訓モード</div>
+        <div class="box middle-column" style="flex-grow:1;">
+            <div id="mode-badge" class="hidden" style="background:var(--special-orange); color:white; padding:5px 15px; border-radius:10px;">🔥 特訓モード</div>
             <div class="answer-container" id="a-text"></div>
+            
             <div style="width:100%; display:flex; flex-direction:column; align-items:center; gap:10px;">
-                <button id="show-btn" class="mode-btn btn-view-mode" style="width:90%; min-height:70px;" onclick="showAnswer()">答えをみる</button>
+                <button id="show-btn" class="btn btn-view" style="width:90%; min-height:70px; font-size:22px;" onclick="showAnswer()">答えをみる</button>
                 <div id="judgement-btns" class="hidden" style="display:flex; gap:10px; width:90%;">
-                    <button class="mode-btn" style="flex:1; background:var(--perfect-green); color:white;" onclick="record('perfect')">かんぺき！</button>
-                    <button class="mode-btn" style="flex:1; background:var(--retry-orange); color:white;" onclick="record('retry')">おぼえちゅう</button>
+                    <button class="btn btn-perfect" style="flex:1; min-height:70px;" onclick="record('perfect')">かんぺき！</button>
+                    <button class="btn btn-retry" style="flex:1; min-height:70px;" onclick="record('retry')">おぼえちゅう</button>
                 </div>
                 <div id="retry-options" class="hidden" style="display:flex; gap:10px; width:90%;">
-                    <button class="mode-btn" style="flex:1;" onclick="nextStep()">次の問題</button>
-                    <button class="mode-btn" style="flex:1; border-style:dashed;" onclick="tryAgain()">もう一度</button>
+                    <button class="btn" style="flex:1; min-height:60px;" onclick="nextStep()">次の問題 ＞</button>
+                    <button class="btn" style="flex:1; min-height:60px; border-style:dashed;" onclick="tryAgain()">もう一度 🔄</button>
                 </div>
             </div>
         </div>
@@ -218,7 +260,7 @@
             <div class="q-num-box" id="q-number"></div>
             <div class="q-area" id="q-text"></div>
         </div>
-        <div id="sheet-title" style="writing-mode:vertical-rl; padding:10px; font-weight:bold; color:#666;"></div>
+        <div id="sheet-title" class="title-column"></div>
     </div>
 
     <div id="view-app">
@@ -236,8 +278,8 @@
 
 <script>
     const API_URL = "https://script.google.com/macros/s/AKfycbyWHprvWe-NcrfamWL2I6bWSAak6HW-JxyMCY-RZkZDFrhLkbSfLkeVmpKyznlI7g3a/exec";
-    const CACHE_KEY = "kanji_quiz_v31_stable";
-    const PROGRESS_KEY = "kanji_quiz_prog_v31_stable";
+    const CACHE_KEY = "kanji_quiz_v35_merged";
+    const PROGRESS_KEY = "kanji_quiz_prog_v35_merged";
     
     let allData = {};
     let allProgress = {};
@@ -245,6 +287,8 @@
     let currentQuestions = [];
     let currentIndex = 0;
     let isRetryOnlyMode = false;
+    
+    // View Mode Variables
     let viewPage = 0;
     const itemsPerPage = 15;
     let isAllAnswersVisible = false;
@@ -252,12 +296,16 @@
     // --- データ処理 ---
     async function fetchData(force = false) {
         document.getElementById('loading').style.display = 'flex';
+        document.getElementById('top-update-btn').style.display = 'none'; // ロード中は隠す
+        
         const cached = localStorage.getItem(CACHE_KEY);
         if (!force && cached) {
-            allData = JSON.parse(cached);
-            loadProg();
-            createMenu();
-            return;
+            try {
+                allData = JSON.parse(cached);
+                loadProg();
+                createMenu();
+                return;
+            } catch(e) { console.error(e); }
         }
         try {
             const res = await fetch(API_URL);
@@ -265,7 +313,11 @@
             localStorage.setItem(CACHE_KEY, JSON.stringify(allData));
             loadProg();
             createMenu();
-        } catch(e) { alert("データが読み込めませんでした。"); }
+            if(force) alert("最新データに更新しました！");
+        } catch(e) { 
+            alert("データの読み込みに失敗しました。通信環境を確認してください。");
+            document.getElementById('loading').innerText = "読み込みエラー";
+        }
     }
 
     function loadProg() {
@@ -300,10 +352,10 @@
         document.getElementById('selector-screen').style.display = 'flex';
         document.getElementById('practice-app').style.display = 'none';
         document.getElementById('view-app').style.display = 'none';
-        
-        // ★ここを修正：メニュー画面の時だけ更新ボタンを表示
+        closeAllModals();
+
+        // メニュー画面でのみ更新ボタンを表示
         document.getElementById('top-update-btn').style.display = 'flex';
-        
         document.body.className = "mode-practice";
 
         const list = document.getElementById('sheet-list');
@@ -311,8 +363,21 @@
         Object.keys(allData).forEach(key => {
             const row = document.createElement('div');
             row.className = "sheet-row";
-            row.innerHTML = `<button class="sheet-btn" onclick="openModeModal('${key}')">${key}</button>
-                             <button class="reset-mini-btn" onclick="clearProg('${key}')">🗑️</button>`;
+            
+            // 進捗状況のバッジ作成
+            const prog = allProgress[key];
+            const retryCount = prog ? prog.retry.size : 0;
+            const badge = retryCount > 0 
+                ? `<span style="background:var(--retry-orange); color:white; padding:2px 8px; border-radius:10px; font-size:12px;">おぼえちゅう:${retryCount}</span>` 
+                : "";
+            
+            row.innerHTML = `
+                <button class="sheet-btn" onclick="openModeModal('${key}')">
+                    <div>${key}</div>
+                    ${badge}
+                </button>
+                <button class="reset-mini-btn" onclick="clearProg('${key}')">🗑️</button>
+            `;
             list.appendChild(row);
         });
     }
@@ -321,54 +386,109 @@
         currentSheetName = name;
         document.getElementById('modal-sheet-title').innerText = name;
         document.getElementById('mode-select-modal').style.display = 'flex';
-        const prog = allProgress[name];
-        document.getElementById('resume-options').style.display = (prog && prog.lastIndex > 0) ? 'block' : 'none';
+        document.getElementById('top-update-btn').style.display = 'none'; // モーダルが出たら隠す
     }
 
-    function closeModeModal() { document.getElementById('mode-select-modal').style.display = 'none'; }
-    
-    // リストに戻るとき
+    function closeAllModals() {
+        document.querySelectorAll('.modal-overlay').forEach(el => el.style.display = 'none');
+        // メニュー画面に戻っているならボタン再表示
+        if(document.getElementById('selector-screen').style.display !== 'none') {
+            document.getElementById('top-update-btn').style.display = 'flex';
+        }
+    }
+
+    function handleModeSelection(mode) {
+        document.getElementById('mode-select-modal').style.display = 'none';
+        
+        if (mode === 'practice') {
+            // 練習モード：履歴チェック
+            const prog = allProgress[currentSheetName];
+            const hasHistory = prog && (prog.lastIndex > 0 || prog.retry.size > 0);
+            
+            if (hasHistory) {
+                // 履歴あり -> オプションモーダルへ
+                document.getElementById('opt-resume-btn').style.display = (prog.lastIndex > 0) ? 'block' : 'none';
+                document.getElementById('opt-special-btn').style.display = (prog.retry.size > 0) ? 'block' : 'none';
+                document.getElementById('practice-options-modal').style.display = 'flex';
+            } else {
+                // 履歴なし -> 即スタート
+                launchPracticeMode('restart');
+            }
+        } else {
+            // 閲覧・印刷モード
+            launchViewMode(mode);
+        }
+    }
+
+    function confirmPracticeStart(type) {
+        document.getElementById('practice-options-modal').style.display = 'none';
+        launchPracticeMode(type);
+    }
+
     function backToList() { 
         saveProgress(); 
         createMenu(); 
     }
     
-    function clearProg(name) { if(confirm("記録を消しますか？")) { delete allProgress[name]; saveProgress(); createMenu(); } }
+    function clearProg(name) { 
+        if(confirm(`「${name}」の記録をすべて消しますか？`)) { 
+            delete allProgress[name]; 
+            saveProgress(); 
+            createMenu(); 
+        } 
+    }
 
-    // --- 練習モード ---
-    function launchPracticeMode(resume = false) {
-        closeModeModal();
+    // --- 練習モードロジック (Code A Integrated) ---
+    function launchPracticeMode(type) {
         document.getElementById('selector-screen').style.display = 'none';
         document.getElementById('practice-app').style.display = 'grid';
-        
-        // ★ここを修正：各モードに入ったら更新ボタンを隠す
-        document.getElementById('top-update-btn').style.display = 'none';
+        document.getElementById('top-update-btn').style.display = 'none'; // 念のため隠す
 
         if (!allProgress[currentSheetName]) allProgress[currentSheetName] = { perfect: new Set(), retry: new Set(), lastIndex: 0 };
+        
         const master = allData[currentSheetName];
-        currentQuestions = master.map((q, i) => ({...q, originalIndex: i}));
-        currentIndex = resume ? allProgress[currentSheetName].lastIndex : 0;
-        isRetryOnlyMode = false;
-        document.getElementById('mode-badge').classList.add('hidden');
+        isRetryOnlyMode = (type === 'special');
+        
+        if (isRetryOnlyMode) {
+            // 特訓モード
+            const retryIndices = Array.from(allProgress[currentSheetName].retry).sort((a,b)=>a-b);
+            currentQuestions = retryIndices.map(idx => ({...master[idx], originalIndex: idx}));
+            currentIndex = 0;
+            document.getElementById('mode-badge').classList.remove('hidden');
+        } else {
+            // 通常モード
+            currentQuestions = master.map((q, i) => ({...q, originalIndex: i}));
+            currentIndex = (type === 'resume') ? allProgress[currentSheetName].lastIndex : 0;
+            document.getElementById('mode-badge').classList.add('hidden');
+        }
+        
         document.getElementById('sheet-title').innerText = "【 " + currentSheetName + " 】";
         showQuestion();
     }
 
     function showQuestion() {
         if (currentIndex >= currentQuestions.length) {
-            alert("最後まで終わりました！");
-            allProgress[currentSheetName].lastIndex = 0;
+            if (isRetryOnlyMode) {
+                alert("特訓おつかれさま！\nリストに戻ります。");
+            } else {
+                alert("最後まで終わりました！\n最初に戻ります。");
+                allProgress[currentSheetName].lastIndex = 0;
+            }
             return backToList();
         }
+        
         const q = currentQuestions[currentIndex];
-        document.getElementById('q-number').innerText = q.originalIndex + 1;
+        document.getElementById('q-number').innerText = isRetryOnlyMode ? (currentIndex + 1) : (q.originalIndex + 1);
         document.getElementById('q-text').innerHTML = q.q.replace(/[（\(](.*?)[）\)]/g, '<span class="highlight">$1</span>');
+        
         const ansArea = document.getElementById('a-text');
         ansArea.innerHTML = q.a.split(/[、,]/).map(t => `<div class="ans-column">${t.trim()}</div>`).join('');
         ansArea.classList.remove('visible');
+        
         document.getElementById('show-btn').classList.remove('hidden');
         document.getElementById('judgement-btns').classList.add('hidden');
         document.getElementById('retry-options').classList.add('hidden');
+        
         if (!isRetryOnlyMode) allProgress[currentSheetName].lastIndex = currentIndex;
         updateStats();
     }
@@ -382,10 +502,14 @@
     function record(type) {
         const p = allProgress[currentSheetName];
         const idx = currentQuestions[currentIndex].originalIndex;
+        
         if (type === 'perfect') {
-            p.perfect.add(idx); p.retry.delete(idx); nextStep();
+            p.perfect.add(idx); p.retry.delete(idx); 
+            updateStats();
+            nextStep();
         } else {
             p.retry.add(idx); p.perfect.delete(idx);
+            updateStats();
             document.getElementById('judgement-btns').classList.add('hidden');
             document.getElementById('retry-options').classList.remove('hidden');
         }
@@ -393,7 +517,18 @@
     }
 
     function nextStep() { currentIndex++; showQuestion(); }
-    function tryAgain() { document.getElementById('a-text').classList.remove('visible'); document.getElementById('retry-options').classList.add('hidden'); document.getElementById('show-btn').classList.remove('hidden'); }
+    function tryAgain() { 
+        document.getElementById('a-text').classList.remove('visible'); 
+        document.getElementById('retry-options').classList.add('hidden'); 
+        document.getElementById('show-btn').classList.remove('hidden'); 
+    }
+
+    function suspendQuiz() {
+        if(confirm("ここまでの状態を保存して、リストに戻りますか？")) {
+            saveProgress();
+            createMenu();
+        }
+    }
 
     function updateStats() {
         const p = allProgress[currentSheetName];
@@ -402,23 +537,11 @@
         document.getElementById('stat-retry').innerText = p.retry.size;
     }
 
-    function startRetryOnlyMode() {
-        const p = allProgress[currentSheetName];
-        if (!p || p.retry.size === 0) return alert("おぼえちゅうの漢字はありません。");
-        currentQuestions = Array.from(p.retry).sort((a,b)=>a-b).map(idx => ({...allData[currentSheetName][idx], originalIndex: idx}));
-        currentIndex = 0; isRetryOnlyMode = true;
-        document.getElementById('mode-badge').classList.remove('hidden');
-        showQuestion();
-    }
-
-    // --- 閲覧・印刷モード ---
+    // --- 閲覧・印刷モードロジック (Code B Integrated) ---
     function launchViewMode(mode) {
-        closeModeModal();
         document.body.className = "mode-view";
         document.getElementById('selector-screen').style.display = 'none';
         document.getElementById('view-app').style.display = 'block';
-        
-        // ★ここを修正：各モードに入ったら更新ボタンを隠す
         document.getElementById('top-update-btn').style.display = 'none';
 
         viewPage = 0;
@@ -428,6 +551,7 @@
             document.getElementById('toggle-all-btn').innerText = "答えを表示";
             renderViewPage();
         } else {
+            // Print Mode
             renderAllPagesForPrint();
             setTimeout(() => { window.print(); }, 500);
         }
