@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>漢字学習システム（完全統合・最終版）</title>
+    <title>漢字学習システム（特訓＆復習機能付き）</title>
     <style>
         /* =========================================
            共通・基盤設定
@@ -17,6 +17,7 @@
             --update-purple: #9b59b6;
             --suspend-gray: #95a5a6;
             --special-orange: #e67e22;
+            --special-green: #27ae60; /* 復習モード用 */
             --main-font: "UD Digital Kyokasho N-R", "UD デジタル 教科書体 N-R", "BIZ UDPGothic", sans-serif;
             --border-width: 2px;
             --border-color: #000; 
@@ -32,7 +33,6 @@
             width: 100vw; height: 100vh;
         }
 
-        /* モードによるレイアウト切り替え */
         body.mode-practice { display: flex; justify-content: center; align-items: center; position: relative; }
         body.mode-view { display: block; overflow: hidden; }
 
@@ -52,7 +52,7 @@
             border: 3px solid var(--ink-black); padding: 8px 15px;
             border-radius: 12px; cursor: pointer; font-weight: bold; font-size: 14px;
             box-shadow: 4px 4px 0 rgba(0,0,0,0.1);
-            display: none; /* 初期は非表示 */
+            display: none;
             flex-direction: column; align-items: center; line-height: 1.2;
         }
         #top-update-btn:active { transform: translate(2px, 2px); box-shadow: 2px 2px 0 rgba(0,0,0,0.1); }
@@ -104,6 +104,7 @@
         .btn-retry { background: var(--retry-orange); color: white; }
         .btn-suspend { background: var(--suspend-gray); color: white; font-size: 16px; }
         .btn-special { background: var(--special-orange); color: white; }
+        .btn-special-check { background: var(--special-green); color: white; } /* 新規：復習ボタン */
         .btn-cancel { background: transparent; border: none; box-shadow: none; color: #999; text-decoration: underline; margin-top: 10px; }
 
         /* =========================================
@@ -118,12 +119,10 @@
             overflow: hidden; display: flex; flex-direction: column; box-shadow: 6px 6px 0 rgba(0,0,0,0.1);
         }
         
-        /* 左カラム：ステータスと操作 */
         .left-column { padding: 25px; height: 100%; }
         .stats p { margin: 15px 0; font-size: 19px; border-bottom: 2px dotted #bbb; padding-bottom: 10px; }
         .stats span { font-size: 30px; font-weight: bold; color: var(--action-blue); }
 
-        /* 中央カラム：答えと操作 */
         .middle-column { display: flex; flex-direction: column; gap: 15px; align-items: center; height: 100%; padding: 20px; }
         .answer-container {
             width: 100%; flex-grow: 1; max-height: 60%; border: 3px dashed #ccc; border-radius: 15px; background: white;
@@ -133,7 +132,6 @@
         .answer-container.visible { opacity: 1; transform: scale(1); transition: 0.2s ease-out; }
         .ans-column { writing-mode: vertical-rl; font-size: clamp(50px, 11vh, 95px); color: #e74c3c; font-weight: bold; white-space: nowrap; }
         
-        /* 右カラム：問題表示 */
         .right-column { display: flex; flex-direction: row-reverse; gap: 10px; height: 100%; padding: 20px; }
         .q-num-box { 
             border: 3px solid var(--ink-black); min-width: 45px; height: 45px; 
@@ -145,7 +143,6 @@
             background-size: 35px 35px; overflow-y: auto; 
         }
         .highlight { color: #e74c3c; text-decoration: underline #e74c3c 2px; text-underline-offset: 3px; display: inline; }
-        
         .title-column { writing-mode: vertical-rl; display: flex; align-items: center; font-size: 16px; font-weight: bold; color: #666; padding-top: 10px; }
 
         /* =========================================
@@ -170,11 +167,7 @@
         .ans-wrapper { position: relative; width: 100%; height: 100%; display: flex; justify-content: center; align-items: center; }
         .ans-text { writing-mode: vertical-rl; text-orientation: upright; font-size: 2.3vh; font-weight: bold; color: #e74c3c; white-space: nowrap; }
         .ans-text.blind { opacity: 0; }
-        .ans-wrapper.show-hint::before { 
-            content: "？"; color: #ccc; font-size: 3vh; 
-            position: absolute; top: 50%; left: 50%;
-            transform: translate(-50%, -50%); z-index: 0; 
-        }
+        .ans-wrapper.show-hint::before { content: "？"; color: #ccc; font-size: 3vh; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 0; }
         .print-title { writing-mode: vertical-rl; font-weight: bold; border: var(--border-width) solid var(--border-color); border-left: 4px double #000; padding: 0 15px; margin-left: 15px; background: white; }
         .square { width: 20px; height: 20px; border: 1px solid #000; margin: auto; cursor: pointer; }
         .btn-action { padding: 5px 15px; background: #eee; border: 1px solid #999; border-radius: 5px; cursor: pointer; }
@@ -221,7 +214,11 @@
             <h3>この問題集は練習したことがあるよ！</h3>
             <div class="mode-btn-group">
                 <button id="opt-resume-btn" class="btn btn-view" onclick="confirmPracticeStart('resume')">🔄 つづきから</button>
+                
                 <button id="opt-special-btn" class="btn btn-special" onclick="confirmPracticeStart('special')">🔥 おぼえちゅうを特訓</button>
+                
+                <button id="opt-perfect-btn" class="btn btn-special-check" onclick="confirmPracticeStart('perfect_check')">✨ かんぺきをたしかめる</button>
+
                 <button class="btn" onclick="confirmPracticeStart('restart')">🆕 はじめから</button>
                 <button class="btn btn-cancel" onclick="closeAllModals()">キャンセル</button>
             </div>
@@ -239,12 +236,16 @@
             <div style="margin-top:auto; display:grid; gap:10px;">
                 <button id="side-special-btn" class="btn btn-special hidden" onclick="startSidebarSpecial()">🔥 おぼえちゅうを特訓</button>
                 
+                <button id="side-perfect-btn" class="btn btn-special-check hidden" onclick="startSidebarPerfect()">✨ かんぺきをたしかめる</button>
+                
                 <button class="btn btn-suspend" onclick="suspendQuiz()">⏸ ちゅうだんする</button>
                 <button class="btn" style="background:#eee; font-size:16px;" onclick="backToList()">🏠 リストに戻る</button>
             </div>
         </div>
         <div class="box middle-column" style="flex-grow:1;">
             <div id="mode-badge" class="hidden" style="background:var(--special-orange); color:white; padding:5px 15px; border-radius:10px;">🔥 特訓モード</div>
+            <div id="mode-badge-perfect" class="hidden" style="background:var(--special-green); color:white; padding:5px 15px; border-radius:10px;">✨ 復習モード</div>
+
             <div class="answer-container" id="a-text"></div>
             
             <div style="width:100%; display:flex; flex-direction:column; align-items:center; gap:10px;">
@@ -281,15 +282,17 @@
 
 <script>
     const API_URL = "https://script.google.com/macros/s/AKfycbyWHprvWe-NcrfamWL2I6bWSAak6HW-JxyMCY-RZkZDFrhLkbSfLkeVmpKyznlI7g3a/exec";
-    const CACHE_KEY = "kanji_quiz_v36_final"; // バージョン更新
-    const PROGRESS_KEY = "kanji_quiz_prog_v36_final";
+    const CACHE_KEY = "kanji_quiz_v37_perfect_mode"; // バージョン更新
+    const PROGRESS_KEY = "kanji_quiz_prog_v37_perfect_mode";
     
     let allData = {};
     let allProgress = {};
     let currentSheetName = "";
     let currentQuestions = [];
     let currentIndex = 0;
-    let isRetryOnlyMode = false;
+    
+    // モード管理: 'normal', 'retry', 'perfect'
+    let currentModeType = 'normal';
     
     // View Mode Variables
     let viewPage = 0;
@@ -402,11 +405,16 @@
         
         if (mode === 'practice') {
             const prog = allProgress[currentSheetName];
-            const hasHistory = prog && (prog.lastIndex > 0 || prog.retry.size > 0);
+            const hasHistory = prog && (prog.lastIndex > 0 || prog.retry.size > 0 || prog.perfect.size > 0);
             
             if (hasHistory) {
+                // 続きからボタン
                 document.getElementById('opt-resume-btn').style.display = (prog.lastIndex > 0) ? 'block' : 'none';
+                // 特訓ボタン（おぼえちゅうがある時）
                 document.getElementById('opt-special-btn').style.display = (prog.retry.size > 0) ? 'block' : 'none';
+                // 復習ボタン（かんぺきがある時）
+                document.getElementById('opt-perfect-btn').style.display = (prog.perfect.size > 0) ? 'block' : 'none';
+
                 document.getElementById('practice-options-modal').style.display = 'flex';
             } else {
                 launchPracticeMode('restart');
@@ -443,51 +451,78 @@
         if (!allProgress[currentSheetName]) allProgress[currentSheetName] = { perfect: new Set(), retry: new Set(), lastIndex: 0 };
         
         const master = allData[currentSheetName];
-        isRetryOnlyMode = (type === 'special');
         
-        if (isRetryOnlyMode) {
-            // 特訓モード設定
-            const retryIndices = Array.from(allProgress[currentSheetName].retry).sort((a,b)=>a-b);
-            currentQuestions = retryIndices.map(idx => ({...master[idx], originalIndex: idx}));
+        // バッジリセット
+        document.getElementById('mode-badge').classList.add('hidden');
+        document.getElementById('mode-badge-perfect').classList.add('hidden');
+
+        if (type === 'special') {
+            // おぼえちゅう特訓モード
+            currentModeType = 'retry';
+            const indices = Array.from(allProgress[currentSheetName].retry).sort((a,b)=>a-b);
+            currentQuestions = indices.map(idx => ({...master[idx], originalIndex: idx}));
             currentIndex = 0;
             document.getElementById('mode-badge').classList.remove('hidden');
+
+        } else if (type === 'perfect_check') {
+            // かんぺき復習モード
+            currentModeType = 'perfect';
+            const indices = Array.from(allProgress[currentSheetName].perfect).sort((a,b)=>a-b);
+            currentQuestions = indices.map(idx => ({...master[idx], originalIndex: idx}));
+            currentIndex = 0;
+            document.getElementById('mode-badge-perfect').classList.remove('hidden');
+
         } else {
-            // 通常モード設定
+            // 通常モード
+            currentModeType = 'normal';
             currentQuestions = master.map((q, i) => ({...q, originalIndex: i}));
             currentIndex = (type === 'resume') ? allProgress[currentSheetName].lastIndex : 0;
-            document.getElementById('mode-badge').classList.add('hidden');
         }
         
         document.getElementById('sheet-title').innerText = "【 " + currentSheetName + " 】";
         showQuestion();
     }
 
-    // サイドバーからの特訓ボタン用
+    // サイドバー：おぼえちゅう特訓
     function startSidebarSpecial() {
         const p = allProgress[currentSheetName];
         if(!p || p.retry.size === 0) return alert("おぼえちゅうの問題はありません");
         
         if(confirm(`現在「おぼえちゅう」の ${p.retry.size} 問だけを特訓しますか？`)) {
-            // 現在の位置を保存してから特訓へ移行
-            if(!isRetryOnlyMode) p.lastIndex = currentIndex;
+            if(currentModeType === 'normal') p.lastIndex = currentIndex;
             saveProgress();
             launchPracticeMode('special');
         }
     }
 
+    // サイドバー：かんぺき確認
+    function startSidebarPerfect() {
+        const p = allProgress[currentSheetName];
+        if(!p || p.perfect.size === 0) return alert("かんぺきの問題はありません");
+        
+        if(confirm(`現在「かんぺき」の ${p.perfect.size} 問を復習（テスト）しますか？`)) {
+            if(currentModeType === 'normal') p.lastIndex = currentIndex;
+            saveProgress();
+            launchPracticeMode('perfect_check');
+        }
+    }
+
     function showQuestion() {
         if (currentIndex >= currentQuestions.length) {
-            if (isRetryOnlyMode) {
-                alert("特訓おつかれさま！\nリストに戻ります。");
-            } else {
-                alert("最後まで終わりました！\n最初に戻ります。");
+            let msg = "最後まで終わりました！\n最初に戻ります。";
+            if (currentModeType === 'retry') msg = "特訓おつかれさま！\nリストに戻ります。";
+            if (currentModeType === 'perfect') msg = "復習おつかれさま！\nリストに戻ります。";
+            
+            alert(msg);
+            
+            if (currentModeType === 'normal') {
                 allProgress[currentSheetName].lastIndex = 0;
             }
             return backToList();
         }
         
         const q = currentQuestions[currentIndex];
-        document.getElementById('q-number').innerText = isRetryOnlyMode ? (currentIndex + 1) : (q.originalIndex + 1);
+        document.getElementById('q-number').innerText = (currentModeType !== 'normal') ? (currentIndex + 1) : (q.originalIndex + 1);
         document.getElementById('q-text').innerHTML = q.q.replace(/[（\(](.*?)[）\)]/g, '<span class="highlight">$1</span>');
         
         const ansArea = document.getElementById('a-text');
@@ -498,7 +533,7 @@
         document.getElementById('judgement-btns').classList.add('hidden');
         document.getElementById('retry-options').classList.add('hidden');
         
-        if (!isRetryOnlyMode) allProgress[currentSheetName].lastIndex = currentIndex;
+        if (currentModeType === 'normal') allProgress[currentSheetName].lastIndex = currentIndex;
         updateStats();
     }
 
@@ -517,6 +552,7 @@
             updateStats();
             nextStep();
         } else {
+            // おぼえちゅう
             p.retry.add(idx); p.perfect.delete(idx);
             updateStats();
             document.getElementById('judgement-btns').classList.add('hidden');
@@ -545,12 +581,22 @@
         document.getElementById('stat-perfect').innerText = p.perfect.size;
         document.getElementById('stat-retry').innerText = p.retry.size;
 
-        // サイドバーの特訓ボタン制御（特訓モード中でなく、かつRetryがある場合のみ表示）
-        const sideBtn = document.getElementById('side-special-btn');
-        if (!isRetryOnlyMode && p.retry.size > 0) {
-            sideBtn.classList.remove('hidden');
+        // サイドバーボタン制御
+        const sideSpecialBtn = document.getElementById('side-special-btn');
+        const sidePerfectBtn = document.getElementById('side-perfect-btn');
+
+        // 特訓ボタンは「retryモード以外」かつ「retryがある」とき表示
+        if (currentModeType !== 'retry' && p.retry.size > 0) {
+            sideSpecialBtn.classList.remove('hidden');
         } else {
-            sideBtn.classList.add('hidden');
+            sideSpecialBtn.classList.add('hidden');
+        }
+
+        // 復習ボタンは「perfectモード以外」かつ「perfectがある」とき表示
+        if (currentModeType !== 'perfect' && p.perfect.size > 0) {
+            sidePerfectBtn.classList.remove('hidden');
+        } else {
+            sidePerfectBtn.classList.add('hidden');
         }
     }
 
@@ -568,7 +614,6 @@
             document.getElementById('toggle-all-btn').innerText = "答えを表示";
             renderViewPage();
         } else {
-            // Print Mode
             renderAllPagesForPrint();
             setTimeout(() => { window.print(); }, 500);
         }
