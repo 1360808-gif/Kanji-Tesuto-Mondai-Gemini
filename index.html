@@ -185,21 +185,38 @@
         .btn-action { padding: 6px 15px; background: #eee; border: 1px solid #999; border-radius: 5px; cursor: pointer; font-weight: bold; font-family: var(--main-font); }
 
         @media print {
-            @page { size: A4 landscape; margin: 0; }
-            body { background: white !important; overflow: visible !important; }
-            #view-mode-container {
-       　　　 height: auto !important;      /* 高さを制限しない */
-        　　　overflow: visible !important; /* はみ出し部分も全部見せる */
-      　　　  display: block !important;    /* 縦に自然に並べる */
-   　　　　　 }
-            #top-update-btn, .view-header, #loading, #selector-screen, .modal-overlay, #practice-app { display: none !important; }
-            #view-app { display: block !important; }
-            .view-canvas { margin: 5mm auto !important; page-break-after: always !important; box-shadow: none !important; border: var(--border-width) solid var(--border-color) !important; }
-            .ans-text { color: black !important; opacity: 1 !important; visibility: visible !important; }
-            .ans-wrapper::before { content: none !important; }
-            .square[data-state="1"]::after { color: #000 !important; } 
-            .square[data-state="2"]::after { color: #000 !important; }
-        }
+    @page { size: A4 landscape; margin: 0; }
+    
+    /* ▼▼▼ ここが最重要修正ポイント ▼▼▼ */
+    /* html, body, アプリ枠, コンテナ すべての高さを「自動(auto)」にしてロック解除します */
+    html, body, #view-app, #view-mode-container {
+        width: 100% !important;
+        height: auto !important;       /* 高さを無限に広げる */
+        overflow: visible !important;  /* はみ出しを許可する */
+        display: block !important;     /* 縦に並べる */
+    }
+    /* ▲▲▲ ここまで ▲▲▲ */
+
+    /* 不要なパーツを消す */
+    #top-update-btn, .view-header, #loading, #selector-screen, .modal-overlay, #practice-app { 
+        display: none !important; 
+    }
+
+    /* 印刷用紙の設定 */
+    .view-canvas { 
+        margin: 5mm auto !important; 
+        page-break-after: always !important; /* 1枚ごとに改ページ */
+        break-inside: avoid !important;      /* 途中で切れないように */
+        box-shadow: none !important; 
+        border: var(--border-width) solid var(--border-color) !important; 
+    }
+
+    /* 答えなどの表示設定 */
+    .ans-text { color: black !important; opacity: 1 !important; visibility: visible !important; }
+    .ans-wrapper::before { content: none !important; }
+    .square[data-state="1"]::after { color: #000 !important; } 
+    .square[data-state="2"]::after { color: #000 !important; }
+}
     </style>
 </head>
 <body class="mode-practice">
