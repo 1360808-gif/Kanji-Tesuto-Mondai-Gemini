@@ -434,34 +434,60 @@
         launchPracticeMode(type);
     }
 
-    function launchPracticeMode(type) {
-        document.getElementById('selector-screen').style.display = 'none';
-        document.getElementById('practice-app').style.display = 'grid';
-        document.getElementById('view-app').style.display = 'none';
-        document.body.className = "mode-practice";
-        if (!allProgress[currentSheetName]) allProgress[currentSheetName] = { perfect: new Set(), retry: new Set(), lastIndex: 0 };
-        const master = allData[currentSheetName];
-        document.getElementById('mode-badge').classList.add('hidden');
-        document.getElementById('mode-badge-perfect').classList.add('hidden');
-
-        if (type === 'special') {
-            currentModeType = 'retry';
-            const indices = Array.from(allProgress[currentSheetName].retry).sort((a,b)=>a-b);
-            currentQuestions = indices.map(idx => ({...master[idx], originalIndex: idx}));
-            currentIndex = 0;
-            document.getElementById('mode-badge').classList.remove('hidden');
-        } else if (type === 'perfect_check') {
-            currentModeType = 'perfect';
-            const indices = Array.from(allProgress[currentSheetName].perfect).sort((a,b)=>a-b);
-            currentQuestions = indices.map(idx => ({...master[idx], originalIndex: idx}));
-            currentIndex = 0;
-            document.getElementById('mode-badge-perfect').classList.remove('hidden');
-        } else {
-            currentModeType = 'normal';
-            currentQuestions = master.map((q, i) => ({...q, originalIndex: i}));
-            currentIndex = (type === 'resume') ? allProgress[currentSheetName].lastIndex : 0;
+    
+    // ▼ 配列をシャッフルする関数（これを追加）
+    function shuffleArray(array) {
+        for (let i = array.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [array[i], array[j]] = [array[j], array[i]];
         }
-        document.getElementById('sheet-title').innerText = "【 " + currentSheetName + " 】";
+        return array;
+    }
+    function launchPracticeMode(type) {
+        // 画面の切り替え
+        document.getElementById('selector-screen').style.display = 'none';
+        document.getElementById('practice-app').style.display = 'block';
+        document.body.className = "mode-practice";
+
+        // ▼ モードごとの処理（ここが新しくなりました）
+        if (type === 'restart') {
+            currentQuestions = allData[currentSheetName]; 
+            currentIndex = 0;
+            currentModeType = 'normal';
+        } else if (type === 'resume') {
+            currentQuestions = allData[currentSheetName]; 
+            currentIndex = allProgress[currentSheetName].lastIndex || 0;
+            currentModeType = 'normal';
+        } 
+        
+        // ▼▼▼ ランダムモードの処理 ▼▼▼
+        else if (type === 'random') {
+            // データをコピーしてシャッフル！
+            currentQuestions = shuffleArray([...allData[currentSheetName]]);
+            currentIndex = 0;
+            currentModeType = 'random';
+        } 
+        // ▲▲▲ ここまで ▲▲▲
+
+        else if (type === 'special') {
+            const p = allProgress[currentSheetName];
+            currentQuestions = allData[currentSheetName].filter(q => p.retry.has(q.originalIndex));
+            currentIndex = 0;
+            currentModeType = 'retry';
+        } else if (type === 'perfect_check') {
+            const p = allProgress[currentSheetName];
+            currentQuestions = allData[currentSheetName].filter(q => p.perfect.has(q.originalIndex));
+            currentIndex = 0;
+            currentModeType = 'perfect';
+        }
+
+        // 問題がない場合のチェック
+        if (currentQuestions.length === 0) {
+            alert("対象の問題がありません！");
+            backToList();
+            return;
+        }
+
         showQuestion();
     }
 
