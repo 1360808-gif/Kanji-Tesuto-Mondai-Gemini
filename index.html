@@ -199,7 +199,14 @@
             overflow: hidden; 
         }
 
-        .ques-wrapper { writing-mode: vertical-rl; text-orientation: upright; font-size: 1.8vh; }
+        .ques-wrapper { 
+            writing-mode: vertical-rl; 
+            text-orientation: upright; 
+            font-size: 1.8vh; 
+            
+            /* ▼ 追加：これで文字が「上（書き出し位置）」に揃います */
+            text-align: left;
+        }
 
         .ans-wrapper { position: relative; width: 100%; height: 100%; display: flex; justify-content: center; align-items: center; }
         .ans-text { writing-mode: vertical-rl; text-orientation: upright; font-size: 2.3vh; font-weight: bold; color: #e74c3c; white-space: nowrap; }
