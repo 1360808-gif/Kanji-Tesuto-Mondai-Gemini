@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>漢字学習システム（v42 固定版）</title>
+    <title>漢字学習システム（v42 Master）</title>
     <style>
         /* =========================================
            共通・基盤設定
@@ -148,28 +148,15 @@
         .title-column { writing-mode: vertical-rl; display: flex; align-items: center; font-size: 16px; font-weight: bold; color: #666; padding-top: 10px; }
 
         /* =========================================
-           閲覧・印刷モード UI
+           閲覧・印刷モード UI 【重要修正箇所】
            ========================================= */
         #view-app { display: none; width: 100%; height: 100%; }
         .view-header { width: 100%; height: 50px; display: flex; justify-content: space-between; align-items: center; padding: 0 20px; background: #fff; border-bottom: 1px solid #ccc; }
         #view-mode-container { height: calc(100vh - 50px); display: flex; flex-direction: column; align-items: center; padding: 10px; overflow-y: auto; }
         .view-canvas { display: flex; flex-direction: row-reverse; height: 185mm; width: 285mm; background: white; border: var(--border-width) solid var(--border-color); padding: 20px; margin-bottom: 20px; flex-shrink: 0; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
         .kanji-table-grid { display: block; height: 100%; flex-grow: 1; border: var(--border-width) solid var(--border-color); background: var(--border-color); }
-        
         .unified-table { width: 100%; height: 100%; border-collapse: collapse; table-layout: fixed; direction: rtl; background: white; }
-        
-        /* 【修正点】テーブルのセルサイズを強制固定 
-           overflow: hidden により、中身が膨らんでもセル自体のサイズは変わりません。
-        */
-        .unified-table td { 
-            border: var(--border-width) solid var(--border-color); 
-            text-align: center; 
-            vertical-align: middle; 
-            padding: 0; 
-            direction: ltr; 
-            
-            overflow: hidden; /* ← これが「はみ出しをカットして枠を守る」最強の呪文です */
-        }
+        .unified-table td { border: var(--border-width) solid var(--border-color); text-align: center; vertical-align: middle; padding: 0; direction: ltr; }
         
         .tr-check { height: 10%; }
         .tr-num   { height: 6%; }
@@ -177,15 +164,17 @@
         .tr-num2  { height: 6%; }
         .tr-ans   { height: 25%; }
 
+        /* --- 【Fix 1】コンテナの配置：上下左右中央寄せ --- */
         .h-ques-inner { 
             width: 100%; 
             height: 100%; 
             display: flex; 
-            justify-content: center; 
-            align-items: center;     
+            justify-content: center; /* 縦書き時の上下中央 */
+            align-items: center;     /* 縦書き時の左右中央 */
             padding-top: 15px; 
         }
 
+        /* --- 【Fix 2】テキストの折り返し制御：強制改行ON --- */
         .ques-wrapper { 
             writing-mode: vertical-rl; 
             text-orientation: upright; 
@@ -205,6 +194,7 @@
         .square { width: 20px; height: 20px; border: 1px solid #000; margin: auto; cursor: pointer; }
         .btn-action { padding: 5px 15px; background: #eee; border: 1px solid #999; border-radius: 5px; cursor: pointer; }
 
+        /* --- 【Fix 3】赤字の表示：inline維持（傍線用） --- */
         .highlight { 
             color: #e74c3c; 
             text-decoration: underline #e74c3c 2px; 
@@ -314,8 +304,9 @@
 
 <script>
     const API_URL = "https://script.google.com/macros/s/AKfycbyWHprvWe-NcrfamWL2I6bWSAak6HW-JxyMCY-RZkZDFrhLkbSfLkeVmpKyznlI7g3a/exec";
-    const CACHE_KEY = "kanji_quiz_v42_fixed"; 
-    const PROGRESS_KEY = "kanji_quiz_prog_v42_fixed";
+    // バージョン識別キーをv42_masterに設定
+    const CACHE_KEY = "kanji_quiz_v42_master"; 
+    const PROGRESS_KEY = "kanji_quiz_prog_v42_master";
     
     let allData = {};
     let allProgress = {};
