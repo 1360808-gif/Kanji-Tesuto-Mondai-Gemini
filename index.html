@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>漢字学習システム（v42 完成版）</title>
+    <title>漢字学習システム（最新保留版・折り返し修正済）</title>
     <style>
         /* =========================================
            共通・基盤設定
@@ -173,8 +173,31 @@
         .tr-num2  { height: 6%; }
         .tr-ans   { height: 25%; }
 
-        .h-ques-inner { width: 100%; height: 100%; display: flex; justify-content: center; align-items: flex-start; padding-top: 15px; }
-        .ques-wrapper { writing-mode: vertical-rl; text-orientation: upright; text-align: left; font-size: min(1.9vh, 17px); line-height: 1.4; }
+        /* ▼▼ 修正箇所：問題文のエリア設定（折り返し対応） ▼▼ */
+        .h-ques-inner { 
+            width: 100%; 
+            height: 100%; 
+            /* Flexboxを解除してBlock要素として扱う（縦書きの折り返しを安定させるため） */
+            display: block; 
+            padding-top: 15px;
+            overflow: hidden; /* はみ出し防止 */
+        }
+
+        .ques-wrapper { 
+            writing-mode: vertical-rl; 
+            text-orientation: upright; 
+            text-align: left; 
+            font-size: min(1.8vh, 16px); 
+            line-height: 1.5; 
+            
+            /* 高さと幅を強制して、下端で折り返すようにする */
+            height: 100%;
+            width: 100%;
+            word-break: break-all; /* 連続文字も強制改行 */
+            white-space: normal;
+        }
+        /* ▲▲ 修正箇所ここまで ▲▲ */
+
         .ans-wrapper { position: relative; width: 100%; height: 100%; display: flex; justify-content: center; align-items: center; }
         .ans-text { writing-mode: vertical-rl; text-orientation: upright; font-size: 2.3vh; font-weight: bold; color: #e74c3c; white-space: nowrap; }
         .ans-text.blind { opacity: 0; }
