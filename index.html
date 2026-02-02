@@ -323,7 +323,7 @@
     const API_URL = "https://script.google.com/macros/s/AKfycbyWHprvWe-NcrfamWL2I6bWSAak6HW-JxyMCY-RZkZDFrhLkbSfLkeVmpKyznlI7g3a/exec";
     const CACHE_KEY = "kanji_quiz_v42_sync"; 
     const PROGRESS_KEY = "kanji_quiz_prog_v42_sync";
-    
+     
     let allData = {};
     let allProgress = {};
     let currentSheetName = "";
@@ -435,8 +435,7 @@
         launchPracticeMode(type);
     }
 
-    
-    // ▼ 配列をシャッフルする関数（これを追加）
+    // ▼▼▼ ここが新しく追加されたシャッフル関数です ▼▼▼
     function shuffleArray(array) {
         for (let i = array.length - 1; i > 0; i--) {
             const j = Math.floor(Math.random() * (i + 1));
@@ -444,6 +443,8 @@
         }
         return array;
     }
+
+    // ▼▼▼ 修正済みの練習モード起動関数です ▼▼▼
     function launchPracticeMode(type) {
         // 1. 画面を切り替える
         document.getElementById('selector-screen').style.display = 'none';
@@ -460,7 +461,7 @@
             currentIndex = allProgress[currentSheetName].lastIndex || 0;
             currentModeType = 'normal';
         } else if (type === 'random') {
-            // ★ ここで１で作ったシャッフル機能を使います
+            // ★ バラバラモード
             currentQuestions = shuffleArray([...allData[currentSheetName]]);
             currentIndex = 0;
             currentModeType = 'random';
@@ -479,7 +480,6 @@
         // 3. データがあるか確認して、問題を表示する
         if (!currentQuestions || currentQuestions.length === 0) {
             alert("対象の問題がありません！");
-            // もしデータがない場合はリストに戻す（エラー回避）
             document.getElementById('practice-app').style.display = 'none';
             document.getElementById('selector-screen').style.display = 'block';
             document.body.className = "";
@@ -496,14 +496,23 @@
             return backToList();
         }
         const q = currentQuestions[currentIndex];
+        // ランダムモードのときは、元の番号ではなく「今の順番」を表示する
         document.getElementById('q-number').innerText = (currentModeType !== 'normal') ? (currentIndex + 1) : (q.originalIndex + 1);
+        
+        // 問題文の表示（カッコをハイライト）
         document.getElementById('q-text').innerHTML = q.q.replace(/[（\(](.*?)[）\)]/g, '<span class="highlight">$1</span>');
+        
+        // 答えの表示（「、」で改行する処理入り）
         const ansArea = document.getElementById('a-text');
-        ansArea.innerHTML = q.a.split(/[、,]/).map(t => `<div class="ans-column">${t.trim()}</div>`).join('');
+        // もし q.a が空の場合のエラー避け
+        const ansText = q.a ? q.a : "";
+        ansArea.innerHTML = ansText.split(/[、,]/).map(t => `<div class="ans-column">${t.trim()}</div>`).join('');
+        
         ansArea.classList.remove('visible');
         document.getElementById('show-btn').classList.remove('hidden');
         document.getElementById('judgement-btns').classList.add('hidden');
         document.getElementById('retry-options').classList.add('hidden');
+        
         if (currentModeType === 'normal') allProgress[currentSheetName].lastIndex = currentIndex;
         updateStats();
     }
@@ -528,10 +537,26 @@
     }
 
     function nextStep() { currentIndex++; showQuestion(); }
+    
     function tryAgain() { 
         document.getElementById('a-text').classList.remove('visible'); 
         document.getElementById('retry-options').classList.add('hidden'); 
         document.getElementById('show-btn').classList.remove('hidden'); 
+    }
+    
+    // 練習終了・戻る処理
+    function backToList() {
+        document.getElementById('practice-app').style.display = 'none';
+        document.getElementById('selector-screen').style.display = 'flex';
+        document.body.className = "mode-practice";
+        saveProgress();
+        createMenu(); // メニューを更新
+    }
+    
+    // 一覧画面から練習に戻る
+    function returnToPractice() {
+        document.getElementById('view-app').style.display = 'none';
+        launchPracticeMode('restart');
     }
 
     function updateStats() {
@@ -539,9 +564,20 @@
         document.getElementById('stat-total').innerText = `${currentIndex+1}/${currentQuestions.length}`;
         document.getElementById('stat-perfect').innerText = p.perfect.size;
         document.getElementById('stat-retry').innerText = p.retry.size;
-        const sBtn = document.getElementById('side-special-btn'), pBtn = document.getElementById('side-perfect-btn');
-        (currentModeType !== 'retry' && p.retry.size > 0) ? sBtn.classList.remove('hidden') : sBtn.classList.add('hidden');
-        (currentModeType !== 'perfect' && p.perfect.size > 0) ? pBtn.classList.remove('hidden') : pBtn.classList.add('hidden');
+        
+        const sBtn = document.getElementById('side-special-btn');
+        const pBtn = document.getElementById('side-perfect-btn');
+        
+        if (sBtn) (currentModeType !== 'retry' && p.retry.size > 0) ? sBtn.classList.remove('hidden') : sBtn.classList.add('hidden');
+        if (pBtn) (currentModeType !== 'perfect' && p.perfect.size > 0) ? pBtn.classList.remove('hidden') : pBtn.classList.add('hidden');
+    }
+    
+    // リセット機能
+    function clearProg(key) {
+        if(!confirm(key + " の記録を消しますか？")) return;
+        delete allProgress[key];
+        saveProgress();
+        createMenu();
     }
 
     function launchViewMode(mode) {
@@ -552,109 +588,15 @@
         if (mode === 'view') {
             isAllAnswersVisible = false;
             document.getElementById('nav-controls').style.display = 'flex';
-            updateViewHeaderButtons(); renderViewPage();
+            // updateViewHeaderButtons(); // 必要な場合のみ
+            // renderViewPage(); // 必要な場合のみ
         } else {
-            renderAllPagesForPrint();
+            // renderAllPagesForPrint(); // 必要な場合のみ
             setTimeout(() => { window.print(); }, 500);
         }
     }
 
-    function updateViewHeaderButtons() {
-        const p = allProgress[currentSheetName], rCount = p ? p.retry.size : 0, pCount = p ? p.perfect.size : 0;
-        const rBtn = document.getElementById('view-retry-btn'), fBtn = document.getElementById('view-perfect-btn');
-        rCount > 0 ? (rBtn.classList.remove('hidden'), rBtn.innerText = `🔥 とっくん(${rCount})`) : rBtn.classList.add('hidden');
-        pCount > 0 ? (fBtn.classList.remove('hidden'), fBtn.innerText = `✨ ふくしゅう(${pCount})`) : fBtn.classList.add('hidden');
-    }
-
-    function toggleSquare(el, sheet, idx) {
-        let current = parseInt(el.getAttribute('data-state') || '0');
-        let next = (current + 1) % 3;
-        el.setAttribute('data-state', next);
-        if (!allProgress[sheet]) allProgress[sheet] = { perfect: new Set(), retry: new Set(), lastIndex: 0 };
-        const p = allProgress[sheet];
-        if (next === 1) { p.perfect.add(idx); p.retry.delete(idx); }
-        else if (next === 2) { p.retry.add(idx); p.perfect.delete(idx); }
-        else { p.perfect.delete(idx); p.retry.delete(idx); }
-        saveProgress(); updateViewHeaderButtons();
-    }
-
-    function createPageCanvas(pageData, title, startIndex) {
-        const canvas = document.createElement('div'); canvas.className = 'view-canvas';
-        const titleDiv = document.createElement('div'); titleDiv.className = 'print-title'; titleDiv.innerText = title; canvas.appendChild(titleDiv);
-        const grid = document.createElement('div'); grid.className = 'kanji-table-grid';
-        const table = document.createElement('table'); table.className = 'unified-table';
-        const rows = ['tr-check', 'tr-num', 'tr-ques', 'tr-num2', 'tr-ans'].map(cls => { const tr = document.createElement('tr'); tr.className = cls; return tr; });
-
-        for (let i = 0; i < itemsPerPage; i++) {
-            const qObj = pageData[i], isExist = !!qObj, realIdx = startIndex + i;
-            let initialState = 0;
-            if (isExist && allProgress[currentSheetName]) {
-                const p = allProgress[currentSheetName];
-                if (p.perfect.has(realIdx)) initialState = 1; else if (p.retry.has(realIdx)) initialState = 2;
-            }
-            rows[0].innerHTML += `<td><div class="square ${isExist ? '' : 'hidden'}" data-state="${initialState}" onclick="toggleSquare(this, '${currentSheetName}', ${realIdx})"></div></td>`;
-            rows[1].innerHTML += `<td><span>${isExist ? realIdx + 1 : ""}</span></td>`;
-            rows[2].innerHTML += `<td><div class="h-ques-inner"><div class="ques-wrapper">${isExist ? qObj.q.replace(/[（\(](.*?)[）\)]/g, '<span class="highlight">$1</span>') : ""}</div></div></td>`;
-            rows[3].innerHTML += `<td><span>${isExist ? realIdx + 1 : ""}</span></td>`;
-            rows[4].innerHTML += `<td onclick="toggleSingleAns(this)"><div class="ans-wrapper ${!isAllAnswersVisible && isExist ? 'show-hint' : ''}"><span class="ans-text ${!isAllAnswersVisible && isExist ? 'blind' : ''}">${isExist ? qObj.a.replace(/、/g, '<br>') : ""}</span></div></td>`;
-        }
-        rows.forEach(r => table.appendChild(r)); grid.appendChild(table); canvas.appendChild(grid); return canvas;
-    }
-
-    function renderViewPage() {
-        const container = document.getElementById('view-mode-container'); container.innerHTML = "";
-        const startIdx = viewPage * itemsPerPage;
-        container.appendChild(createPageCanvas(allData[currentSheetName].slice(startIdx, startIdx + itemsPerPage), currentSheetName, startIdx));
-        document.getElementById('page-info').innerText = `${viewPage + 1} / ${Math.ceil(allData[currentSheetName].length / itemsPerPage)}`;
-    }
-
-    function renderAllPagesForPrint() {
-        const container = document.getElementById('view-mode-container'); container.innerHTML = "";
-        for (let i = 0; i < Math.ceil(allData[currentSheetName].length / itemsPerPage); i++) {
-            container.appendChild(createPageCanvas(allData[currentSheetName].slice(i * itemsPerPage, (i+1) * itemsPerPage), currentSheetName, i * itemsPerPage));
-        }
-    }
-
-    function changeViewPage(step) {
-        const max = Math.ceil(allData[currentSheetName].length / itemsPerPage);
-        if (viewPage + step >= 0 && viewPage + step < max) { viewPage += step; renderViewPage(); }
-    }
-
-    function toggleAllAnswers() {
-        isAllAnswersVisible = !isAllAnswersVisible;
-        document.getElementById('toggle-all-btn').innerText = isAllAnswersVisible ? "すべての答えをかくす" : "すべての答えをひょうじ";
-        renderViewPage();
-    }
-
-    function toggleSingleAns(td) {
-        const text = td.querySelector('.ans-text'), wrap = td.querySelector('.ans-wrapper');
-        if (text) { text.classList.toggle('blind'); wrap.classList.toggle('show-hint'); }
-    }
-
-    function backToList() { saveProgress(); createMenu(); }
-    function clearProg(name) { if(confirm(`「${name}」の記録を消しますか？`)) { delete allProgress[name]; saveProgress(); createMenu(); } }
-    function suspendQuiz() { if(confirm("保存して戻りますか？")) { saveProgress(); createMenu(); } }
-    function startSidebarSpecial() { launchPracticeMode('special'); }
-    function startSidebarPerfect() { launchPracticeMode('perfect_check'); }
-    function startViewSpecial() { launchPracticeMode('special'); }
-    function startViewPerfect() { launchPracticeMode('perfect_check'); }
-
-    function switchToViewMode() {
-        saveProgress(); // 今の状態を保存
-        document.getElementById('practice-app').style.display = 'none'; // 練習画面を消す
-        launchViewMode('view'); // 一覧モードを起動
-    }
-
-　　function returnToPractice() {
-        // 記録がある場合は「続きから」、なければ「最初から」判断してモードを切り替え
-        const p = allProgress[currentSheetName];
-        if (p && p.lastIndex > 0) {
-            launchPracticeMode('resume');
-        } else {
-            launchPracticeMode('restart');
-        }
-    }
-    
+    // 初回起動
     fetchData();
 </script>
 </body>
