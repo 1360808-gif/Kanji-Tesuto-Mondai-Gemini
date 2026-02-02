@@ -445,12 +445,12 @@
         return array;
     }
     function launchPracticeMode(type) {
-        // 画面の切り替え
+        // 1. 画面を切り替える
         document.getElementById('selector-screen').style.display = 'none';
         document.getElementById('practice-app').style.display = 'block';
         document.body.className = "mode-practice";
 
-        // ▼ モードごとの処理（ここが新しくなりました）
+        // 2. モードごとのデータをセットする
         if (type === 'restart') {
             currentQuestions = allData[currentSheetName]; 
             currentIndex = 0;
@@ -459,18 +459,12 @@
             currentQuestions = allData[currentSheetName]; 
             currentIndex = allProgress[currentSheetName].lastIndex || 0;
             currentModeType = 'normal';
-        } 
-        
-        // ▼▼▼ ランダムモードの処理 ▼▼▼
-        else if (type === 'random') {
-            // データをコピーしてシャッフル！
+        } else if (type === 'random') {
+            // ★ ここで１で作ったシャッフル機能を使います
             currentQuestions = shuffleArray([...allData[currentSheetName]]);
             currentIndex = 0;
             currentModeType = 'random';
-        } 
-        // ▲▲▲ ここまで ▲▲▲
-
-        else if (type === 'special') {
+        } else if (type === 'special') {
             const p = allProgress[currentSheetName];
             currentQuestions = allData[currentSheetName].filter(q => p.retry.has(q.originalIndex));
             currentIndex = 0;
@@ -482,10 +476,13 @@
             currentModeType = 'perfect';
         }
 
-        // 問題がない場合のチェック
-        if (currentQuestions.length === 0) {
+        // 3. データがあるか確認して、問題を表示する
+        if (!currentQuestions || currentQuestions.length === 0) {
             alert("対象の問題がありません！");
-            backToList();
+            // もしデータがない場合はリストに戻す（エラー回避）
+            document.getElementById('practice-app').style.display = 'none';
+            document.getElementById('selector-screen').style.display = 'block';
+            document.body.className = "";
             return;
         }
 
