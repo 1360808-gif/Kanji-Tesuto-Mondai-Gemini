@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>漢字学習システム（v42 Master）</title>
+    <title>漢字学習システム（完成版 v42）</title>
     <style>
         /* =========================================
            共通・基盤設定
@@ -11,8 +11,8 @@
         :root {
             --paper-bg: #fffdf5;
             --ink-black: #333;
-            --perfect-green: #2ecc71;
-            --retry-orange: #f39c12;
+            --perfect-green: #2ecc71; /* かんぺき色 */
+            --retry-orange: #f39c12;  /* おぼえちゅう色 */
             --action-blue: #3498db;
             --update-purple: #9b59b6;
             --suspend-gray: #95a5a6;
@@ -33,6 +33,7 @@
             width: 100vw; height: 100vh;
         }
 
+        /* 画面モード切り替え */
         body.mode-practice { display: flex; justify-content: center; align-items: center; position: relative; }
         body.mode-view { display: block; overflow: hidden; }
 
@@ -77,7 +78,7 @@
             border-radius: 12px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 20px;
         }
 
-        /* 共通モーダル */
+        /* 共通モーダル設定 */
         .modal-overlay {
             display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0,0,0,0.6); z-index: 2000; justify-content: center; align-items: center;
@@ -88,6 +89,7 @@
         }
         .mode-btn-group { display: flex; flex-direction: column; gap: 12px; margin-top: 20px; }
         
+        /* ボタン共通スタイル */
         .btn {
             width: 100%; padding: 12px; border: 3px solid var(--ink-black); border-radius: 15px;
             font-size: 18px; font-weight: bold; cursor: pointer; font-family: var(--main-font);
@@ -136,23 +138,30 @@
             border: 3px solid var(--ink-black); min-width: 45px; height: 45px; 
             display: flex; align-items: center; justify-content: center; font-size: 22px; font-weight: bold; background: white; border-radius: 10px; 
         }
-        
-        /* 練習モードのテキスト表示 */
         .q-area { 
-            flex-grow: 1; writing-mode: vertical-rl; font-size: clamp(22px, 4vh, 34px); line-height: 1.8; 
-            padding: 15px 20px 40px; background-image: radial-gradient(#ddd 1.5px, transparent 1.5px); 
-            background-size: 35px 35px; overflow-y: hidden; overflow-x: auto;
-            text-orientation: upright;
+            flex-grow: 1; writing-mode: vertical-rl; font-size: clamp(22px, 4vh, 34px); line-height: 2.2; 
+            padding: 10px 15px 30px; background-image: radial-gradient(#ddd 1.5px, transparent 1.5px); 
+            background-size: 35px 35px; overflow-y: auto; 
         }
-
+        .highlight { color: #e74c3c; text-decoration: underline #e74c3c 2px; text-underline-offset: 3px; display: inline; }
         .title-column { writing-mode: vertical-rl; display: flex; align-items: center; font-size: 16px; font-weight: bold; color: #666; padding-top: 10px; }
 
         /* =========================================
-           閲覧・印刷モード UI 【重要修正箇所】
+           閲覧・印刷モード UI (チェック機能付き)
            ========================================= */
         #view-app { display: none; width: 100%; height: 100%; }
-        .view-header { width: 100%; height: 50px; display: flex; justify-content: space-between; align-items: center; padding: 0 20px; background: #fff; border-bottom: 1px solid #ccc; }
-        #view-mode-container { height: calc(100vh - 50px); display: flex; flex-direction: column; align-items: center; padding: 10px; overflow-y: auto; }
+        
+        .view-header { 
+            width: 100%; height: auto; min-height: 50px; 
+            display: flex; justify-content: space-between; align-items: center; 
+            padding: 5px 20px; background: #fff; border-bottom: 1px solid #ccc; 
+        }
+        
+        .header-center { display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        .header-actions { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; justify-content: center; }
+        .header-note { font-size: 11px; color: #555; font-weight: bold; margin-top: 4px; }
+
+        #view-mode-container { height: calc(100vh - 70px); display: flex; flex-direction: column; align-items: center; padding: 10px; overflow-y: auto; }
         .view-canvas { display: flex; flex-direction: row-reverse; height: 185mm; width: 285mm; background: white; border: var(--border-width) solid var(--border-color); padding: 20px; margin-bottom: 20px; flex-shrink: 0; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
         .kanji-table-grid { display: block; height: 100%; flex-grow: 1; border: var(--border-width) solid var(--border-color); background: var(--border-color); }
         .unified-table { width: 100%; height: 100%; border-collapse: collapse; table-layout: fixed; direction: rtl; background: white; }
@@ -160,46 +169,36 @@
         
         .tr-check { height: 10%; }
         .tr-num   { height: 6%; }
-        .tr-ques  { height: 53%; } 
+        .tr-ques  { height: 53%; }
         .tr-num2  { height: 6%; }
         .tr-ans   { height: 25%; }
 
-        /* --- 【Fix 1】コンテナの配置：上下左右中央寄せ --- */
+        /* ▼▼▼ v42 修正箇所：問題文の上ぞろえ ▼▼▼ */
         .h-ques-inner { 
-            width: 100%; 
-            height: 100%; 
-            display: flex; 
-            justify-content: center; /* 縦書き時の上下中央 */
-            align-items: center;     /* 縦書き時の左右中央 */
-            padding-top: 15px; 
+            width: 100%; height: 100%; display: flex; justify-content: center; 
+            align-items: flex-start; /* 上寄せ */
+            padding-top: 15px;       /* 上部の余白 */
         }
+        /* ▲▲▲▲▲▲ */
 
-        /* --- 【Fix 2】テキストの折り返し制御：強制改行ON --- */
-        .ques-wrapper { 
-            writing-mode: vertical-rl; 
-            text-orientation: upright; 
-            text-align: left; 
-            font-size: min(1.8vh, 16px); 
-            line-height: 1.6; 
-            max-height: 100%; 
-            word-break: break-all; 
-            white-space: normal;
-        }
+        .ques-wrapper { writing-mode: vertical-rl; text-orientation: upright; font-size: 1.8vh; }
 
         .ans-wrapper { position: relative; width: 100%; height: 100%; display: flex; justify-content: center; align-items: center; }
         .ans-text { writing-mode: vertical-rl; text-orientation: upright; font-size: 2.3vh; font-weight: bold; color: #e74c3c; white-space: nowrap; }
         .ans-text.blind { opacity: 0; }
         .ans-wrapper.show-hint::before { content: "？"; color: #ccc; font-size: 3vh; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 0; }
         .print-title { writing-mode: vertical-rl; font-weight: bold; border: var(--border-width) solid var(--border-color); border-left: 4px double #000; padding: 0 15px; margin-left: 15px; background: white; }
-        .square { width: 20px; height: 20px; border: 1px solid #000; margin: auto; cursor: pointer; }
-        .btn-action { padding: 5px 15px; background: #eee; border: 1px solid #999; border-radius: 5px; cursor: pointer; }
-
-        /* --- 【Fix 3】赤字の表示：inline維持（傍線用） --- */
-        .highlight { 
-            color: #e74c3c; 
-            text-decoration: underline #e74c3c 2px; 
-            text-underline-offset: 3px;
+        
+        /* ■■ チェックボックス機能用スタイル ■■ */
+        .square { 
+            width: 25px; height: 25px; border: 2px solid #000; margin: auto; cursor: pointer; 
+            display: flex; justify-content: center; align-items: center;
+            font-weight: bold; user-select: none; font-size: 20px;
         }
+        .square[data-state="1"]::after { content: "✔"; color: var(--perfect-green); }
+        .square[data-state="2"]::after { content: "△"; color: var(--retry-orange); font-size: 16px; }
+
+        .btn-action { padding: 6px 15px; background: #eee; border: 1px solid #999; border-radius: 5px; cursor: pointer; font-weight: bold; font-family: var(--main-font); }
 
         @media print {
             @page { size: A4 landscape; margin: 0; }
@@ -209,6 +208,15 @@
             .view-canvas { margin: 5mm auto !important; page-break-after: always !important; box-shadow: none !important; border: var(--border-width) solid var(--border-color) !important; }
             .ans-text { color: black !important; opacity: 1 !important; visibility: visible !important; }
             .ans-wrapper::before { content: none !important; }
+            .square[data-state="1"]::after { color: #000 !important; } 
+            .square[data-state="2"]::after { color: #000 !important; }
+        }
+        
+        @media (max-width: 600px) {
+            .view-header { flex-wrap: wrap; height: auto; padding-bottom: 10px; }
+            .header-center { order: 2; width: 100%; margin-top: 8px; }
+            .header-actions { width: 100%; justify-content: center; }
+            .header-note { margin-bottom: 5px; }
         }
     </style>
 </head>
@@ -230,9 +238,9 @@
         <div class="modal-card">
             <h2 id="modal-sheet-title"></h2>
             <div class="mode-btn-group">
-                <button class="btn btn-practice" onclick="handleModeSelection('practice')">✏️ １もん ずつ れんしゅう</button>
-                <button class="btn btn-view" onclick="handleModeSelection('view')">👀 いちらんを みて れんしゅう</button>
-                <button class="btn btn-print" onclick="handleModeSelection('print')">🖨️ プリントを印刷</button>
+                <button class="btn btn-practice" onclick="handleModeSelection('practice')">１もん ずつ れんしゅう</button>
+                <button class="btn btn-view" onclick="handleModeSelection('view')">いちらんを みて れんしゅう</button>
+                <button class="btn btn-print" onclick="handleModeSelection('print')">プリントを印刷</button>
                 <button class="btn btn-cancel" onclick="closeAllModals()">キャンセル</button>
             </div>
         </div>
@@ -240,7 +248,7 @@
 
     <div id="practice-options-modal" class="modal-overlay">
         <div class="modal-card">
-            <h3>つづきから れんしゅうする？</h3>
+            <h3>この問題集は練習したことがあるよ！</h3>
             <div class="mode-btn-group">
                 <button id="opt-resume-btn" class="btn btn-view" onclick="confirmPracticeStart('resume')">🔄 つづきから</button>
                 <button id="opt-special-btn" class="btn btn-special" onclick="confirmPracticeStart('special')">🔥 おぼえちゅうを特訓</button>
@@ -269,7 +277,9 @@
         <div class="box middle-column" style="flex-grow:1;">
             <div id="mode-badge" class="hidden" style="background:var(--special-orange); color:white; padding:5px 15px; border-radius:10px;">🔥 特訓モード</div>
             <div id="mode-badge-perfect" class="hidden" style="background:var(--special-green); color:white; padding:5px 15px; border-radius:10px;">✨ 復習モード</div>
+
             <div class="answer-container" id="a-text"></div>
+            
             <div style="width:100%; display:flex; flex-direction:column; align-items:center; gap:10px;">
                 <button id="show-btn" class="btn btn-view" style="width:90%; min-height:70px; font-size:22px;" onclick="showAnswer()">答えをみる</button>
                 <div id="judgement-btns" class="hidden" style="display:flex; gap:10px; width:90%;">
@@ -292,7 +302,16 @@
     <div id="view-app">
         <div class="view-header">
             <button class="btn-action" onclick="backToList()">× 閉じる</button>
-            <button id="toggle-all-btn" class="btn-action" onclick="toggleAllAnswers()">答えを表示</button>
+            
+            <div class="header-center">
+                <div class="header-actions">
+                    <button id="toggle-all-btn" class="btn-action" onclick="toggleAllAnswers()">すべての答えをひょうじ</button>
+                    <button id="view-retry-btn" class="btn-action hidden" style="background:var(--retry-orange); color:white; border-color:#e67e22;" onclick="startViewSpecial()">🔥 特訓</button>
+                    <button id="view-perfect-btn" class="btn-action hidden" style="background:var(--perfect-green); color:white; border-color:#27ae60;" onclick="startViewPerfect()">✨ 復習</button>
+                </div>
+                <span class="header-note">※下の 答えの ぶぶんを クリックしても 答えが見れるよ</span>
+            </div>
+
             <div id="nav-controls">
                 <button class="btn-action" onclick="changeViewPage(-1)">← 前</button>
                 <span id="page-info" style="font-weight:bold; margin:0 10px;"></span>
@@ -304,9 +323,8 @@
 
 <script>
     const API_URL = "https://script.google.com/macros/s/AKfycbyWHprvWe-NcrfamWL2I6bWSAak6HW-JxyMCY-RZkZDFrhLkbSfLkeVmpKyznlI7g3a/exec";
-    // バージョン識別キーをv42_masterに設定
-    const CACHE_KEY = "kanji_quiz_v42_master"; 
-    const PROGRESS_KEY = "kanji_quiz_prog_v42_master";
+    const CACHE_KEY = "kanji_quiz_v42_sync"; 
+    const PROGRESS_KEY = "kanji_quiz_prog_v42_sync";
     
     let allData = {};
     let allProgress = {};
@@ -314,25 +332,37 @@
     let currentQuestions = [];
     let currentIndex = 0;
     let currentModeType = 'normal';
+    
+    // View Mode Variables
     let viewPage = 0;
     const itemsPerPage = 15;
     let isAllAnswersVisible = false;
 
+    // --- データ処理 ---
     async function fetchData(force = false) {
         document.getElementById('loading').style.display = 'flex';
+        document.getElementById('top-update-btn').style.display = 'none'; 
+        
         const cached = localStorage.getItem(CACHE_KEY);
         if (!force && cached) {
             try {
                 allData = JSON.parse(cached);
-                loadProg(); createMenu(); return;
-            } catch(e) {}
+                loadProg();
+                createMenu();
+                return;
+            } catch(e) { console.error(e); }
         }
         try {
             const res = await fetch(API_URL);
             allData = await res.json();
             localStorage.setItem(CACHE_KEY, JSON.stringify(allData));
-            loadProg(); createMenu();
-        } catch(e) { alert("読み込み失敗"); }
+            loadProg();
+            createMenu();
+            if(force) alert("最新データに更新しました！");
+        } catch(e) { 
+            alert("データの読み込みに失敗しました。通信環境を確認してください。");
+            document.getElementById('loading').innerText = "読み込みエラー";
+        }
     }
 
     function loadProg() {
@@ -361,22 +391,36 @@
         localStorage.setItem(PROGRESS_KEY, JSON.stringify(toSave));
     }
 
+    // --- メニュー表示 ---
     function createMenu() {
         document.getElementById('loading').style.display = 'none';
         document.getElementById('selector-screen').style.display = 'flex';
         document.getElementById('practice-app').style.display = 'none';
         document.getElementById('view-app').style.display = 'none';
+        closeAllModals();
+
         document.getElementById('top-update-btn').style.display = 'flex';
         document.body.className = "mode-practice";
+
         const list = document.getElementById('sheet-list');
         list.innerHTML = "";
         Object.keys(allData).forEach(key => {
             const row = document.createElement('div');
             row.className = "sheet-row";
+            
             const prog = allProgress[key];
             const retryCount = prog ? prog.retry.size : 0;
-            const badge = retryCount > 0 ? `<span style="background:var(--retry-orange); color:white; padding:2px 8px; border-radius:10px; font-size:12px;">おぼえちゅう:${retryCount}</span>` : "";
-            row.innerHTML = `<button class="sheet-btn" onclick="openModeModal('${key}')"><div>${key}</div>${badge}</button><button class="reset-mini-btn" onclick="clearProg('${key}')">🗑️</button>`;
+            const badge = retryCount > 0 
+                ? `<span style="background:var(--retry-orange); color:white; padding:2px 8px; border-radius:10px; font-size:12px;">おぼえちゅう:${retryCount}</span>` 
+                : "";
+            
+            row.innerHTML = `
+                <button class="sheet-btn" onclick="openModeModal('${key}')">
+                    <div>${key}</div>
+                    ${badge}
+                </button>
+                <button class="reset-mini-btn" onclick="clearProg('${key}')">🗑️</button>
+            `;
             list.appendChild(row);
         });
     }
@@ -385,67 +429,131 @@
         currentSheetName = name;
         document.getElementById('modal-sheet-title').innerText = name;
         document.getElementById('mode-select-modal').style.display = 'flex';
+        document.getElementById('top-update-btn').style.display = 'none'; 
     }
 
-    function closeAllModals() { document.querySelectorAll('.modal-overlay').forEach(el => el.style.display = 'none'); }
+    function closeAllModals() {
+        document.querySelectorAll('.modal-overlay').forEach(el => el.style.display = 'none');
+        if(document.getElementById('selector-screen').style.display !== 'none') {
+            document.getElementById('top-update-btn').style.display = 'flex';
+        }
+    }
 
     function handleModeSelection(mode) {
-        closeAllModals();
+        document.getElementById('mode-select-modal').style.display = 'none';
+        
         if (mode === 'practice') {
             const prog = allProgress[currentSheetName];
-            if (prog && (prog.lastIndex > 0 || prog.retry.size > 0 || prog.perfect.size > 0)) {
+            const hasHistory = prog && (prog.lastIndex > 0 || prog.retry.size > 0 || prog.perfect.size > 0);
+            
+            if (hasHistory) {
                 document.getElementById('opt-resume-btn').style.display = (prog.lastIndex > 0) ? 'block' : 'none';
                 document.getElementById('opt-special-btn').style.display = (prog.retry.size > 0) ? 'block' : 'none';
                 document.getElementById('opt-perfect-btn').style.display = (prog.perfect.size > 0) ? 'block' : 'none';
                 document.getElementById('practice-options-modal').style.display = 'flex';
-            } else { launchPracticeMode('restart'); }
-        } else { launchViewMode(mode); }
+            } else {
+                launchPracticeMode('restart');
+            }
+        } else {
+            launchViewMode(mode);
+        }
     }
 
-    function confirmPracticeStart(type) { closeAllModals(); launchPracticeMode(type); }
+    function confirmPracticeStart(type) {
+        document.getElementById('practice-options-modal').style.display = 'none';
+        launchPracticeMode(type);
+    }
 
+    function backToList() { saveProgress(); createMenu(); }
+    
+    function clearProg(name) { 
+        if(confirm(`「${name}」の記録をすべて消しますか？`)) { 
+            delete allProgress[name]; 
+            saveProgress(); 
+            createMenu(); 
+        } 
+    }
+
+    // --- 練習モードロジック ---
     function launchPracticeMode(type) {
         document.getElementById('selector-screen').style.display = 'none';
         document.getElementById('practice-app').style.display = 'grid';
+        document.getElementById('view-app').style.display = 'none'; // view-appも確実に消す
+        document.getElementById('top-update-btn').style.display = 'none'; 
+        document.body.className = "mode-practice";
+
         if (!allProgress[currentSheetName]) allProgress[currentSheetName] = { perfect: new Set(), retry: new Set(), lastIndex: 0 };
+        
         const master = allData[currentSheetName];
         document.getElementById('mode-badge').classList.add('hidden');
         document.getElementById('mode-badge-perfect').classList.add('hidden');
 
         if (type === 'special') {
             currentModeType = 'retry';
-            currentQuestions = Array.from(allProgress[currentSheetName].retry).sort((a,b)=>a-b).map(idx => ({...master[idx], originalIndex: idx}));
+            const indices = Array.from(allProgress[currentSheetName].retry).sort((a,b)=>a-b);
+            currentQuestions = indices.map(idx => ({...master[idx], originalIndex: idx}));
             currentIndex = 0;
             document.getElementById('mode-badge').classList.remove('hidden');
+
         } else if (type === 'perfect_check') {
             currentModeType = 'perfect';
-            currentQuestions = Array.from(allProgress[currentSheetName].perfect).sort((a,b)=>a-b).map(idx => ({...master[idx], originalIndex: idx}));
+            const indices = Array.from(allProgress[currentSheetName].perfect).sort((a,b)=>a-b);
+            currentQuestions = indices.map(idx => ({...master[idx], originalIndex: idx}));
             currentIndex = 0;
             document.getElementById('mode-badge-perfect').classList.remove('hidden');
+
         } else {
             currentModeType = 'normal';
             currentQuestions = master.map((q, i) => ({...q, originalIndex: i}));
             currentIndex = (type === 'resume') ? allProgress[currentSheetName].lastIndex : 0;
         }
+        
         document.getElementById('sheet-title').innerText = "【 " + currentSheetName + " 】";
         showQuestion();
     }
 
+    function startSidebarSpecial() {
+        const p = allProgress[currentSheetName];
+        if(!p || p.retry.size === 0) return alert("おぼえちゅうの問題はありません");
+        if(confirm(`現在「おぼえちゅう」の ${p.retry.size} 問だけを特訓しますか？`)) {
+            if(currentModeType === 'normal') p.lastIndex = currentIndex;
+            saveProgress();
+            launchPracticeMode('special');
+        }
+    }
+
+    function startSidebarPerfect() {
+        const p = allProgress[currentSheetName];
+        if(!p || p.perfect.size === 0) return alert("かんぺきの問題はありません");
+        if(confirm(`現在「かんぺき」の ${p.perfect.size} 問を復習（テスト）しますか？`)) {
+            if(currentModeType === 'normal') p.lastIndex = currentIndex;
+            saveProgress();
+            launchPracticeMode('perfect_check');
+        }
+    }
+
     function showQuestion() {
         if (currentIndex >= currentQuestions.length) {
-            alert("おわりました！");
+            let msg = "最後まで終わりました！\n最初に戻ります。";
+            if (currentModeType === 'retry') msg = "特訓おつかれさま！\nリストに戻ります。";
+            if (currentModeType === 'perfect') msg = "復習おつかれさま！\nリストに戻ります。";
+            alert(msg);
             if (currentModeType === 'normal') allProgress[currentSheetName].lastIndex = 0;
             return backToList();
         }
+        
         const q = currentQuestions[currentIndex];
         document.getElementById('q-number').innerText = (currentModeType !== 'normal') ? (currentIndex + 1) : (q.originalIndex + 1);
-        document.getElementById('q-text').innerHTML = q.q.replace(/[（\(](.*?)[）\)]/g, '<span class="highlight">（$1）</span>');
+        document.getElementById('q-text').innerHTML = q.q.replace(/[（\(](.*?)[）\)]/g, '<span class="highlight">$1</span>');
+        
         const ansArea = document.getElementById('a-text');
         ansArea.innerHTML = q.a.split(/[、,]/).map(t => `<div class="ans-column">${t.trim()}</div>`).join('');
         ansArea.classList.remove('visible');
+        
         document.getElementById('show-btn').classList.remove('hidden');
         document.getElementById('judgement-btns').classList.add('hidden');
         document.getElementById('retry-options').classList.add('hidden');
+        
         if (currentModeType === 'normal') allProgress[currentSheetName].lastIndex = currentIndex;
         updateStats();
     }
@@ -459,69 +567,204 @@
     function record(type) {
         const p = allProgress[currentSheetName];
         const idx = currentQuestions[currentIndex].originalIndex;
-        if (type === 'perfect') { p.perfect.add(idx); p.retry.delete(idx); nextStep(); }
-        else { p.retry.add(idx); p.perfect.delete(idx); document.getElementById('judgement-btns').classList.add('hidden'); document.getElementById('retry-options').classList.remove('hidden'); }
+        if (type === 'perfect') {
+            p.perfect.add(idx); p.retry.delete(idx); 
+            updateStats();
+            nextStep();
+        } else {
+            p.retry.add(idx); p.perfect.delete(idx);
+            updateStats();
+            document.getElementById('judgement-btns').classList.add('hidden');
+            document.getElementById('retry-options').classList.remove('hidden');
+        }
         saveProgress();
     }
 
     function nextStep() { currentIndex++; showQuestion(); }
-    function tryAgain() { document.getElementById('a-text').classList.remove('visible'); document.getElementById('retry-options').classList.add('hidden'); document.getElementById('show-btn').classList.remove('hidden'); }
-    function backToList() { saveProgress(); createMenu(); }
-    function suspendQuiz() { if(confirm("保存して戻りますか？")) backToList(); }
+    function tryAgain() { 
+        document.getElementById('a-text').classList.remove('visible'); 
+        document.getElementById('retry-options').classList.add('hidden'); 
+        document.getElementById('show-btn').classList.remove('hidden'); 
+    }
+    function suspendQuiz() {
+        if(confirm("ここまでの状態を保存して、リストに戻りますか？")) {
+            saveProgress();
+            createMenu();
+        }
+    }
 
     function updateStats() {
         const p = allProgress[currentSheetName];
         document.getElementById('stat-total').innerText = `${currentIndex+1}/${currentQuestions.length}`;
         document.getElementById('stat-perfect').innerText = p.perfect.size;
         document.getElementById('stat-retry').innerText = p.retry.size;
-        document.getElementById('side-special-btn').classList.toggle('hidden', !(currentModeType !== 'retry' && p.retry.size > 0));
-        document.getElementById('side-perfect-btn').classList.toggle('hidden', !(currentModeType !== 'perfect' && p.perfect.size > 0));
+
+        const sideSpecialBtn = document.getElementById('side-special-btn');
+        const sidePerfectBtn = document.getElementById('side-perfect-btn');
+        if (currentModeType !== 'retry' && p.retry.size > 0) sideSpecialBtn.classList.remove('hidden');
+        else sideSpecialBtn.classList.add('hidden');
+        if (currentModeType !== 'perfect' && p.perfect.size > 0) sidePerfectBtn.classList.remove('hidden');
+        else sidePerfectBtn.classList.add('hidden');
     }
 
-    function startSidebarSpecial() { if(confirm("特訓を開始しますか？")) launchPracticeMode('special'); }
-    function startSidebarPerfect() { if(confirm("復習を開始しますか？")) launchPracticeMode('perfect_check'); }
-
+    // --- 閲覧・印刷モードロジック (チェック機能連動) ---
     function launchViewMode(mode) {
         document.body.className = "mode-view";
         document.getElementById('selector-screen').style.display = 'none';
         document.getElementById('view-app').style.display = 'block';
+        document.getElementById('top-update-btn').style.display = 'none';
+
         viewPage = 0;
-        if (mode === 'view') { isAllAnswersVisible = false; renderViewPage(); }
-        else { renderAllPagesForPrint(); setTimeout(() => { window.print(); }, 500); }
+        if (mode === 'view') {
+            isAllAnswersVisible = false;
+            document.getElementById('nav-controls').style.display = 'flex';
+            document.getElementById('toggle-all-btn').innerText = "すべての答えをひょうじ";
+            updateViewHeaderButtons(); // ボタン表示更新
+            renderViewPage();
+        } else {
+            renderAllPagesForPrint();
+            setTimeout(() => { window.print(); }, 500);
+        }
     }
 
-    function createPageCanvas(pageData, title) {
-        const canvas = document.createElement('div'); canvas.className = 'view-canvas';
-        const titleDiv = document.createElement('div'); titleDiv.className = 'print-title'; titleDiv.innerText = title;
-        canvas.appendChild(titleDiv);
-        const grid = document.createElement('div'); grid.className = 'kanji-table-grid';
-        const table = document.createElement('table'); table.className = 'unified-table';
-        const rows = ['tr-check', 'tr-num', 'tr-ques', 'tr-num2', 'tr-ans'].map(cls => { const tr = document.createElement('tr'); tr.className = cls; return tr; });
-        for (let i = 0; i < itemsPerPage; i++) {
-            const qObj = pageData[i]; const isExist = !!qObj;
-            const qIdx = isExist ? (allData[currentSheetName].indexOf(qObj) + 1) : "";
-            const qText = isExist ? qObj.q.replace(/[（\(](.*?)[）\)]/g, '<span class="highlight">（$1）</span>') : "";
-            rows[0].innerHTML += `<td><div class="square ${isExist ? '' : 'hidden'}"></div></td>`;
-            rows[1].innerHTML += `<td><span>${qIdx}</span></td>`;
-            rows[2].innerHTML += `<td><div class="h-ques-inner"><div class="ques-wrapper">${qText}</div></div></td>`;
-            rows[3].innerHTML += `<td><span>${qIdx}</span></td>`;
-            rows[4].innerHTML += `<td onclick="toggleSingleAns(this)"><div class="ans-wrapper ${!isAllAnswersVisible && isExist ? 'show-hint' : ''}"><span class="ans-text ${!isAllAnswersVisible && isExist ? 'blind' : ''}">${isExist?qObj.a:''}</span></div></td>`;
+    // 一覧画面のヘッダーボタンを更新する関数
+    function updateViewHeaderButtons() {
+        const p = allProgress[currentSheetName];
+        const rCount = p ? p.retry.size : 0;
+        const pCount = p ? p.perfect.size : 0;
+        
+        const retryBtn = document.getElementById('view-retry-btn');
+        const perfectBtn = document.getElementById('view-perfect-btn');
+        
+        if (rCount > 0) {
+            retryBtn.classList.remove('hidden');
+            retryBtn.innerText = `🔥 特訓(${rCount})`;
+        } else {
+            retryBtn.classList.add('hidden');
         }
-        rows.forEach(r => table.appendChild(r)); grid.appendChild(table); canvas.appendChild(grid);
+        
+        if (pCount > 0) {
+            perfectBtn.classList.remove('hidden');
+            perfectBtn.innerText = `✨ 復習(${pCount})`;
+        } else {
+            perfectBtn.classList.add('hidden');
+        }
+    }
+
+    // 一覧画面からの遷移アクション
+    function startViewSpecial() {
+        if(confirm("リストで見ている「おぼえちゅう」の問題だけで、特訓モードを始めますか？")) {
+            launchPracticeMode('special');
+        }
+    }
+    function startViewPerfect() {
+        if(confirm("リストで見ている「かんぺき」の問題だけで、復習（テスト）を始めますか？")) {
+            launchPracticeMode('perfect_check');
+        }
+    }
+
+    // ■■■ 四角クリック処理（データ連動） ■■■
+    function toggleSquare(el, sheet, idx) {
+        // 現在の状態を取得 (0:無, 1:完, 2:特)
+        let current = parseInt(el.getAttribute('data-state') || '0');
+        // 次の状態へ (0->1->2->0)
+        let next = (current + 1) % 3;
+        el.setAttribute('data-state', next);
+
+        // データ更新
+        if (!allProgress[sheet]) allProgress[sheet] = { perfect: new Set(), retry: new Set(), lastIndex: 0 };
+        const p = allProgress[sheet];
+
+        if (next === 1) { // かんぺき
+            p.perfect.add(idx);
+            p.retry.delete(idx);
+        } else if (next === 2) { // おぼえちゅう
+            p.retry.add(idx);
+            p.perfect.delete(idx);
+        } else { // なし
+            p.perfect.delete(idx);
+            p.retry.delete(idx);
+        }
+        saveProgress(); // 即時保存
+        updateViewHeaderButtons(); // ヘッダーのボタンも即座に更新
+    }
+
+    function createPageCanvas(pageData, title, startIndex) {
+        const canvas = document.createElement('div');
+        canvas.className = 'view-canvas';
+        const titleDiv = document.createElement('div');
+        titleDiv.className = 'print-title';
+        titleDiv.innerText = title;
+        canvas.appendChild(titleDiv);
+        const grid = document.createElement('div');
+        grid.className = 'kanji-table-grid';
+        const table = document.createElement('table');
+        table.className = 'unified-table';
+
+        const rowClasses = ['tr-check', 'tr-num', 'tr-ques', 'tr-num2', 'tr-ans'];
+        const rows = rowClasses.map(cls => { const tr = document.createElement('tr'); tr.className = cls; return tr; });
+
+        for (let i = 0; i < itemsPerPage; i++) {
+            const qObj = pageData[i];
+            const isExist = !!qObj;
+            
+            // 本当のインデックス (全データ内の位置)
+            const realIdx = startIndex + i;
+            
+            // 表示用番号 (1始まり)
+            const qIdxDisplay = isExist ? (realIdx + 1) : "";
+
+            // 初期状態の判定 (データから読み込み)
+            let initialState = 0;
+            if (isExist && allProgress[currentSheetName]) {
+                const p = allProgress[currentSheetName];
+                if (p.perfect.has(realIdx)) initialState = 1;
+                else if (p.retry.has(realIdx)) initialState = 2;
+            }
+
+            const qText = isExist ? qObj.q.replace(/[（\(](.*?)[）\)]/g, '<span class="highlight">$1</span>') : "";
+            const qAns = isExist ? qObj.a : "";
+
+            // squareにonclickとstateを付与
+            rows[0].innerHTML += `<td>
+                <div class="square ${isExist ? '' : 'hidden'}" 
+                     data-state="${initialState}" 
+                     onclick="toggleSquare(this, '${currentSheetName}', ${realIdx})">
+                </div>
+            </td>`;
+            
+            rows[1].innerHTML += `<td><span>${qIdxDisplay}</span></td>`;
+            rows[2].innerHTML += `<td><div class="h-ques-inner"><div class="ques-wrapper">${qText}</div></div></td>`;
+            rows[3].innerHTML += `<td><span>${qIdxDisplay}</span></td>`;
+            rows[4].innerHTML += `<td class="h-ans-cell" onclick="toggleSingleAns(this)">
+                <div class="ans-wrapper ${!isAllAnswersVisible && isExist ? 'show-hint' : ''}">
+                    <span class="ans-text ${!isAllAnswersVisible && isExist ? 'blind' : ''}">${qAns}</span>
+                </div>
+            </td>`;
+        }
+        rows.forEach(r => table.appendChild(r));
+        grid.appendChild(table);
+        canvas.appendChild(grid);
         return canvas;
     }
 
     function renderViewPage() {
-        const container = document.getElementById('view-mode-container'); container.innerHTML = "";
-        const data = allData[currentSheetName].slice(viewPage * itemsPerPage, (viewPage + 1) * itemsPerPage);
-        container.appendChild(createPageCanvas(data, currentSheetName));
+        const container = document.getElementById('view-mode-container');
+        container.innerHTML = "";
+        const startIdx = viewPage * itemsPerPage;
+        const data = allData[currentSheetName].slice(startIdx, startIdx + itemsPerPage);
+        container.appendChild(createPageCanvas(data, currentSheetName, startIdx));
         document.getElementById('page-info').innerText = `${viewPage + 1} / ${Math.ceil(allData[currentSheetName].length / itemsPerPage)}`;
     }
 
     function renderAllPagesForPrint() {
-        const container = document.getElementById('view-mode-container'); container.innerHTML = "";
+        const container = document.getElementById('view-mode-container');
+        container.innerHTML = "";
         const fullData = allData[currentSheetName];
-        for (let i = 0; i < Math.ceil(fullData.length / itemsPerPage); i++) { container.appendChild(createPageCanvas(fullData.slice(i * itemsPerPage, (i + 1) * itemsPerPage), currentSheetName)); }
+        for (let i = 0; i < Math.ceil(fullData.length / itemsPerPage); i++) {
+            const startIdx = i * itemsPerPage;
+            container.appendChild(createPageCanvas(fullData.slice(startIdx, startIdx + itemsPerPage), currentSheetName, startIdx));
+        }
     }
 
     function changeViewPage(step) {
@@ -529,9 +772,17 @@
         if (viewPage + step >= 0 && viewPage + step < max) { viewPage += step; renderViewPage(); }
     }
 
-    function toggleAllAnswers() { isAllAnswersVisible = !isAllAnswersVisible; document.getElementById('toggle-all-btn').innerText = isAllAnswersVisible ? "答えを隠す" : "答えを表示"; renderViewPage(); }
-    function toggleSingleAns(td) { const text = td.querySelector('.ans-text'); const wrap = td.querySelector('.ans-wrapper'); if (text) { text.classList.toggle('blind'); wrap.classList.toggle('show-hint'); } }
-    function clearProg(name) { if(confirm("消去しますか？")) { delete allProgress[name]; saveProgress(); createMenu(); } }
+    function toggleAllAnswers() {
+        isAllAnswersVisible = !isAllAnswersVisible;
+        document.getElementById('toggle-all-btn').innerText = isAllAnswersVisible ? "すべての答えをかくす" : "すべての答えをひょうじ";
+        renderViewPage();
+    }
+
+    function toggleSingleAns(td) {
+        const text = td.querySelector('.ans-text');
+        const wrap = td.querySelector('.ans-wrapper');
+        if (text) { text.classList.toggle('blind'); wrap.classList.toggle('show-hint'); }
+    }
 
     fetchData();
 </script>
