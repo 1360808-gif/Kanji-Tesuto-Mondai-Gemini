@@ -598,6 +598,16 @@
         document.getElementById('practice-app').style.display = 'none'; // 練習画面を消す
         launchViewMode('view'); // 一覧モードを起動
     }
+
+　　function returnToPractice() {
+        // 記録がある場合は「続きから」、なければ「最初から」判断してモードを切り替え
+        const p = allProgress[currentSheetName];
+        if (p && p.lastIndex > 0) {
+            launchPracticeMode('resume');
+        } else {
+            launchPracticeMode('restart');
+        }
+    }
     
     fetchData();
 </script>
