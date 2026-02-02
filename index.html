@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>漢字学習システム（チェック連動版 v39）</title>
+    <title>漢字学習システム（v40 アイコン削除版）</title>
     <style>
         /* =========================================
            共通・基盤設定
@@ -11,8 +11,8 @@
         :root {
             --paper-bg: #fffdf5;
             --ink-black: #333;
-            --perfect-green: #2ecc71;
-            --retry-orange: #f39c12;
+            --perfect-green: #2ecc71; /* かんぺき色 */
+            --retry-orange: #f39c12;  /* おぼえちゅう色 */
             --action-blue: #3498db;
             --update-purple: #9b59b6;
             --suspend-gray: #95a5a6;
@@ -33,6 +33,7 @@
             width: 100vw; height: 100vh;
         }
 
+        /* 画面モード切り替え */
         body.mode-practice { display: flex; justify-content: center; align-items: center; position: relative; }
         body.mode-view { display: block; overflow: hidden; }
 
@@ -146,7 +147,7 @@
         .title-column { writing-mode: vertical-rl; display: flex; align-items: center; font-size: 16px; font-weight: bold; color: #666; padding-top: 10px; }
 
         /* =========================================
-           閲覧・印刷モード UI (グリッド＋チェック機能)
+           閲覧・印刷モード UI (チェック機能付き)
            ========================================= */
         #view-app { display: none; width: 100%; height: 100%; }
         .view-header { width: 100%; height: 50px; display: flex; justify-content: space-between; align-items: center; padding: 0 20px; background: #fff; border-bottom: 1px solid #ccc; }
@@ -191,7 +192,8 @@
             .view-canvas { margin: 5mm auto !important; page-break-after: always !important; box-shadow: none !important; border: var(--border-width) solid var(--border-color) !important; }
             .ans-text { color: black !important; opacity: 1 !important; visibility: visible !important; }
             .ans-wrapper::before { content: none !important; }
-            /* 印刷時は現在のステータスをそのまま印字 */
+            
+            /* 印刷時もチェック状態を維持 */
             .square[data-state="1"]::after { color: #000 !important; } 
             .square[data-state="2"]::after { color: #000 !important; }
         }
@@ -215,9 +217,9 @@
         <div class="modal-card">
             <h2 id="modal-sheet-title"></h2>
             <div class="mode-btn-group">
-                <button class="btn btn-practice" onclick="handleModeSelection('practice')">✏️ １もん ずつ れんしゅう</button>
-                <button class="btn btn-view" onclick="handleModeSelection('view')">👀 いちらんを みて れんしゅう</button>
-                <button class="btn btn-print" onclick="handleModeSelection('print')">🖨️ プリントを印刷</button>
+                <button class="btn btn-practice" onclick="handleModeSelection('practice')">１もん ずつ れんしゅう</button>
+                <button class="btn btn-view" onclick="handleModeSelection('view')">いちらんを みて れんしゅう</button>
+                <button class="btn btn-print" onclick="handleModeSelection('print')">プリントを印刷</button>
                 <button class="btn btn-cancel" onclick="closeAllModals()">キャンセル</button>
             </div>
         </div>
@@ -592,7 +594,7 @@
         }
     }
 
-    // ■■■ 修正：四角クリック処理 ■■■
+    // ■■■ 四角クリック処理（データ連動） ■■■
     function toggleSquare(el, sheet, idx) {
         // 現在の状態を取得 (0:無, 1:完, 2:特)
         let current = parseInt(el.getAttribute('data-state') || '0');
@@ -642,7 +644,7 @@
             // 表示用番号 (1始まり)
             const qIdxDisplay = isExist ? (realIdx + 1) : "";
 
-            // ■■■ 修正：初期状態の判定 ■■■
+            // 初期状態の判定 (データから読み込み)
             let initialState = 0;
             if (isExist && allProgress[currentSheetName]) {
                 const p = allProgress[currentSheetName];
@@ -653,7 +655,7 @@
             const qText = isExist ? qObj.q.replace(/[（\(](.*?)[）\)]/g, '<span class="highlight">$1</span>') : "";
             const qAns = isExist ? qObj.a : "";
 
-            // ■■■ 修正：squareにonclickとstateを付与 ■■■
+            // squareにonclickとstateを付与
             rows[0].innerHTML += `<td>
                 <div class="square ${isExist ? '' : 'hidden'}" 
                      data-state="${initialState}" 
@@ -702,7 +704,7 @@
 
     function toggleAllAnswers() {
         isAllAnswersVisible = !isAllAnswersVisible;
-        document.getElementById('toggle-all-btn').innerText = isAllAnswersVisible ? "答えを隠す" : "答えを表示";
+        document.getElementById('toggle-all-btn').innerText = isAllAnswersVisible ? "すべての答えをかくす" : "すべての答えをひょうじ";
         renderViewPage();
     }
 
