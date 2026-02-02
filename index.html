@@ -514,8 +514,8 @@
     function updateViewHeaderButtons() {
         const p = allProgress[currentSheetName], rCount = p ? p.retry.size : 0, pCount = p ? p.perfect.size : 0;
         const rBtn = document.getElementById('view-retry-btn'), fBtn = document.getElementById('view-perfect-btn');
-        rCount > 0 ? (rBtn.classList.remove('hidden'), rBtn.innerText = `🔥 特訓(${rCount})`) : rBtn.classList.add('hidden');
-        pCount > 0 ? (fBtn.classList.remove('hidden'), fBtn.innerText = `✨ 復習(${pCount})`) : fBtn.classList.add('hidden');
+        rCount > 0 ? (rBtn.classList.remove('hidden'), rBtn.innerText = `🔥 とっくん(${rCount})`) : rBtn.classList.add('hidden');
+        pCount > 0 ? (fBtn.classList.remove('hidden'), fBtn.innerText = `✨ ふくしゅう(${pCount})`) : fBtn.classList.add('hidden');
     }
 
     function toggleSquare(el, sheet, idx) {
