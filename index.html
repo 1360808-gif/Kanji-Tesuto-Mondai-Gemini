@@ -550,7 +550,7 @@
             rows[1].innerHTML += `<td><span>${isExist ? realIdx + 1 : ""}</span></td>`;
             rows[2].innerHTML += `<td><div class="h-ques-inner"><div class="ques-wrapper">${isExist ? qObj.q.replace(/[（\(](.*?)[）\)]/g, '<span class="highlight">$1</span>') : ""}</div></div></td>`;
             rows[3].innerHTML += `<td><span>${isExist ? realIdx + 1 : ""}</span></td>`;
-            rows[4].innerHTML += `<td onclick="toggleSingleAns(this)"><div class="ans-wrapper ${!isAllAnswersVisible && isExist ? 'show-hint' : ''}"><span class="ans-text ${!isAllAnswersVisible && isExist ? 'blind' : ''}">${isExist ? qObj.a : ""}</span></div></td>`;
+            rows[4].innerHTML += `<td onclick="toggleSingleAns(this)"><div class="ans-wrapper ${!isAllAnswersVisible && isExist ? 'show-hint' : ''}"><span class="ans-text ${!isAllAnswersVisible && isExist ? 'blind' : ''}">${isExist ? qObj.a.replace(/、/g, '<br>') : ""}</span></div></td>`;
         }
         rows.forEach(r => table.appendChild(r)); grid.appendChild(table); canvas.appendChild(grid); return canvas;
     }
