@@ -592,6 +592,12 @@
     function startViewSpecial() { launchPracticeMode('special'); }
     function startViewPerfect() { launchPracticeMode('perfect_check'); }
 
+    function switchToViewMode() {
+        saveProgress(); // 今の状態を保存
+        document.getElementById('practice-app').style.display = 'none'; // 練習画面を消す
+        launchViewMode('view'); // 一覧モードを起動
+    }
+    
     fetchData();
 </script>
 </body>
