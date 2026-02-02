@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>漢字学習システム：極 v43-Random</title>
+    <title>漢字学習システム：極 v44-RandomFix</title>
     <style>
         /* =========================================
            共通・基盤設定
@@ -413,7 +413,6 @@
     function handleModeSelection(mode) {
         document.getElementById('mode-select-modal').style.display = 'none';
         if (mode === 'random') {
-            // ランダムの場合は即座に開始（続きから機能は使わない）
             launchPracticeMode('random');
         } else if (mode === 'practice') {
             const prog = allProgress[currentSheetName];
@@ -431,7 +430,6 @@
         launchPracticeMode(type);
     }
 
-    // 配列をシャッフルする関数
     function shuffleArray(array) {
         for (let i = array.length - 1; i > 0; i--) {
             const j = Math.floor(Math.random() * (i + 1));
@@ -448,7 +446,6 @@
         if (!allProgress[currentSheetName]) allProgress[currentSheetName] = { perfect: new Set(), retry: new Set(), lastIndex: 0 };
         const master = allData[currentSheetName];
         
-        // バッジを一旦すべてリセット
         document.getElementById('mode-badge').classList.add('hidden');
         document.getElementById('mode-badge-perfect').classList.add('hidden');
         document.getElementById('mode-badge-random').classList.add('hidden');
@@ -466,16 +463,12 @@
             currentIndex = 0;
             document.getElementById('mode-badge-perfect').classList.remove('hidden');
         } else if (type === 'random') {
-            // ランダムモード
             currentModeType = 'random';
-            // まずオリジナル番号を付与してから
             let temp = master.map((q, i) => ({...q, originalIndex: i}));
-            // シャッフルする
             currentQuestions = shuffleArray(temp);
             currentIndex = 0;
             document.getElementById('mode-badge-random').classList.remove('hidden');
         } else {
-            // 通常（順番通り）
             currentModeType = 'normal';
             currentQuestions = master.map((q, i) => ({...q, originalIndex: i}));
             currentIndex = (type === 'resume') ? allProgress[currentSheetName].lastIndex : 0;
@@ -491,7 +484,6 @@
             return backToList();
         }
         const q = currentQuestions[currentIndex];
-        // ランダムや特訓のときは「今の問題数」、通常のときは「本来の番号」を表示
         document.getElementById('q-number').innerText = (currentModeType !== 'normal') ? (currentIndex + 1) : (q.originalIndex + 1);
         document.getElementById('q-text').innerHTML = q.q.replace(/[（\(](.*?)[）\)]/g, '<span class="highlight">$1</span>');
         const ansArea = document.getElementById('a-text');
@@ -501,7 +493,6 @@
         document.getElementById('judgement-btns').classList.add('hidden');
         document.getElementById('retry-options').classList.add('hidden');
         
-        // 順番通りのときだけ、どこまで進んだかを記録する
         if (currentModeType === 'normal') allProgress[currentSheetName].lastIndex = currentIndex;
         updateStats();
     }
@@ -514,7 +505,6 @@
 
     function record(type) {
         const p = allProgress[currentSheetName];
-        // ランダムでも、元の番号(originalIndex)を使って記録するので安全！
         const idx = currentQuestions[currentIndex].originalIndex;
         if (type === 'perfect') {
             p.perfect.add(idx); p.retry.delete(idx); nextStep();
@@ -540,14 +530,9 @@
         document.getElementById('stat-retry').innerText = p.retry.size;
         
         const sBtn = document.getElementById('side-special-btn'), pBtn = document.getElementById('side-perfect-btn');
-        // ランダムモード中はサイドバーの特訓ボタンなどは隠す（混乱防止）
-        if (currentModeType === 'random') {
-             sBtn.classList.add('hidden');
-             pBtn.classList.add('hidden');
-        } else {
-             (currentModeType !== 'retry' && p.retry.size > 0) ? sBtn.classList.remove('hidden') : sBtn.classList.add('hidden');
-             (currentModeType !== 'perfect' && p.perfect.size > 0) ? pBtn.classList.remove('hidden') : pBtn.classList.add('hidden');
-        }
+        // ランダムモードでも、記録があればボタンを表示するように変更
+        (currentModeType !== 'retry' && p.retry.size > 0) ? sBtn.classList.remove('hidden') : sBtn.classList.add('hidden');
+        (currentModeType !== 'perfect' && p.perfect.size > 0) ? pBtn.classList.remove('hidden') : pBtn.classList.add('hidden');
     }
 
     function launchViewMode(mode) {
