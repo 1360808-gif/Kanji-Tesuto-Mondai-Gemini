@@ -187,6 +187,11 @@
         @media print {
             @page { size: A4 landscape; margin: 0; }
             body { background: white !important; overflow: visible !important; }
+            #view-mode-container {
+       　　　 height: auto !important;      /* 高さを制限しない */
+        　　　overflow: visible !important; /* はみ出し部分も全部見せる */
+      　　　  display: block !important;    /* 縦に自然に並べる */
+   　　　　　 }
             #top-update-btn, .view-header, #loading, #selector-screen, .modal-overlay, #practice-app { display: none !important; }
             #view-app { display: block !important; }
             .view-canvas { margin: 5mm auto !important; page-break-after: always !important; box-shadow: none !important; border: var(--border-width) solid var(--border-color) !important; }
