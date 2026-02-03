@@ -144,7 +144,23 @@
             padding: 10px 15px 30px; background-image: radial-gradient(#ddd 1.5px, transparent 1.5px); 
             background-size: 35px 35px; overflow-y: auto; 
         }
-        .highlight { color: #e74c3c; text-decoration: underline #e74c3c 2px; text-underline-offset: 3px; display: inline; }
+        /* ▼ 共通：赤く太くする */
+.highlight { 
+    color: #e74c3c; 
+    font-weight: bold; 
+    display: inline; 
+}
+
+/* ▼ 「1問ずつモード」の時だけ：線を引く */
+#practice-app .highlight {
+    text-decoration: underline #e74c3c 2px;
+    text-underline-offset: 3px;
+}
+
+/* ▼ 「一覧モード」の時だけ：線を消す（重なり防止） */
+#view-app .highlight {
+    text-decoration: none;
+}
         .title-column { writing-mode: vertical-rl; display: flex; align-items: center; font-size: 16px; font-weight: bold; color: #666; padding-top: 10px; }
 
         /* =========================================
