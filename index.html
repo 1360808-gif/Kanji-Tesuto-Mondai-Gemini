@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>漢字学習システム：極 v45-PrintFix</title>
+    <title>漢字学習システム：極 v45-PrintFix (Selector Update)</title>
     <style>
         /* =========================================
            共通・基盤設定
@@ -11,14 +11,14 @@
         :root {
             --paper-bg: #fffdf5;
             --ink-black: #333;
-            --perfect-green: #2ecc71; /* かんぺき色 */
-            --retry-orange: #f39c12;  /* おぼえちゅう色 */
+            --perfect-green: #2ecc71;
+            --retry-orange: #f39c12; 
             --action-blue: #3498db;
             --update-purple: #9b59b6;
             --suspend-gray: #95a5a6;
             --special-orange: #e67e22;
             --special-green: #27ae60;
-            --random-purple: #8e44ad; /* ランダムモード色 */
+            --random-purple: #8e44ad; 
             --main-font: "UD Digital Kyokasho N-R", "UD デジタル 教科書体 N-R", BIZ UDPGothic, sans-serif;
             --border-width: 2px;
             --border-color: #000; 
@@ -34,7 +34,6 @@
             width: 100vw; height: 100vh;
         }
 
-        /* 画面モード切り替え */
         body.mode-practice { display: flex; justify-content: center; align-items: center; position: relative; }
         body.mode-view { display: block; overflow: hidden; }
 
@@ -47,55 +46,87 @@
 
         .hidden { display: none !important; }
 
-        /* --- ハイライト（問題部分）の共通設定 --- */
         .highlight { 
             color: #e74c3c; 
             font-weight: bold; 
             display: inline; 
         }
         
-        /* 練習モードでは「線」を引く */
         #practice-app .highlight {
             text-decoration: underline #e74c3c 2px;
             text-underline-offset: 3px;
         }
 
-        /* 一覧モードでは「線なし（太文字のみ）」にして重なりを防ぐ */
         #view-app .highlight {
             text-decoration: none;
         }
 
         /* --- こうしんボタン --- */
+        /* ※絶対配置（position:absolute）を解除し、自然な配置に変更 */
         #top-update-btn {
-            position: absolute; top: 15px; left: 15px; z-index: 50;
             background: var(--update-purple); color: white;
             border: 3px solid var(--ink-black); padding: 8px 15px;
             border-radius: 12px; cursor: pointer; font-weight: bold; font-size: 14px;
             box-shadow: 4px 4px 0 rgba(0,0,0,0.1);
             display: none;
             flex-direction: column; align-items: center; line-height: 1.2;
+            margin: 0; 
         }
         #top-update-btn:active { transform: translate(2px, 2px); box-shadow: 2px 2px 0 rgba(0,0,0,0.1); }
         #top-update-btn small { font-size: 10px; font-weight: normal; margin-top: 2px; }
 
-        /* セレクター画面 */
+        /* =========================================
+           セレクター画面（6列・スリム化対応）
+           ========================================= */
         #selector-screen {
             display: none; flex-direction: column; align-items: center;
-            background: var(--paper-bg); padding: 30px; border-radius: 30px;
-            border: 5px solid var(--ink-black); width: 90%; max-width: 500px;
-            max-height: 80vh; overflow-y: auto; box-shadow: 15px 15px 0 rgba(0,0,0,0.1);
+            background: var(--paper-bg); padding: 25px; border-radius: 30px;
+            border: 5px solid var(--ink-black); 
+            width: 96vw; max-width: 1400px; /* 6列のために幅を広く */
+            max-height: 92vh; overflow-y: auto; 
             position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            z-index: 100; box-shadow: 15px 15px 0 rgba(0,0,0,0.1);
         }
-        .sheet-row { display: flex; width: 100%; gap: 10px; margin: 8px 0; align-items: center; }
+
+        #sheet-list {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr); /* 6列固定 */
+            gap: 12px; width: 100%; align-items: start;
+        }
+
+        .grade-column {
+            display: flex; flex-direction: column; gap: 8px;
+            background: rgba(0,0,0,0.04); padding: 12px; border-radius: 15px;
+            border: 1px solid #ddd;
+        }
+
+        .grade-header {
+            text-align: center; font-weight: bold; font-size: 18px;
+            padding: 6px; border-bottom: 3px solid var(--ink-black);
+            margin-bottom: 8px; background: #f0f0f0; border-radius: 8px;
+        }
+
+        .sheet-row { display: flex; width: 100%; gap: 4px; align-items: stretch; margin: 0; }
+
         .sheet-btn {
-            flex-grow: 1; padding: 18px; font-size: 20px; font-weight: bold; background: white;
-            border: 3px solid var(--ink-black); border-radius: 15px; cursor: pointer;
-            font-family: var(--main-font); display: flex; justify-content: space-between; align-items: center;
+            flex-grow: 1; padding: 8px 10px; font-size: 14px; font-weight: bold; 
+            background: white; border: 2px solid var(--ink-black); 
+            border-radius: 10px; cursor: pointer; font-family: var(--main-font);
+            display: flex; flex-direction: column; justify-content: center;
+            min-height: 55px; line-height: 1.2; overflow: hidden; text-align: left;
         }
+
         .reset-mini-btn {
-            width: 50px; height: 60px; background: #eee; border: 3px solid var(--ink-black);
-            border-radius: 12px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 20px;
+            width: 32px; background: #eee; border: 2px solid var(--ink-black); 
+            border-radius: 8px; cursor: pointer; display: flex; 
+            align-items: center; justify-content: center; font-size: 14px;
+            flex-shrink: 0;
         }
+
+        /* レスポンシブ対応（画面が狭いときは列数を減らす） */
+        @media (max-width: 1200px) { #sheet-list { grid-template-columns: repeat(3, 1fr); } }
+        @media (max-width: 800px)  { #sheet-list { grid-template-columns: repeat(2, 1fr); } }
+        @media (max-width: 500px)  { #sheet-list { grid-template-columns: 1fr; } }
 
         /* 共通モーダル設定 */
         .modal-overlay {
@@ -218,7 +249,6 @@
            ここを調整して「ズレ」と「白黒対策」を行っています
            ========================================= */
         @media print {
-            /* 余白を10mmとることで、2枚目以降のズレ（切れる現象）を防ぐ */
             @page { size: A4 landscape; margin: 10mm; }
             
             html, body, #view-app, #view-mode-container {
@@ -231,7 +261,6 @@
                 display: none !important; 
             }
             .view-canvas { 
-                /* マージンは@pageに任せて、ここでは0にする */
                 margin: 0 auto !important; 
                 page-break-after: always !important; 
                 break-inside: avoid !important;
@@ -243,7 +272,6 @@
             .square[data-state="1"]::after { color: #000 !important; } 
             .square[data-state="2"]::after { color: #000 !important; }
 
-            /* 白黒印刷用の特別ルール：文字色黒、背景グレー、線なし */
             .highlight {
                 color: #000 !important;
                 background: #e0e0e0 !important;
@@ -258,13 +286,13 @@
 
     <div id="loading">✨ データを読み込んでいます... ✨</div>
 
-    <button id="top-update-btn" onclick="fetchData(true)">
-        🔄 こうしん
-        <small>(先生からお知らせがあったとき)</small>
-    </button>
-
     <div id="selector-screen">
-        <h2 style="margin-top:0;">📖 問題集を選んでね</h2>
+        <div style="display:flex; justify-content:space-between; align-items:center; width:100%; margin-bottom:20px; border-bottom:2px solid #ccc; padding-bottom:10px;">
+            <h2 style="margin:0; font-size:24px;">📖 問題集を選んでね</h2>
+            <button id="top-update-btn" onclick="fetchData(true)">
+                🔄 こうしん<br><small>(先生からお知らせがあったとき)</small>
+            </button>
+        </div>
         <div id="sheet-list" style="width:100%;"></div>
     </div>
 
@@ -354,8 +382,7 @@
         </div>
         <div id="view-mode-container"></div>
     </div>
-
-<script>
+    <script>
     const API_URL = "https://script.google.com/macros/s/AKfycbyWHprvWe-NcrfamWL2I6bWSAak6HW-JxyMCY-RZkZDFrhLkbSfLkeVmpKyznlI7g3a/exec";
     const CACHE_KEY = "kanji_quiz_v42_sync"; 
     const PROGRESS_KEY = "kanji_quiz_prog_v42_sync";
@@ -372,7 +399,6 @@
 
     async function fetchData(force = false) {
         document.getElementById('loading').style.display = 'flex';
-        document.getElementById('top-update-btn').style.display = 'none'; 
         const cached = localStorage.getItem(CACHE_KEY);
         if (!force && cached) {
             try {
@@ -418,6 +444,7 @@
         localStorage.setItem(PROGRESS_KEY, JSON.stringify(toSave));
     }
 
+    // ★ 修正箇所：学年別に6列に振り分け、エスケープ処理を追加
     function createMenu() {
         document.getElementById('loading').style.display = 'none';
         document.getElementById('selector-screen').style.display = 'flex';
@@ -429,28 +456,73 @@
 
         const list = document.getElementById('sheet-list');
         list.innerHTML = "";
+
+        const grades = ["１年", "２年", "３年", "４年", "５年", "６年"];
+        const columns = {};
+
+        grades.forEach(g => {
+            const col = document.createElement('div');
+            col.className = "grade-column";
+            col.innerHTML = `<div class="grade-header">${g}</div>`;
+            columns[g] = col;
+            list.appendChild(col);
+        });
+
+        const otherCol = document.createElement('div');
+        otherCol.className = "grade-column";
+        otherCol.innerHTML = `<div class="grade-header">その他</div>`;
+
         Object.keys(allData).forEach(key => {
             const row = document.createElement('div');
             row.className = "sheet-row";
+            
             const prog = allProgress[key];
             const retryCount = prog ? prog.retry.size : 0;
-            const badge = retryCount > 0 ? `<span style="background:var(--retry-orange); color:white; padding:2px 8px; border-radius:10px; font-size:12px;">おぼえちゅう:${retryCount}</span>` : "";
-            row.innerHTML = `<button class="sheet-btn" onclick="openModeModal('${key}')"><div>${key}</div>${badge}</button>
-                             <button class="reset-mini-btn" onclick="clearProg('${key}')">🗑️</button>`;
-            list.appendChild(row);
+            const badge = retryCount > 0 ? `<div style="background:var(--retry-orange); color:white; padding:1px 5px; border-radius:5px; font-size:10px; margin-top:3px; align-self:flex-start;">おぼえちゅう:${retryCount}</div>` : "";
+            
+            // シングルクォーテーションをエスケープしてバグを防ぐ
+            const escapedKey = key.replace(/'/g, "\\'"); 
+            
+            row.innerHTML = `
+                <button class="sheet-btn" onclick="openModeModal('${escapedKey}')">
+                    <div style="word-break:break-all;">${key}</div>
+                    ${badge}
+                </button>
+                <button class="reset-mini-btn" onclick="clearProg('${escapedKey}')">🗑️</button>
+            `;
+
+            const prefix = key.substring(0, 2);
+            if (columns[prefix]) {
+                columns[prefix].appendChild(row);
+            } else {
+                otherCol.appendChild(row);
+            }
         });
+
+        if (otherCol.children.length > 1) {
+            list.appendChild(otherCol);
+        }
     }
 
+    // ★ 修正箇所：モーダルを開くときにリストを隠す
     function openModeModal(name) {
         currentSheetName = name;
         document.getElementById('modal-sheet-title').innerText = name;
         document.getElementById('mode-select-modal').style.display = 'flex';
-        document.getElementById('top-update-btn').style.display = 'none'; 
+        document.getElementById('selector-screen').style.display = 'none'; // リストを隠す
     }
 
+    // ★ 修正箇所：モーダルを閉じるときにリストを復活させる
     function closeAllModals() {
         document.querySelectorAll('.modal-overlay').forEach(el => el.style.display = 'none');
-        if(document.getElementById('selector-screen').style.display !== 'none') document.getElementById('top-update-btn').style.display = 'flex';
+        
+        // 練習画面でも印刷画面でもないときだけ、リスト画面を表示する
+        const pracHidden = document.getElementById('practice-app').style.display === 'none';
+        const viewHidden = document.getElementById('view-app').style.display === 'none';
+        if (pracHidden && viewHidden) {
+            document.getElementById('selector-screen').style.display = 'flex';
+            document.getElementById('top-update-btn').style.display = 'flex';
+        }
     }
 
     function handleModeSelection(mode) {
